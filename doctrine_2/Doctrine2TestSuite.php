@@ -12,21 +12,8 @@ class Doctrine2TestSuite extends AbstractTestSuite
 
     public function initialize()
     {
-      $lib = __DIR__ . '/vendor/doctrine2/lib/';
-      require_once $lib . 'vendor/doctrine-common/lib/Doctrine/Common/ClassLoader.php';
+      require_once "vendor/autoload.php";
 
-      $classLoader = new \Doctrine\Common\ClassLoader('Doctrine\Common', $lib . 'vendor/doctrine-common/lib');
-      $classLoader->register();
-
-      $classLoader = new \Doctrine\Common\ClassLoader('Doctrine\DBAL', $lib . 'vendor/doctrine-dbal/lib');
-      $classLoader->register();
-
-      $classLoader = new \Doctrine\Common\ClassLoader('Doctrine\ORM', $lib);
-      $classLoader->register();
-      
-      $classloader = new \Doctrine\Common\ClassLoader('Symfony', $lib . 'vendor/');
-      $classloader->register();
-      
       $cache = new \Doctrine\Common\Cache\ArrayCache;
       $config = new Doctrine\ORM\Configuration;
       $config->setMetadataCacheImpl($cache);
