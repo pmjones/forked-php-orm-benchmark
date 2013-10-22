@@ -29,7 +29,7 @@ $conf = array (
     ),
     'default' => 'bookstore',
   ),
-  'generator_version' => '1.7.1-dev',
+  'generator_version' => '1.7.0',
 );
 $conf['classmap'] = include(dirname(__FILE__) . DIRECTORY_SEPARATOR . 'classmap-bookstore-conf.php');
 return $conf;
