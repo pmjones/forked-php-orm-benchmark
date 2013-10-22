@@ -8,11 +8,10 @@ class Propel16TestSuite extends AbstractTestSuite
 	{
 		set_include_path(
 			realpath(dirname(__FILE__) . '/build/classes') . PATH_SEPARATOR .
-			realpath(dirname(__FILE__) . '/vendor/propel/runtime/lib') . PATH_SEPARATOR .
 			get_include_path()
 		);
 
-		require_once 'Propel.php';
+        require_once "vendor/autoload.php";
 		$conf = include realpath(dirname(__FILE__) . '/build/conf/bookstore-conf.php');
 		$conf['log'] = null;
 		Propel::setConfiguration($conf);
