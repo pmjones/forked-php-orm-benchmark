@@ -11,7 +11,11 @@ class Propel16WithCacheTestSuite extends AbstractTestSuite
 			get_include_path()
 		);
 
-        require_once "../propel_16/vendor/autoload.php";
+        if (file_exists("propel_16/vendor/autoload.php")) {
+            require_once "propel_16/vendor/autoload.php";
+        } else {
+            require_once "../propel_16/vendor/autoload.php";
+        }
 		$conf = include realpath(dirname(__FILE__) . '/build/conf/bookstore-conf.php');
 		$conf['log'] = null;
 		Propel::setConfiguration($conf);
