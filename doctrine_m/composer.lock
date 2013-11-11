@@ -297,12 +297,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/doctrine/dbal.git",
-                "reference": "d79ce18e3ab6d3ebe0d8c026d38b8b7d8b80a6ce"
+                "reference": "9e3e9cc5aa146d967a1555804d28a3f57d8e5d3a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/doctrine/dbal/zipball/d79ce18e3ab6d3ebe0d8c026d38b8b7d8b80a6ce",
-                "reference": "d79ce18e3ab6d3ebe0d8c026d38b8b7d8b80a6ce",
+                "url": "https://api.github.com/repos/doctrine/dbal/zipball/9e3e9cc5aa146d967a1555804d28a3f57d8e5d3a",
+                "reference": "9e3e9cc5aa146d967a1555804d28a3f57d8e5d3a",
                 "shasum": ""
             },
             "require": {
@@ -333,7 +333,7 @@
             ],
             "authors": [
                 {
-                    "name": "Jonathan H. Wage",
+                    "name": "Jonathan Wage",
                     "email": "jonwage@gmail.com",
                     "homepage": "http://www.jwage.com/",
                     "role": "Creator"
@@ -360,7 +360,7 @@
                 "persistence",
                 "queryobject"
             ],
-            "time": "2013-11-04 10:59:42"
+            "time": "2013-11-10 17:51:03"
         },
         {
             "name": "doctrine/inflector",
