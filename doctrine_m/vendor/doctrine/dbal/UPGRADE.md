@@ -1,3 +1,7 @@
+# Upgrade to 2.5
+
+No BC breaks yet.
+
 # Upgrade to 2.4
 
 ## Doctrine\DBAL\Schema\Constraint

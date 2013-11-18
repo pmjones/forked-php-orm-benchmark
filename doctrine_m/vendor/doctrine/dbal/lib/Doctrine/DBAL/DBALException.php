@@ -19,8 +19,22 @@
 
 namespace Doctrine\DBAL;
 
+use Doctrine\DBAL\Driver\ExceptionConverterDriver;
+
 class DBALException extends \Exception
 {
+    const ERROR_DUPLICATE_KEY = 1;
+    const ERROR_UNKNOWN_TABLE = 2;
+    const ERROR_TABLE_ALREADY_EXISTS = 3;
+    const ERROR_FOREIGN_KEY_CONSTRAINT = 4;
+    const ERROR_NOT_NULL = 5;
+    const ERROR_BAD_FIELD_NAME = 6;
+    const ERROR_NON_UNIQUE_FIELD_NAME = 7;
+    const ERROR_SYNTAX = 9;
+    const ERROR_UNABLE_TO_OPEN = 10;
+    const ERROR_WRITE_READONLY = 11;
+    const ERROR_ACCESS_DENIED = 12;
+
     /**
      * @param string $method
      *
@@ -74,13 +88,14 @@ class DBALException extends \Exception
     }
 
     /**
+     * @param \Doctrine\DBAL\Driver     $driver
      * @param \Exception $driverEx
      * @param string     $sql
      * @param array      $params
      *
      * @return \Doctrine\DBAL\DBALException
      */
-    public static function driverExceptionDuringQuery(\Exception $driverEx, $sql, array $params = array())
+    public static function driverExceptionDuringQuery(Driver $driver, \Exception $driverEx, $sql, array $params = array())
     {
         $msg = "An exception occurred while executing '".$sql."'";
         if ($params) {
@@ -88,7 +103,24 @@ class DBALException extends \Exception
         }
         $msg .= ":\n\n".$driverEx->getMessage();
 
-        return new self($msg, 0, $driverEx);
+        $code = ($driver instanceof ExceptionConverterDriver)
+            ? $driver->convertExceptionCode($driverEx)
+            : 0;
+
+        return new self($msg, $code, $driverEx);
+    }
+
+    /**
+     * @param \Doctrine\DBAL\Driver     $driver
+     * @param \Exception $driverEx
+     *
+     * @return \Doctrine\DBAL\DBALException
+     */
+    public static function driverException(Driver $driver, \Exception $driverEx)
+    {
+        $msg = "An exception occured in driver: " . $driverEx->getMessage();
+
+        return new self($msg, $driver->convertExceptionCode($driverEx), $driverEx);
     }
 
     /**

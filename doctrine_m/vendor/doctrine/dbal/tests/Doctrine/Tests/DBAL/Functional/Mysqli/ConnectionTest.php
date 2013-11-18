@@ -9,19 +9,16 @@ class ConnectionTest extends \Doctrine\Tests\DbalFunctionalTestCase
             $this->markTestSkipped('mysqli is not installed.');
         }
 
-        $driver = getenv('DB');
-        if (false !== $driver && $driver !== 'mysqli') {
-            $this->markTestSkipped('this test case is for mysqli only');
-        }
-
-        $this->resetSharedConn();
         parent::setUp();
+
+        if ( !($this->_conn->getDriver() instanceof \Doctrine\DBAL\Driver\Mysqli\Driver)) {
+            $this->markTestSkipped('MySQLi only test.');
+        }
     }
 
     public function tearDown()
     {
         parent::tearDown();
-        $this->resetSharedConn();
     }
 
     public function testDriverOptions()
@@ -40,6 +37,12 @@ class ConnectionTest extends \Doctrine\Tests\DbalFunctionalTestCase
     public function testUnsupportedDriverOption()
     {
         $this->getConnection(array('hello' => 'world')); // use local infile
+    }
+
+    public function testPing()
+    {
+        $conn = $this->getConnection(array());
+        $this->assertTrue($conn->ping());
     }
 
     private function getConnection(array $driverOptions)

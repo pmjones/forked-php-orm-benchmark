@@ -20,11 +20,13 @@
 namespace Doctrine\DBAL\Driver\Mysqli;
 
 use Doctrine\DBAL\Driver\Connection as Connection;
+use \Doctrine\DBAL\Driver\PingableConnection;
 
 /**
  * @author Kim Hemsø Rasmussen <kimhemsoe@gmail.com>
+ * @author Till Klampaeckel <till@php.net>
  */
-class MysqliConnection implements Connection
+class MysqliConnection implements Connection, PingableConnection
 {
     /**
      * @var \mysqli
@@ -45,9 +47,17 @@ class MysqliConnection implements Connection
         $socket = isset($params['unix_socket']) ? $params['unix_socket'] : ini_get('mysqli.default_socket');
 
         $this->_conn = mysqli_init();
+
+        $previousHandler = set_error_handler(function () {
+        });
+
         if ( ! $this->_conn->real_connect($params['host'], $username, $password, $params['dbname'], $port, $socket)) {
+            set_error_handler($previousHandler);
+
             throw new MysqliException($this->_conn->connect_error, $this->_conn->connect_errno);
         }
+
+        set_error_handler($previousHandler);
 
         if (isset($params['charset'])) {
             $this->_conn->set_charset($params['charset']);
@@ -198,5 +208,15 @@ class MysqliConnection implements Connection
                 mysqli_errno($this->_conn)
             );
         }
+    }
+
+    /**
+     * Pings the server and re-connects when `mysqli.reconnect = 1`
+     *
+     * @return bool
+     */
+    public function ping()
+    {
+        return $this->_conn->ping();
     }
 }

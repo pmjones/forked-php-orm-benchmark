@@ -343,12 +343,12 @@
         "source": {
             "type": "git",
             "url": "https://github.com/doctrine/dbal.git",
-            "reference": "9e3e9cc5aa146d967a1555804d28a3f57d8e5d3a"
+            "reference": "5fdedc4f8f304e8035580807bd36d59e97a87265"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/doctrine/dbal/zipball/9e3e9cc5aa146d967a1555804d28a3f57d8e5d3a",
-            "reference": "9e3e9cc5aa146d967a1555804d28a3f57d8e5d3a",
+            "url": "https://api.github.com/repos/doctrine/dbal/zipball/5fdedc4f8f304e8035580807bd36d59e97a87265",
+            "reference": "5fdedc4f8f304e8035580807bd36d59e97a87265",
             "shasum": ""
         },
         "require": {
@@ -362,7 +362,7 @@
         "suggest": {
             "symfony/console": "Allows use of the command line interface"
         },
-        "time": "2013-11-10 17:51:03",
+        "time": "2013-11-15 14:43:05",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -408,61 +408,6 @@
             "persistence",
             "queryobject"
         ]
-    },
-    {
-        "name": "symfony/console",
-        "version": "v2.3.6",
-        "version_normalized": "2.3.6.0",
-        "target-dir": "Symfony/Component/Console",
-        "source": {
-            "type": "git",
-            "url": "https://github.com/symfony/Console.git",
-            "reference": "f880062d56edefb25b36f2defa65aafe65959dc7"
-        },
-        "dist": {
-            "type": "zip",
-            "url": "https://api.github.com/repos/symfony/Console/zipball/f880062d56edefb25b36f2defa65aafe65959dc7",
-            "reference": "f880062d56edefb25b36f2defa65aafe65959dc7",
-            "shasum": ""
-        },
-        "require": {
-            "php": ">=5.3.3"
-        },
-        "require-dev": {
-            "symfony/event-dispatcher": "~2.1"
-        },
-        "suggest": {
-            "symfony/event-dispatcher": ""
-        },
-        "time": "2013-09-25 06:04:15",
-        "type": "library",
-        "extra": {
-            "branch-alias": {
-                "dev-master": "2.3-dev"
-            }
-        },
-        "installation-source": "dist",
-        "autoload": {
-            "psr-0": {
-                "Symfony\\Component\\Console\\": ""
-            }
-        },
-        "notification-url": "https://packagist.org/downloads/",
-        "license": [
-            "MIT"
-        ],
-        "authors": [
-            {
-                "name": "Fabien Potencier",
-                "email": "fabien@symfony.com"
-            },
-            {
-                "name": "Symfony Community",
-                "homepage": "http://symfony.com/contributors"
-            }
-        ],
-        "description": "Symfony Console Component",
-        "homepage": "http://symfony.com"
     },
     {
         "name": "doctrine/cache",
@@ -541,18 +486,73 @@
         ]
     },
     {
+        "name": "symfony/console",
+        "version": "v2.3.7",
+        "version_normalized": "2.3.7.0",
+        "target-dir": "Symfony/Component/Console",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/symfony/Console.git",
+            "reference": "00848d3e13cf512e77c7498c2b3b0192f61f4b18"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/symfony/Console/zipball/00848d3e13cf512e77c7498c2b3b0192f61f4b18",
+            "reference": "00848d3e13cf512e77c7498c2b3b0192f61f4b18",
+            "shasum": ""
+        },
+        "require": {
+            "php": ">=5.3.3"
+        },
+        "require-dev": {
+            "symfony/event-dispatcher": "~2.1"
+        },
+        "suggest": {
+            "symfony/event-dispatcher": ""
+        },
+        "time": "2013-11-13 21:27:40",
+        "type": "library",
+        "extra": {
+            "branch-alias": {
+                "dev-master": "2.3-dev"
+            }
+        },
+        "installation-source": "dist",
+        "autoload": {
+            "psr-0": {
+                "Symfony\\Component\\Console\\": ""
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "MIT"
+        ],
+        "authors": [
+            {
+                "name": "Fabien Potencier",
+                "email": "fabien@symfony.com"
+            },
+            {
+                "name": "Symfony Community",
+                "homepage": "http://symfony.com/contributors"
+            }
+        ],
+        "description": "Symfony Console Component",
+        "homepage": "http://symfony.com"
+    },
+    {
         "name": "doctrine/orm",
         "version": "dev-master",
         "version_normalized": "9999999-dev",
         "source": {
             "type": "git",
             "url": "https://github.com/doctrine/doctrine2.git",
-            "reference": "0edf2bc585dab37c7d935aee34e240632fda2dac"
+            "reference": "3529cd4282b3966707f4a5dc67a992fba6c687dd"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/doctrine/doctrine2/zipball/0edf2bc585dab37c7d935aee34e240632fda2dac",
-            "reference": "0edf2bc585dab37c7d935aee34e240632fda2dac",
+            "url": "https://api.github.com/repos/doctrine/doctrine2/zipball/3529cd4282b3966707f4a5dc67a992fba6c687dd",
+            "reference": "3529cd4282b3966707f4a5dc67a992fba6c687dd",
             "shasum": ""
         },
         "require": {
@@ -569,7 +569,7 @@
         "suggest": {
             "symfony/yaml": "If you want to use YAML Metadata Mapping Driver"
         },
-        "time": "2013-11-07 15:43:36",
+        "time": "2013-11-16 18:52:09",
         "bin": [
             "bin/doctrine",
             "bin/doctrine.php"
