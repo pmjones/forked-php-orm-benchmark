@@ -297,12 +297,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/doctrine/dbal.git",
-                "reference": "5fdedc4f8f304e8035580807bd36d59e97a87265"
+                "reference": "f1a8b20ad29f98084725f4cb34bac135a27b0d41"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/doctrine/dbal/zipball/5fdedc4f8f304e8035580807bd36d59e97a87265",
-                "reference": "5fdedc4f8f304e8035580807bd36d59e97a87265",
+                "url": "https://api.github.com/repos/doctrine/dbal/zipball/f1a8b20ad29f98084725f4cb34bac135a27b0d41",
+                "reference": "f1a8b20ad29f98084725f4cb34bac135a27b0d41",
                 "shasum": ""
             },
             "require": {
@@ -360,7 +360,7 @@
                 "persistence",
                 "queryobject"
             ],
-            "time": "2013-11-15 14:43:05"
+            "time": "2013-11-24 18:53:48"
         },
         {
             "name": "doctrine/inflector",
@@ -483,12 +483,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/doctrine/doctrine2.git",
-                "reference": "3529cd4282b3966707f4a5dc67a992fba6c687dd"
+                "reference": "75d7ac2783345803da1cc211735382f7a4c5d055"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/doctrine/doctrine2/zipball/3529cd4282b3966707f4a5dc67a992fba6c687dd",
-                "reference": "3529cd4282b3966707f4a5dc67a992fba6c687dd",
+                "url": "https://api.github.com/repos/doctrine/doctrine2/zipball/75d7ac2783345803da1cc211735382f7a4c5d055",
+                "reference": "75d7ac2783345803da1cc211735382f7a4c5d055",
                 "shasum": ""
             },
             "require": {
@@ -526,7 +526,7 @@
             ],
             "authors": [
                 {
-                    "name": "Jonathan Wage",
+                    "name": "Jonathan H. Wage",
                     "email": "jonwage@gmail.com",
                     "homepage": "http://www.jwage.com/",
                     "role": "Creator"
@@ -551,7 +551,7 @@
                 "database",
                 "orm"
             ],
-            "time": "2013-11-16 18:52:09"
+            "time": "2013-11-23 13:14:44"
         },
         {
             "name": "symfony/console",
