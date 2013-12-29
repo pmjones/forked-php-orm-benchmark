@@ -16,14 +16,48 @@
  * and is licensed under the MIT license. For more information, see
  * <http://www.doctrine-project.org>.
  */
-namespace Doctrine\ORM\Persisters;
+
+namespace Doctrine\DBAL\Platforms;
 
 /**
- * Persister for collections of basic elements / value types.
+ * Provides the behavior, features and SQL dialect of the PostgreSQL 9.2 database platform.
  *
- * @author robo
- * @todo Implementation once support for collections of basic elements (i.e. strings) is added.
+ * @author Steve Müller <st.mueller@dzh-online.de>
+ * @link   www.doctrine-project.org
+ * @since  2.5
  */
-abstract class ElementCollectionPersister extends AbstractCollectionPersister
+class PostgreSQL92Platform extends PostgreSqlPlatform
 {
+    /**
+     * {@inheritdoc}
+     */
+    public function getJsonTypeDeclarationSQL(array $field)
+    {
+        return 'JSON';
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function hasNativeJsonType()
+    {
+        return true;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function getReservedKeywordsClass()
+    {
+        return 'Doctrine\DBAL\Platforms\Keywords\PostgreSQL92Keywords';
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function initializeDoctrineTypeMappings()
+    {
+        parent::initializeDoctrineTypeMappings();
+        $this->doctrineTypeMapping['json'] = 'json_array';
+    }
 }

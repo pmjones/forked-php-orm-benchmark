@@ -3,6 +3,8 @@
 namespace Doctrine\Tests\DBAL\Platforms;
 
 use Doctrine\DBAL\Platforms\OraclePlatform;
+use Doctrine\DBAL\Schema\Comparator;
+use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Type;
 
 require_once __DIR__ . '/../../TestInit.php';
@@ -61,13 +63,13 @@ class OraclePlatformTest extends AbstractPlatformTestCase
 
     public function getGenerateTableSql()
     {
-        return 'CREATE TABLE test (id NUMBER(10) NOT NULL, test VARCHAR2(255) DEFAULT NULL, PRIMARY KEY(id))';
+        return 'CREATE TABLE test (id NUMBER(10) NOT NULL, test VARCHAR2(255) DEFAULT NULL NULL, PRIMARY KEY(id))';
     }
 
     public function getGenerateTableWithMultiColumnUniqueIndexSql()
     {
         return array(
-            'CREATE TABLE test (foo VARCHAR2(255) DEFAULT NULL, bar VARCHAR2(255) DEFAULT NULL)',
+            'CREATE TABLE test (foo VARCHAR2(255) DEFAULT NULL NULL, bar VARCHAR2(255) DEFAULT NULL NULL)',
             'CREATE UNIQUE INDEX UNIQ_D87F7E0C8C73652176FF8CAA ON test (foo, bar)',
         );
     }
@@ -75,8 +77,8 @@ class OraclePlatformTest extends AbstractPlatformTestCase
     public function getGenerateAlterTableSql()
     {
         return array(
-            'ALTER TABLE mytable ADD (quota NUMBER(10) DEFAULT NULL)',
-            "ALTER TABLE mytable MODIFY (baz  VARCHAR2(255) DEFAULT 'def' NOT NULL, bloo  NUMBER(1) DEFAULT '0' NOT NULL)",
+            'ALTER TABLE mytable ADD (quota NUMBER(10) DEFAULT NULL NULL)',
+            "ALTER TABLE mytable MODIFY (baz VARCHAR2(255) DEFAULT 'def' NOT NULL, bloo NUMBER(1) DEFAULT '0' NOT NULL)",
             "ALTER TABLE mytable DROP (foo)",
             "ALTER TABLE mytable RENAME TO userlist",
         );
@@ -324,10 +326,116 @@ class OraclePlatformTest extends AbstractPlatformTestCase
             ),
             array('type', 'notnull')
         );
+        $tableDiff->changedColumns['metar'] = new \Doctrine\DBAL\Schema\ColumnDiff(
+            'metar', new \Doctrine\DBAL\Schema\Column(
+                'metar', \Doctrine\DBAL\Types\Type::getType('string'), array('length' => 2000, 'notnull' => false)
+            ),
+            array('notnull')
+        );
 
         $expectedSql = array(
-            "ALTER TABLE mytable MODIFY (foo  VARCHAR2(255) DEFAULT 'bla', baz  VARCHAR2(255) DEFAULT 'bla' NOT NULL)",
+            "ALTER TABLE mytable MODIFY (foo VARCHAR2(255) DEFAULT 'bla' NULL, baz VARCHAR2(255) DEFAULT 'bla' NOT NULL, metar VARCHAR2(2000) DEFAULT NULL NULL)",
 	);
         $this->assertEquals($expectedSql, $this->_platform->getAlterTableSQL($tableDiff));
+    }
+
+    public function testInitializesDoctrineTypeMappings()
+    {
+        $this->assertTrue($this->_platform->hasDoctrineTypeMappingFor('long raw'));
+        $this->assertSame('blob', $this->_platform->getDoctrineTypeMapping('long raw'));
+
+        $this->assertTrue($this->_platform->hasDoctrineTypeMappingFor('raw'));
+        $this->assertSame('binary', $this->_platform->getDoctrineTypeMapping('raw'));
+    }
+
+    protected function getBinaryMaxLength()
+    {
+        return 2000;
+    }
+
+    public function testReturnsBinaryTypeDeclarationSQL()
+    {
+        $this->assertSame('RAW(255)', $this->_platform->getBinaryTypeDeclarationSQL(array()));
+        $this->assertSame('RAW(2000)', $this->_platform->getBinaryTypeDeclarationSQL(array('length' => 0)));
+        $this->assertSame('RAW(2000)', $this->_platform->getBinaryTypeDeclarationSQL(array('length' => 2000)));
+        $this->assertSame('BLOB', $this->_platform->getBinaryTypeDeclarationSQL(array('length' => 2001)));
+
+        $this->assertSame('RAW(255)', $this->_platform->getBinaryTypeDeclarationSQL(array('fixed' => true)));
+        $this->assertSame('RAW(2000)', $this->_platform->getBinaryTypeDeclarationSQL(array('fixed' => true, 'length' => 0)));
+        $this->assertSame('RAW(2000)', $this->_platform->getBinaryTypeDeclarationSQL(array('fixed' => true, 'length' => 2000)));
+        $this->assertSame('BLOB', $this->_platform->getBinaryTypeDeclarationSQL(array('fixed' => true, 'length' => 2001)));
+    }
+
+    public function testDoesNotPropagateUnnecessaryTableAlterationOnBinaryType()
+    {
+        $table1 = new Table('mytable');
+        $table1->addColumn('column_varbinary', 'binary');
+        $table1->addColumn('column_binary', 'binary', array('fixed' => true));
+
+        $table2 = new Table('mytable');
+        $table2->addColumn('column_varbinary', 'binary', array('fixed' => true));
+        $table2->addColumn('column_binary', 'binary');
+
+        $comparator = new Comparator();
+
+        // VARBINARY -> BINARY
+        // BINARY    -> VARBINARY
+        $this->assertEmpty($this->_platform->getAlterTableSQL($comparator->diffTable($table1, $table2)));
+    }
+
+    /**
+     * @group DBAL-563
+     */
+    public function testUsesSequenceEmulatedIdentityColumns()
+    {
+        $this->assertTrue($this->_platform->usesSequenceEmulatedIdentityColumns());
+    }
+
+    /**
+     * @group DBAL-563
+     */
+    public function testReturnsIdentitySequenceName()
+    {
+        $this->assertSame('mytable_mycolumn_SEQ', $this->_platform->getIdentitySequenceName('mytable', 'mycolumn'));
+    }
+
+    /**
+     * @dataProvider dataCreateSequenceWithCache
+     * @group DBAL-139
+     */
+    public function testCreateSequenceWithCache($cacheSize, $expectedSql)
+    {
+        $sequence = new \Doctrine\DBAL\Schema\Sequence('foo', 1, 1, $cacheSize);
+        $this->assertContains($expectedSql, $this->_platform->getCreateSequenceSQL($sequence));
+    }
+
+    public function dataCreateSequenceWithCache()
+    {
+        return array(
+            array(1, 'NOCACHE'),
+            array(0, 'NOCACHE'),
+            array(3, 'CACHE 3')
+        );
+    }
+
+    /**
+     * @group DBAL-234
+     */
+    protected function getAlterTableRenameIndexSQL()
+    {
+        return array(
+            'ALTER INDEX idx_foo RENAME TO idx_bar',
+        );
+    }
+
+    /**
+     * @group DBAL-234
+     */
+    protected function getQuotedAlterTableRenameIndexSQL()
+    {
+        return array(
+            'ALTER INDEX "create" RENAME TO "select"',
+            'ALTER INDEX "foo" RENAME TO "bar"',
+        );
     }
 }

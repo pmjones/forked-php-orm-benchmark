@@ -19,7 +19,10 @@
 
 namespace Doctrine\DBAL\Driver\PDOOracle;
 
-use Doctrine\DBAL\Platforms;
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Driver\PDOConnection;
+use Doctrine\DBAL\Platforms\OraclePlatform;
+use Doctrine\DBAL\Schema\OracleSchemaManager;
 
 /**
  * PDO Oracle driver.
@@ -36,7 +39,7 @@ class Driver implements \Doctrine\DBAL\Driver
      */
     public function connect(array $params, $username = null, $password = null, array $driverOptions = array())
     {
-        return new \Doctrine\DBAL\Driver\PDOConnection(
+        return new PDOConnection(
             $this->_constructPdoDsn($params),
             $username,
             $password,
@@ -53,10 +56,11 @@ class Driver implements \Doctrine\DBAL\Driver
      */
     private function _constructPdoDsn(array $params)
     {
-        $dsn = 'oci:';
+        $dsn = 'oci:dbname=';
+
         if (isset($params['host']) && $params['host'] != '') {
-            $dsn .= 'dbname=(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)' .
-                   '(HOST=' . $params['host'] . ')';
+            $dsn .= '(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)' .
+                '(HOST=' . $params['host'] . ')';
 
             if (isset($params['port'])) {
                 $dsn .= '(PORT=' . $params['port'] . ')';
@@ -64,13 +68,26 @@ class Driver implements \Doctrine\DBAL\Driver
                 $dsn .= '(PORT=1521)';
             }
 
-            if (isset($params['service']) && $params['service'] == true) {
-                $dsn .= '))(CONNECT_DATA=(SERVICE_NAME=' . $params['dbname'] . ')))';
-            } else {
-                $dsn .= '))(CONNECT_DATA=(SID=' . $params['dbname'] . ')))';
+            $serviceName = $params['dbname'];
+
+            if ( ! empty($params['servicename'])) {
+                $serviceName = $params['servicename'];
             }
+
+            $service = 'SID=' . $serviceName;
+            $pooled  = '';
+
+            if (isset($params['service']) && $params['service'] == true) {
+                $service = 'SERVICE_NAME=' . $serviceName;
+            }
+
+            if (isset($params['pooled']) && $params['pooled'] == true) {
+                $pooled = '(SERVER=POOLED)';
+            }
+
+            $dsn .= '))(CONNECT_DATA=(' . $service . ')' . $pooled . '))';
         } else {
-            $dsn .= 'dbname=' . $params['dbname'];
+            $dsn .= $params['dbname'];
         }
 
         if (isset($params['charset'])) {
@@ -85,15 +102,15 @@ class Driver implements \Doctrine\DBAL\Driver
      */
     public function getDatabasePlatform()
     {
-        return new \Doctrine\DBAL\Platforms\OraclePlatform();
+        return new OraclePlatform();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getSchemaManager(\Doctrine\DBAL\Connection $conn)
+    public function getSchemaManager(Connection $conn)
     {
-        return new \Doctrine\DBAL\Schema\OracleSchemaManager($conn);
+        return new OracleSchemaManager($conn);
     }
 
     /**
@@ -107,7 +124,7 @@ class Driver implements \Doctrine\DBAL\Driver
     /**
      * {@inheritdoc}
      */
-    public function getDatabase(\Doctrine\DBAL\Connection $conn)
+    public function getDatabase(Connection $conn)
     {
         $params = $conn->getParams();
 

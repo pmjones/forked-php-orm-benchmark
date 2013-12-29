@@ -1,4 +1,5 @@
 <?php
+
 /*
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -17,17 +18,21 @@
  * <http://www.doctrine-project.org>.
  */
 
-namespace Doctrine\ORM\Mapping;
+namespace Doctrine\ORM\Cache;
 
 /**
- * @Annotation
- * @Target("ALL")
- * @todo check available targets
+ * Defines entity / collection / query key to be stored in the cache region.
+ * Allows multiple roles to be stored in the same cache region.
+ *
+ * @since   2.5
+ * @author  Fabio B. Silva <fabio.bat.silva@gmail.com>
  */
-final class ElementCollection implements Annotation
+abstract class CacheKey
 {
     /**
-     * @var string
+     * READ-ONLY: Public only for performance reasons, it should be considered immutable.
+     *
+     * @var string Unique identifier
      */
-    public $tableName;
+    public $hash;
 }

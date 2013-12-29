@@ -224,7 +224,7 @@ class Connection implements DriverConnection
 
         if ( ! isset($params['platform'])) {
             $this->_platform = $driver->getDatabasePlatform();
-        } else if ($params['platform'] instanceof Platforms\AbstractPlatform) {
+        } elseif ($params['platform'] instanceof Platforms\AbstractPlatform) {
             $this->_platform = $params['platform'];
         } else {
             throw DBALException::invalidPlatformSpecified();
@@ -514,7 +514,7 @@ class Connection implements DriverConnection
             $criteria[] = $columnName . ' = ?';
         }
 
-        if ( ! is_int(key($types))) {
+        if (is_string(key($types))) {
             $types = $this->extractTypeValues($identifier, $types);
         }
 
@@ -578,7 +578,7 @@ class Connection implements DriverConnection
             $set[] = $columnName . ' = ?';
         }
 
-        if ( ! is_int(key($types))) {
+        if (is_string(key($types))) {
             $types = $this->extractTypeValues(array_merge($data, $identifier), $types);
         }
 
@@ -604,15 +604,16 @@ class Connection implements DriverConnection
     {
         $this->connect();
 
-        if ( ! is_int(key($types))) {
-            $types = $this->extractTypeValues($data, $types);
+        if (empty($data)) {
+            return $this->executeUpdate('INSERT INTO ' . $tableName . ' ()' . ' VALUES ()');
         }
 
-        $query = 'INSERT INTO ' . $tableName
-               . ' (' . implode(', ', array_keys($data)) . ')'
-               . ' VALUES (' . implode(', ', array_fill(0, count($data), '?')) . ')';
-
-        return $this->executeUpdate($query, array_values($data), $types);
+        return $this->executeUpdate(
+            'INSERT INTO ' . $tableName . ' (' . implode(', ', array_keys($data)) . ')' .
+            ' VALUES (' . implode(', ', array_fill(0, count($data), '?')) . ')',
+            array_values($data),
+            is_string(key($types)) ? $this->extractTypeValues($data, $types) : $types
+        );
     }
 
     /**
@@ -792,7 +793,7 @@ class Connection implements DriverConnection
             // is the real key part of this row pointers map or is the cache only pointing to other cache keys?
             if (isset($data[$realKey])) {
                 $stmt = new ArrayStatement($data[$realKey]);
-            } else if (array_key_exists($realKey, $data)) {
+            } elseif (array_key_exists($realKey, $data)) {
                 $stmt = new ArrayStatement(array());
             }
         }
@@ -1100,7 +1101,7 @@ class Connection implements DriverConnection
             if ($logger) {
                 $logger->stopQuery();
             }
-        } else if ($this->_nestTransactionsWithSavepoints) {
+        } elseif ($this->_nestTransactionsWithSavepoints) {
             if ($logger) {
                 $logger->startQuery('"SAVEPOINT"');
             }
@@ -1140,7 +1141,7 @@ class Connection implements DriverConnection
             if ($logger) {
                 $logger->stopQuery();
             }
-        } else if ($this->_nestTransactionsWithSavepoints) {
+        } elseif ($this->_nestTransactionsWithSavepoints) {
             if ($logger) {
                 $logger->startQuery('"RELEASE SAVEPOINT"');
             }
@@ -1207,7 +1208,7 @@ class Connection implements DriverConnection
             if (false === $this->autoCommit) {
                 $this->beginTransaction();
             }
-        } else if ($this->_nestTransactionsWithSavepoints) {
+        } elseif ($this->_nestTransactionsWithSavepoints) {
             if ($logger) {
                 $logger->startQuery('"ROLLBACK TO SAVEPOINT"');
             }

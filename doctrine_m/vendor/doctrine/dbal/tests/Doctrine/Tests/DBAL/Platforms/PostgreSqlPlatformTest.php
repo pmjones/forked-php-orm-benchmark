@@ -3,7 +3,10 @@
 namespace Doctrine\Tests\DBAL\Platforms;
 
 use Doctrine\DBAL\Platforms\PostgreSqlPlatform;
+use Doctrine\DBAL\Schema\Comparator;
 use Doctrine\DBAL\Types\Type;
+use Doctrine\DBAL\Schema\Table;
+use Doctrine\DBAL\Schema\TableDiff;
 
 class PostgreSqlPlatformTest extends AbstractPlatformTestCase
 {
@@ -31,10 +34,10 @@ class PostgreSqlPlatformTest extends AbstractPlatformTestCase
             'ALTER TABLE mytable ADD quota INT DEFAULT NULL',
             'ALTER TABLE mytable DROP foo',
             'ALTER TABLE mytable ALTER bar TYPE VARCHAR(255)',
-            "ALTER TABLE mytable ALTER bar SET  DEFAULT 'def'",
+            "ALTER TABLE mytable ALTER bar SET DEFAULT 'def'",
             'ALTER TABLE mytable ALTER bar SET NOT NULL',
             'ALTER TABLE mytable ALTER bloo TYPE BOOLEAN',
-            "ALTER TABLE mytable ALTER bloo SET  DEFAULT 'false'",
+            "ALTER TABLE mytable ALTER bloo SET DEFAULT 'false'",
             'ALTER TABLE mytable ALTER bloo SET NOT NULL',
             'ALTER TABLE mytable RENAME TO userlist',
         );
@@ -333,5 +336,195 @@ class PostgreSqlPlatformTest extends AbstractPlatformTestCase
             $actual = $this->_platform->schemaNeedsCreation($name);
             $this->assertEquals($expected, $actual);
         }
+    }
+
+    public function testAlterDecimalPrecisionScale()
+    {
+
+        $table = new Table('mytable');
+        $table->addColumn('dfoo1', 'decimal');
+        $table->addColumn('dfoo2', 'decimal', array('precision' => 10, 'scale' => 6));
+        $table->addColumn('dfoo3', 'decimal', array('precision' => 10, 'scale' => 6));
+        $table->addColumn('dfoo4', 'decimal', array('precision' => 10, 'scale' => 6));
+
+        $tableDiff = new TableDiff('mytable');
+        $tableDiff->fromTable = $table;
+
+        $tableDiff->changedColumns['dloo1'] = new \Doctrine\DBAL\Schema\ColumnDiff(
+            'dloo1', new \Doctrine\DBAL\Schema\Column(
+                'dloo1', \Doctrine\DBAL\Types\Type::getType('decimal'), array('precision' => 16, 'scale' => 6)
+            ),
+            array('precision')
+        );
+        $tableDiff->changedColumns['dloo2'] = new \Doctrine\DBAL\Schema\ColumnDiff(
+            'dloo2', new \Doctrine\DBAL\Schema\Column(
+                'dloo2', \Doctrine\DBAL\Types\Type::getType('decimal'), array('precision' => 10, 'scale' => 4)
+            ),
+            array('scale')
+        );
+        $tableDiff->changedColumns['dloo3'] = new \Doctrine\DBAL\Schema\ColumnDiff(
+            'dloo3', new \Doctrine\DBAL\Schema\Column(
+                'dloo3', \Doctrine\DBAL\Types\Type::getType('decimal'), array('precision' => 10, 'scale' => 6)
+            ),
+            array()
+        );
+        $tableDiff->changedColumns['dloo4'] = new \Doctrine\DBAL\Schema\ColumnDiff(
+            'dloo4', new \Doctrine\DBAL\Schema\Column(
+                'dloo4', \Doctrine\DBAL\Types\Type::getType('decimal'), array('precision' => 16, 'scale' => 8)
+            ),
+            array('precision', 'scale')
+        );
+
+        $sql = $this->_platform->getAlterTableSQL($tableDiff);
+
+        $expectedSql = array(
+            'ALTER TABLE mytable ALTER dloo1 TYPE NUMERIC(16, 6)',
+            'ALTER TABLE mytable ALTER dloo2 TYPE NUMERIC(10, 4)',
+            'ALTER TABLE mytable ALTER dloo4 TYPE NUMERIC(16, 8)',
+        );
+
+        $this->assertEquals($expectedSql, $sql);
+    }
+
+    /**
+     * @group DBAL-365
+     */
+    public function testDroppingConstraintsBeforeColumns()
+    {
+        $newTable = new Table('mytable');
+        $newTable->addColumn('id', 'integer');
+        $newTable->setPrimaryKey(array('id'));
+
+        $oldTable = clone $newTable;
+        $oldTable->addColumn('parent_id', 'integer');
+        $oldTable->addUnnamedForeignKeyConstraint('mytable', array('parent_id'), array('id'));
+
+        $comparator = new \Doctrine\DBAL\Schema\Comparator();
+        $tableDiff = $comparator->diffTable($oldTable, $newTable);
+
+        $sql = $this->_platform->getAlterTableSQL($tableDiff);
+
+        $expectedSql = array(
+            'ALTER TABLE mytable DROP CONSTRAINT FK_6B2BD609727ACA70',
+            'DROP INDEX IDX_6B2BD609727ACA70',
+            'ALTER TABLE mytable DROP parent_id',
+        );
+
+        $this->assertEquals($expectedSql, $sql);
+    }
+
+    /**
+     * @group DBAL-563
+     */
+    public function testUsesSequenceEmulatedIdentityColumns()
+    {
+        $this->assertTrue($this->_platform->usesSequenceEmulatedIdentityColumns());
+    }
+
+    /**
+     * @group DBAL-563
+     */
+    public function testReturnsIdentitySequenceName()
+    {
+        $this->assertSame('mytable_mycolumn_seq', $this->_platform->getIdentitySequenceName('mytable', 'mycolumn'));
+    }
+
+    /**
+     * @dataProvider dataCreateSequenceWithCache
+     * @group DBAL-139
+     */
+    public function testCreateSequenceWithCache($cacheSize, $expectedSql)
+    {
+        $sequence = new \Doctrine\DBAL\Schema\Sequence('foo', 1, 1, $cacheSize);
+        $this->assertContains($expectedSql, $this->_platform->getCreateSequenceSQL($sequence));
+    }
+
+    public function dataCreateSequenceWithCache()
+    {
+        return array(
+            array(3, 'CACHE 3')
+        );
+    }
+
+    protected function getBinaryDefaultLength()
+    {
+        return 0;
+    }
+
+    protected function getBinaryMaxLength()
+    {
+        return 0;
+    }
+
+    public function testReturnsBinaryTypeDeclarationSQL()
+    {
+        $this->assertSame('BYTEA', $this->_platform->getBinaryTypeDeclarationSQL(array()));
+        $this->assertSame('BYTEA', $this->_platform->getBinaryTypeDeclarationSQL(array('length' => 0)));
+        $this->assertSame('BYTEA', $this->_platform->getBinaryTypeDeclarationSQL(array('length' => 9999999)));
+
+        $this->assertSame('BYTEA', $this->_platform->getBinaryTypeDeclarationSQL(array('fixed' => true)));
+        $this->assertSame('BYTEA', $this->_platform->getBinaryTypeDeclarationSQL(array('fixed' => true, 'length' => 0)));
+        $this->assertSame('BYTEA', $this->_platform->getBinaryTypeDeclarationSQL(array('fixed' => true, 'length' => 9999999)));
+    }
+
+    public function testDoesNotPropagateUnnecessaryTableAlterationOnBinaryType()
+    {
+        $table1 = new Table('mytable');
+        $table1->addColumn('column_varbinary', 'binary');
+        $table1->addColumn('column_binary', 'binary', array('fixed' => true));
+        $table1->addColumn('column_blob', 'blob');
+
+        $table2 = new Table('mytable');
+        $table2->addColumn('column_varbinary', 'binary', array('fixed' => true));
+        $table2->addColumn('column_binary', 'binary');
+        $table2->addColumn('column_blob', 'binary');
+
+        $comparator = new Comparator();
+
+        // VARBINARY -> BINARY
+        // BINARY    -> VARBINARY
+        // BLOB      -> VARBINARY
+        $this->assertEmpty($this->_platform->getAlterTableSQL($comparator->diffTable($table1, $table2)));
+
+        $table2 = new Table('mytable');
+        $table2->addColumn('column_varbinary', 'binary', array('length' => 42));
+        $table2->addColumn('column_binary', 'blob');
+        $table2->addColumn('column_blob', 'binary', array('length' => 11, 'fixed' => true));
+
+        // VARBINARY -> VARBINARY with changed length
+        // BINARY    -> BLOB
+        // BLOB      -> BINARY
+        $this->assertEmpty($this->_platform->getAlterTableSQL($comparator->diffTable($table1, $table2)));
+
+        $table2 = new Table('mytable');
+        $table2->addColumn('column_varbinary', 'blob');
+        $table2->addColumn('column_binary', 'binary', array('length' => 42, 'fixed' => true));
+        $table2->addColumn('column_blob', 'blob');
+
+        // VARBINARY -> BLOB
+        // BINARY    -> BINARY with changed length
+        // BLOB      -> BLOB
+        $this->assertEmpty($this->_platform->getAlterTableSQL($comparator->diffTable($table1, $table2)));
+    }
+
+    /**
+     * @group DBAL-234
+     */
+    protected function getAlterTableRenameIndexSQL()
+    {
+        return array(
+            'ALTER INDEX idx_foo RENAME TO idx_bar',
+        );
+    }
+
+    /**
+     * @group DBAL-234
+     */
+    protected function getQuotedAlterTableRenameIndexSQL()
+    {
+        return array(
+            'ALTER INDEX "create" RENAME TO "select"',
+            'ALTER INDEX "foo" RENAME TO "bar"',
+        );
     }
 }

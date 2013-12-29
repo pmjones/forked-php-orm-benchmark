@@ -297,12 +297,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/doctrine/dbal.git",
-                "reference": "f3f6b7ddb7d6af6c3fa42882bc0e2e6715c873fd"
+                "reference": "6d0e8e2a8598f121cdb136507022915247fc98b8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/doctrine/dbal/zipball/f3f6b7ddb7d6af6c3fa42882bc0e2e6715c873fd",
-                "reference": "f3f6b7ddb7d6af6c3fa42882bc0e2e6715c873fd",
+                "url": "https://api.github.com/repos/doctrine/dbal/zipball/6d0e8e2a8598f121cdb136507022915247fc98b8",
+                "reference": "6d0e8e2a8598f121cdb136507022915247fc98b8",
                 "shasum": ""
             },
             "require": {
@@ -360,7 +360,7 @@
                 "persistence",
                 "queryobject"
             ],
-            "time": "2013-12-06 11:52:45"
+            "time": "2013-12-29 16:46:41"
         },
         {
             "name": "doctrine/inflector",
@@ -483,12 +483,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/doctrine/doctrine2.git",
-                "reference": "90a0d29b2b9d639c556a511c4155d6dc2c6f114a"
+                "reference": "7360231b4b615837cc61ec660dd10539df8e7d59"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/doctrine/doctrine2/zipball/90a0d29b2b9d639c556a511c4155d6dc2c6f114a",
-                "reference": "90a0d29b2b9d639c556a511c4155d6dc2c6f114a",
+                "url": "https://api.github.com/repos/doctrine/doctrine2/zipball/7360231b4b615837cc61ec660dd10539df8e7d59",
+                "reference": "7360231b4b615837cc61ec660dd10539df8e7d59",
                 "shasum": ""
             },
             "require": {
@@ -551,7 +551,7 @@
                 "database",
                 "orm"
             ],
-            "time": "2013-12-02 15:00:40"
+            "time": "2013-12-25 22:12:38"
         },
         {
             "name": "symfony/console",

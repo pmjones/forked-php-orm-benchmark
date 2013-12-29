@@ -2,8 +2,10 @@
 
 namespace Doctrine\Tests\DBAL\Platforms;
 
+use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Platforms\MySqlPlatform;
 use Doctrine\DBAL\Schema\Comparator;
+use Doctrine\DBAL\Schema\ForeignKeyConstraint;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Schema\TableDiff;
@@ -314,8 +316,196 @@ class MySqlPlatformTest extends AbstractPlatformTestCase
         $diffTable->setPrimaryKey(array('id'));
 
         $this->assertEquals(
-            array('ALTER TABLE alter_table_add_pk DROP INDEX idx_id, ADD PRIMARY KEY (id)'),
+            array('DROP INDEX idx_id ON alter_table_add_pk', 'ALTER TABLE alter_table_add_pk ADD PRIMARY KEY (id)'),
             $this->_platform->getAlterTableSQL($comparator->diffTable($table, $diffTable))
+        );
+    }
+
+    /**
+     * @group DBAL-464
+     */
+    public function testDropPrimaryKeyWithAutoincrementColumn()
+    {
+        $table = new Table("drop_primary_key");
+        $table->addColumn('id', 'integer', array('primary' => true, 'autoincrement' => true));
+        $table->addColumn('foo', 'integer', array('primary' => true));
+        $table->addColumn('bar', 'integer');
+        $table->setPrimaryKey(array('id', 'foo'));
+
+        $comparator = new Comparator();
+        $diffTable = clone $table;
+
+        $diffTable->dropPrimaryKey();
+
+        $this->assertEquals(
+            array(
+                'ALTER TABLE drop_primary_key MODIFY id INT NOT NULL',
+                'ALTER TABLE drop_primary_key DROP PRIMARY KEY'
+            ),
+            $this->_platform->getAlterTableSQL($comparator->diffTable($table, $diffTable))
+        );
+    }
+
+    /**
+     * @group DBAL-586
+     */
+    public function testAddAutoIncrementPrimaryKey()
+    {
+        $keyTable = new Table("foo");
+        $keyTable->addColumn("id", "integer", array('autoincrement' => true));
+        $keyTable->addColumn("baz", "string");
+        $keyTable->setPrimaryKey(array("id"));
+
+        $oldTable = new Table("foo");
+        $oldTable->addColumn("baz", "string");
+
+        $c = new \Doctrine\DBAL\Schema\Comparator;
+        $diff = $c->diffTable($oldTable, $keyTable);
+
+        $sql = $this->_platform->getAlterTableSQL($diff);
+
+        $this->assertEquals(array(
+            "ALTER TABLE foo ADD id INT AUTO_INCREMENT NOT NULL, ADD PRIMARY KEY (id)",
+        ), $sql);
+    }
+
+    public function testNamedPrimaryKey()
+    {
+        $diff = new TableDiff('mytable');
+        $diff->changedIndexes['foo_index'] = new Index('foo_index', array('foo'), true, true);
+
+        $sql = $this->_platform->getAlterTableSQL($diff);
+
+        $this->assertEquals(array(
+	        "ALTER TABLE mytable DROP PRIMARY KEY",
+            "ALTER TABLE mytable ADD PRIMARY KEY (foo)",
+        ), $sql);
+    }
+
+    public function testInitializesDoctrineTypeMappings()
+    {
+        $this->assertTrue($this->_platform->hasDoctrineTypeMappingFor('binary'));
+        $this->assertSame('binary', $this->_platform->getDoctrineTypeMapping('binary'));
+
+        $this->assertTrue($this->_platform->hasDoctrineTypeMappingFor('varbinary'));
+        $this->assertSame('binary', $this->_platform->getDoctrineTypeMapping('varbinary'));
+    }
+
+    protected function getBinaryMaxLength()
+    {
+        return 65535;
+    }
+
+    public function testReturnsBinaryTypeDeclarationSQL()
+    {
+        $this->assertSame('VARBINARY(255)', $this->_platform->getBinaryTypeDeclarationSQL(array()));
+        $this->assertSame('VARBINARY(255)', $this->_platform->getBinaryTypeDeclarationSQL(array('length' => 0)));
+        $this->assertSame('VARBINARY(65535)', $this->_platform->getBinaryTypeDeclarationSQL(array('length' => 65535)));
+        $this->assertSame('MEDIUMBLOB', $this->_platform->getBinaryTypeDeclarationSQL(array('length' => 65536)));
+        $this->assertSame('MEDIUMBLOB', $this->_platform->getBinaryTypeDeclarationSQL(array('length' => 16777215)));
+        $this->assertSame('LONGBLOB', $this->_platform->getBinaryTypeDeclarationSQL(array('length' => 16777216)));
+
+        $this->assertSame('BINARY(255)', $this->_platform->getBinaryTypeDeclarationSQL(array('fixed' => true)));
+        $this->assertSame('BINARY(255)', $this->_platform->getBinaryTypeDeclarationSQL(array('fixed' => true, 'length' => 0)));
+        $this->assertSame('BINARY(65535)', $this->_platform->getBinaryTypeDeclarationSQL(array('fixed' => true, 'length' => 65535)));
+        $this->assertSame('MEDIUMBLOB', $this->_platform->getBinaryTypeDeclarationSQL(array('fixed' => true, 'length' => 65536)));
+        $this->assertSame('MEDIUMBLOB', $this->_platform->getBinaryTypeDeclarationSQL(array('fixed' => true, 'length' => 16777215)));
+        $this->assertSame('LONGBLOB', $this->_platform->getBinaryTypeDeclarationSQL(array('fixed' => true, 'length' => 16777216)));
+    }
+
+    public function testDoesNotPropagateForeignKeyCreationForNonSupportingEngines()
+    {
+        $table = new Table("foreign_table");
+        $table->addColumn('id', 'integer');
+        $table->addColumn('fk_id', 'integer');
+        $table->addForeignKeyConstraint('foreign_table', array('fk_id'), array('id'));
+        $table->setPrimaryKey(array('id'));
+        $table->addOption('engine', 'MyISAM');
+
+        $this->assertSame(
+            array('CREATE TABLE foreign_table (id INT NOT NULL, fk_id INT NOT NULL, INDEX IDX_5690FFE2A57719D0 (fk_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci ENGINE = MyISAM'),
+            $this->_platform->getCreateTableSQL(
+                $table,
+                AbstractPlatform::CREATE_INDEXES|AbstractPlatform::CREATE_FOREIGNKEYS
+            )
+        );
+
+        $table = clone $table;
+        $table->addOption('engine', 'InnoDB');
+
+        $this->assertSame(
+            array(
+                'CREATE TABLE foreign_table (id INT NOT NULL, fk_id INT NOT NULL, INDEX IDX_5690FFE2A57719D0 (fk_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci ENGINE = InnoDB',
+                'ALTER TABLE foreign_table ADD CONSTRAINT FK_5690FFE2A57719D0 FOREIGN KEY (fk_id) REFERENCES foreign_table (id)'
+            ),
+            $this->_platform->getCreateTableSQL(
+                $table,
+                AbstractPlatform::CREATE_INDEXES|AbstractPlatform::CREATE_FOREIGNKEYS
+            )
+        );
+    }
+
+    public function testDoesNotPropagateForeignKeyAlterationForNonSupportingEngines()
+    {
+        $table = new Table("foreign_table");
+        $table->addColumn('id', 'integer');
+        $table->addColumn('fk_id', 'integer');
+        $table->addForeignKeyConstraint('foreign_table', array('fk_id'), array('id'));
+        $table->setPrimaryKey(array('id'));
+        $table->addOption('engine', 'MyISAM');
+
+        $addedForeignKeys   = array(new ForeignKeyConstraint(array('fk_id'), 'foo', array('id'), 'fk_add'));
+        $changedForeignKeys = array(new ForeignKeyConstraint(array('fk_id'), 'bar', array('id'), 'fk_change'));
+        $removedForeignKeys = array(new ForeignKeyConstraint(array('fk_id'), 'baz', array('id'), 'fk_remove'));
+
+        $tableDiff = new TableDiff('foreign_table');
+        $tableDiff->fromTable = $table;
+        $tableDiff->addedForeignKeys = $addedForeignKeys;
+        $tableDiff->changedForeignKeys = $changedForeignKeys;
+        $tableDiff->removedForeignKeys = $removedForeignKeys;
+
+        $this->assertEmpty($this->_platform->getAlterTableSQL($tableDiff));
+
+        $table->addOption('engine', 'InnoDB');
+
+        $tableDiff = new TableDiff('foreign_table');
+        $tableDiff->fromTable = $table;
+        $tableDiff->addedForeignKeys = $addedForeignKeys;
+        $tableDiff->changedForeignKeys = $changedForeignKeys;
+        $tableDiff->removedForeignKeys = $removedForeignKeys;
+
+        $this->assertSame(
+            array(
+                'ALTER TABLE foreign_table DROP FOREIGN KEY fk_remove',
+                'ALTER TABLE foreign_table DROP FOREIGN KEY fk_change',
+                'ALTER TABLE foreign_table ADD CONSTRAINT fk_add FOREIGN KEY (fk_id) REFERENCES foo (id)',
+                'ALTER TABLE foreign_table ADD CONSTRAINT fk_change FOREIGN KEY (fk_id) REFERENCES bar (id)',
+            ),
+            $this->_platform->getAlterTableSQL($tableDiff)
+        );
+    }
+
+    /**
+     * @group DBAL-234
+     */
+    protected function getAlterTableRenameIndexSQL()
+    {
+        return array(
+            'DROP INDEX idx_foo ON mytable',
+            'CREATE INDEX idx_bar ON mytable (id)',
+        );
+    }
+
+    /**
+     * @group DBAL-234
+     */
+    protected function getQuotedAlterTableRenameIndexSQL()
+    {
+        return array(
+            'DROP INDEX `create` ON `table`',
+            'CREATE INDEX `select` ON `table` (id)',
+            'DROP INDEX `foo` ON `table`',
+            'CREATE INDEX `bar` ON `table` (id)',
         );
     }
 }

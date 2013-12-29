@@ -19,7 +19,9 @@
 
 namespace Doctrine\DBAL\Driver\OCI8;
 
-use Doctrine\DBAL\Platforms;
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\OraclePlatform;
+use Doctrine\DBAL\Schema\OracleSchemaManager;
 
 /**
  * A Doctrine DBAL driver for the Oracle OCI8 PHP extensions.
@@ -64,15 +66,24 @@ class Driver implements \Doctrine\DBAL\Driver
                 $dsn .= '(PORT=1521)';
             }
 
+            $serviceName = $params['dbname'];
+
+            if ( ! empty($params['servicename'])) {
+                $serviceName = $params['servicename'];
+            }
+
+            $service = 'SID=' . $serviceName;
+            $pooled   = '';
+
             if (isset($params['service']) && $params['service'] == true) {
-                $dsn .= '))(CONNECT_DATA=(SERVICE_NAME=' . $params['dbname'] . '))';
-            } else {
-                $dsn .= '))(CONNECT_DATA=(SID=' . $params['dbname'] . '))';
+                $service = 'SERVICE_NAME=' . $serviceName;
             }
+
             if (isset($params['pooled']) && $params['pooled'] == true) {
-                $dsn .= '(SERVER=POOLED)';
+                $pooled = '(SERVER=POOLED)';
             }
-            $dsn .= ')';
+
+            $dsn .= '))(CONNECT_DATA=(' . $service . ')' . $pooled . '))';
         } else {
             $dsn .= $params['dbname'];
         }
@@ -85,15 +96,15 @@ class Driver implements \Doctrine\DBAL\Driver
      */
     public function getDatabasePlatform()
     {
-        return new \Doctrine\DBAL\Platforms\OraclePlatform();
+        return new OraclePlatform();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getSchemaManager(\Doctrine\DBAL\Connection $conn)
+    public function getSchemaManager(Connection $conn)
     {
-        return new \Doctrine\DBAL\Schema\OracleSchemaManager($conn);
+        return new OracleSchemaManager($conn);
     }
 
     /**
@@ -107,7 +118,7 @@ class Driver implements \Doctrine\DBAL\Driver
     /**
      * {@inheritdoc}
      */
-    public function getDatabase(\Doctrine\DBAL\Connection $conn)
+    public function getDatabase(Connection $conn)
     {
         $params = $conn->getParams();
 

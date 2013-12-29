@@ -617,9 +617,14 @@ class ComparatorTest extends \PHPUnit_Framework_TestCase
         $tableB->addIndex(array("id"), "bar_foo_idx");
 
         $c = new Comparator();
-        $tableDiff = $c->diffTable($tableA, $tableB);
+        $tableDiff = new TableDiff('foo');
+        $tableDiff->fromTable = $tableA;
+        $tableDiff->renamedIndexes['foo_bar_idx'] = new Index('bar_foo_idx', array('id'));
 
-        $this->assertFalse($tableDiff);
+        $this->assertEquals(
+            $tableDiff,
+            $c->diffTable($tableA, $tableB)
+        );
     }
 
     public function testCompareForeignKeyBasedOnPropertiesNotName()
@@ -864,6 +869,28 @@ class ComparatorTest extends \PHPUnit_Framework_TestCase
 
 
     /**
+     * Check that added autoincrement sequence is not populated in newSequences
+     * @group DBAL-562
+     */
+    public function testAutoIncremenetNoSequences()
+    {
+        $oldSchema = new Schema();
+        $table = $oldSchema->createTable("foo");
+        $table->addColumn("id", "integer", array("autoincrement" => true));
+        $table->setPrimaryKey(array("id"));
+
+        $newSchema = new Schema();
+        $table = $newSchema->createTable("foo");
+        $table->addColumn("id", "integer", array("autoincrement" => true));
+        $table->setPrimaryKey(array("id"));
+        $newSchema->createSequence("foo_id_seq");
+
+        $c = new Comparator();
+        $diff = $c->compare($oldSchema, $newSchema);
+
+        $this->assertCount(0, $diff->newSequences);
+    }
+    /**
      * You can get multiple drops for a FK when a table referenced by a foreign
      * key is deleted, as this FK is referenced twice, once on the orphanedForeignKeys
      * array because of the dropped table, and once on changedTables array. We
@@ -911,6 +938,42 @@ class ComparatorTest extends \PHPUnit_Framework_TestCase
         $columnDiff->changedProperties = array('type');
 
         $this->assertEquals($expected, Comparator::compareSchemas($oldSchema, $newSchema));
+    }
+
+    public function testCompareChangedBinaryColumn()
+    {
+        $oldSchema = new Schema();
+
+        $tableFoo = $oldSchema->createTable('foo');
+        $tableFoo->addColumn('id', 'binary');
+
+        $newSchema = new Schema();
+        $table = $newSchema->createTable('foo');
+        $table->addColumn('id', 'binary', array('length' => 42, 'fixed' => true));
+
+        $expected = new SchemaDiff();
+        $expected->fromSchema = $oldSchema;
+        $tableDiff = $expected->changedTables['foo'] = new TableDiff('foo');
+        $tableDiff->fromTable = $tableFoo;
+        $columnDiff = $tableDiff->changedColumns['id'] = new ColumnDiff('id', $table->getColumn('id'));
+        $columnDiff->fromColumn = $tableFoo->getColumn('id');
+        $columnDiff->changedProperties = array('length', 'fixed');
+
+        $this->assertEquals($expected, Comparator::compareSchemas($oldSchema, $newSchema));
+    }
+
+    /**
+     * @group DBAL-617
+     */
+    public function testCompareQuotedAndUnquotedForeignKeyColumns()
+    {
+        $fk1 = new ForeignKeyConstraint(array("foo"), "bar", array("baz"), "fk1", array('onDelete' => 'NO ACTION'));
+        $fk2 = new ForeignKeyConstraint(array("`foo`"), "bar", array("`baz`"), "fk1", array('onDelete' => 'NO ACTION'));
+
+        $comparator = new Comparator();
+        $diff = $comparator->diffForeignKey($fk1, $fk2);
+
+        $this->assertFalse($diff);
     }
 
     /**

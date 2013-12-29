@@ -27,7 +27,7 @@ class ExceptionTest extends \Doctrine\Tests\DbalFunctionalTestCase
 
         $this->_conn->insert("duplicatekey_table", array('id' => 1));
 
-        $this->setExpectedException('\Doctrine\DBAL\DBALException', null, DBALException::ERROR_DUPLICATE_KEY);
+        $this->setExpectedException('\Doctrine\DBAL\Exception\DuplicateKeyException', null, DBALException::ERROR_DUPLICATE_KEY);
         $this->_conn->insert("duplicatekey_table", array('id' => 1));
     }
 
@@ -79,7 +79,7 @@ class ExceptionTest extends \Doctrine\Tests\DbalFunctionalTestCase
         $this->_conn->insert("constraint_error_table", array('id' => 1));
         $this->_conn->insert("owning_table", array('id' => 1, 'constraint_id' => 1));
 
-        $this->setExpectedException('\Doctrine\DBAL\DBALException', null, DBALException::ERROR_FOREIGN_KEY_CONSTRAINT);
+        $this->setExpectedException('\Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException', null, DBALException::ERROR_FOREIGN_KEY_CONSTRAINT);
         $this->_conn->delete('constraint_error_table', array('id' => 1));
     }
 
@@ -96,7 +96,7 @@ class ExceptionTest extends \Doctrine\Tests\DbalFunctionalTestCase
             $this->_conn->executeQuery($sql);
         }
 
-        $this->setExpectedException('\Doctrine\DBAL\DBALException', null, DBALException::ERROR_NOT_NULL);
+        $this->setExpectedException('\Doctrine\DBAL\Exception\NotNullableException', null, DBALException::ERROR_NOT_NULL);
         $this->_conn->insert("notnull_table", array('id' => 1, 'value' => null));
     }
 
@@ -215,6 +215,10 @@ class ExceptionTest extends \Doctrine\Tests\DbalFunctionalTestCase
     {
         if ($this->_conn->getDatabasePlatform()->getName() == 'sqlite') {
             $this->markTestSkipped("Only skipped if platform is not sqlite");
+        }
+
+        if ($this->_conn->getDatabasePlatform()->getName() == 'drizzle') {
+            $this->markTestSkipped("Drizzle does not always support authentication");
         }
 
         if ($this->_conn->getDatabasePlatform()->getName() == 'postgresql' && isset($params['password'])) {

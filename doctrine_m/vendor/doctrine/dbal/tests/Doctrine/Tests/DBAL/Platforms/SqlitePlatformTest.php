@@ -302,4 +302,56 @@ class SqlitePlatformTest extends AbstractPlatformTestCase
             'CONSTRAINT FK_WITH_INTENDED_QUOTATION FOREIGN KEY ("create", foo, "bar") REFERENCES "foo-bar" ("create", bar, "foo-bar") NOT DEFERRABLE INITIALLY IMMEDIATE)',
         );
     }
+
+    protected function getBinaryDefaultLength()
+    {
+        return 0;
+    }
+
+    protected function getBinaryMaxLength()
+    {
+        return 0;
+    }
+
+    public function testReturnsBinaryTypeDeclarationSQL()
+    {
+        $this->assertSame('BLOB', $this->_platform->getBinaryTypeDeclarationSQL(array()));
+        $this->assertSame('BLOB', $this->_platform->getBinaryTypeDeclarationSQL(array('length' => 0)));
+        $this->assertSame('BLOB', $this->_platform->getBinaryTypeDeclarationSQL(array('length' => 9999999)));
+
+        $this->assertSame('BLOB', $this->_platform->getBinaryTypeDeclarationSQL(array('fixed' => true)));
+        $this->assertSame('BLOB', $this->_platform->getBinaryTypeDeclarationSQL(array('fixed' => true, 'length' => 0)));
+        $this->assertSame('BLOB', $this->_platform->getBinaryTypeDeclarationSQL(array('fixed' => true, 'length' => 9999999)));
+    }
+
+    /**
+     * @group DBAL-234
+     */
+    protected function getAlterTableRenameIndexSQL()
+    {
+        return array(
+            'CREATE TEMPORARY TABLE __temp__mytable AS SELECT id FROM mytable',
+            'DROP TABLE mytable',
+            'CREATE TABLE mytable (id INTEGER NOT NULL, PRIMARY KEY(id))',
+            'INSERT INTO mytable (id) SELECT id FROM __temp__mytable',
+            'DROP TABLE __temp__mytable',
+            'CREATE INDEX idx_bar ON mytable (id)',
+        );
+    }
+
+    /**
+     * @group DBAL-234
+     */
+    protected function getQuotedAlterTableRenameIndexSQL()
+    {
+        return array(
+            'CREATE TEMPORARY TABLE __temp__table AS SELECT id FROM "table"',
+            'DROP TABLE "table"',
+            'CREATE TABLE "table" (id INTEGER NOT NULL, PRIMARY KEY(id))',
+            'INSERT INTO "table" (id) SELECT id FROM __temp__table',
+            'DROP TABLE __temp__table',
+            'CREATE INDEX "select" ON table (id)',
+            'CREATE INDEX "bar" ON table (id)',
+        );
+    }
 }
