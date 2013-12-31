@@ -15,7 +15,7 @@ Running One Of The Benchmarks
 -----------------------------
 
     > cd /path/to/php-orm-benchmark
-    > cd propel_15
+    > cd propel_20
     > php TestRunner.php
 
 Test Scenarios
