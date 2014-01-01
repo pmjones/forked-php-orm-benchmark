@@ -43,9 +43,10 @@
             ],
             "authors": [
                 {
-                    "name": "Jonathan Wage",
+                    "name": "Jonathan H. Wage",
                     "email": "jonwage@gmail.com",
-                    "homepage": "http://www.jwage.com/"
+                    "homepage": "http://www.jwage.com/",
+                    "role": "Creator"
                 },
                 {
                     "name": "Guilherme Blanco",
@@ -117,7 +118,7 @@
             ],
             "authors": [
                 {
-                    "name": "Jonathan H. Wage",
+                    "name": "Jonathan Wage",
                     "email": "jonwage@gmail.com",
                     "homepage": "http://www.jwage.com/",
                     "role": "Creator"
@@ -136,7 +137,7 @@
                     "email": "kontakt@beberlei.de"
                 },
                 {
-                    "name": "Johannes M. Schmitt",
+                    "name": "Johannes Schmitt",
                     "email": "schmittjoh@gmail.com",
                     "homepage": "http://jmsyst.com",
                     "role": "Developer of wrapped JMSSerializerBundle"
@@ -186,7 +187,8 @@
                 {
                     "name": "Jonathan Wage",
                     "email": "jonwage@gmail.com",
-                    "homepage": "http://www.jwage.com/"
+                    "homepage": "http://www.jwage.com/",
+                    "role": "Creator"
                 },
                 {
                     "name": "Guilherme Blanco",
@@ -258,7 +260,8 @@
                 {
                     "name": "Jonathan Wage",
                     "email": "jonwage@gmail.com",
-                    "homepage": "http://www.jwage.com/"
+                    "homepage": "http://www.jwage.com/",
+                    "role": "Creator"
                 },
                 {
                     "name": "Guilherme Blanco",
@@ -297,12 +300,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/doctrine/dbal.git",
-                "reference": "9ec63e25b572db79c09cacccb844e33ed435e479"
+                "reference": "9975da983f92c731dcebb5a5f815455163dfcce1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/doctrine/dbal/zipball/9ec63e25b572db79c09cacccb844e33ed435e479",
-                "reference": "9ec63e25b572db79c09cacccb844e33ed435e479",
+                "url": "https://api.github.com/repos/doctrine/dbal/zipball/9975da983f92c731dcebb5a5f815455163dfcce1",
+                "reference": "9975da983f92c731dcebb5a5f815455163dfcce1",
                 "shasum": ""
             },
             "require": {
@@ -360,7 +363,7 @@
                 "persistence",
                 "queryobject"
             ],
-            "time": "2013-12-30 07:54:23"
+            "time": "2014-01-01 17:40:31"
         },
         {
             "name": "doctrine/inflector",
@@ -393,7 +396,8 @@
                 {
                     "name": "Jonathan Wage",
                     "email": "jonwage@gmail.com",
-                    "homepage": "http://www.jwage.com/"
+                    "homepage": "http://www.jwage.com/",
+                    "role": "Creator"
                 },
                 {
                     "name": "Guilherme Blanco",
@@ -483,12 +487,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/doctrine/doctrine2.git",
-                "reference": "58c57c50bf3582a1672bc09733afab4167ebd5ba"
+                "reference": "a7b9140d2fddcab995b2597be4d589155ff1aa8f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/doctrine/doctrine2/zipball/58c57c50bf3582a1672bc09733afab4167ebd5ba",
-                "reference": "58c57c50bf3582a1672bc09733afab4167ebd5ba",
+                "url": "https://api.github.com/repos/doctrine/doctrine2/zipball/a7b9140d2fddcab995b2597be4d589155ff1aa8f",
+                "reference": "a7b9140d2fddcab995b2597be4d589155ff1aa8f",
                 "shasum": ""
             },
             "require": {
@@ -551,7 +555,7 @@
                 "database",
                 "orm"
             ],
-            "time": "2013-12-30 08:33:03"
+            "time": "2013-12-31 05:34:20"
         },
         {
             "name": "symfony/console",

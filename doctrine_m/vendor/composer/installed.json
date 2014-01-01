@@ -94,9 +94,10 @@
         ],
         "authors": [
             {
-                "name": "Jonathan Wage",
+                "name": "Jonathan H. Wage",
                 "email": "jonwage@gmail.com",
-                "homepage": "http://www.jwage.com/"
+                "homepage": "http://www.jwage.com/",
+                "role": "Creator"
             },
             {
                 "name": "Guilherme Blanco",
@@ -165,7 +166,8 @@
             {
                 "name": "Jonathan Wage",
                 "email": "jonwage@gmail.com",
-                "homepage": "http://www.jwage.com/"
+                "homepage": "http://www.jwage.com/",
+                "role": "Creator"
             },
             {
                 "name": "Guilherme Blanco",
@@ -193,6 +195,82 @@
             "array",
             "collections",
             "iterator"
+        ]
+    },
+    {
+        "name": "doctrine/cache",
+        "version": "v1.3.0",
+        "version_normalized": "1.3.0.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/doctrine/cache.git",
+            "reference": "e16d7adf45664a50fa86f515b6d5e7f670130449"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/doctrine/cache/zipball/e16d7adf45664a50fa86f515b6d5e7f670130449",
+            "reference": "e16d7adf45664a50fa86f515b6d5e7f670130449",
+            "shasum": ""
+        },
+        "require": {
+            "php": ">=5.3.2"
+        },
+        "conflict": {
+            "doctrine/common": ">2.2,<2.4"
+        },
+        "require-dev": {
+            "phpunit/phpunit": ">=3.7",
+            "satooshi/php-coveralls": "~0.6"
+        },
+        "time": "2013-10-25 19:04:14",
+        "type": "library",
+        "extra": {
+            "branch-alias": {
+                "dev-master": "1.0.x-dev"
+            }
+        },
+        "installation-source": "dist",
+        "autoload": {
+            "psr-0": {
+                "Doctrine\\Common\\Cache\\": "lib/"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "MIT"
+        ],
+        "authors": [
+            {
+                "name": "Jonathan Wage",
+                "email": "jonwage@gmail.com",
+                "homepage": "http://www.jwage.com/",
+                "role": "Creator"
+            },
+            {
+                "name": "Guilherme Blanco",
+                "email": "guilhermeblanco@gmail.com",
+                "homepage": "http://www.instaclick.com"
+            },
+            {
+                "name": "Roman Borschel",
+                "email": "roman@code-factory.org"
+            },
+            {
+                "name": "Benjamin Eberlei",
+                "email": "kontakt@beberlei.de"
+            },
+            {
+                "name": "Johannes Schmitt",
+                "email": "schmittjoh@gmail.com",
+                "homepage": "http://jmsyst.com",
+                "role": "Developer of wrapped JMSSerializerBundle"
+            }
+        ],
+        "description": "Caching library offering an object-oriented API for many cache backends",
+        "homepage": "http://www.doctrine-project.org",
+        "keywords": [
+            "cache",
+            "caching"
         ]
     },
     {
@@ -229,7 +307,8 @@
             {
                 "name": "Jonathan Wage",
                 "email": "jonwage@gmail.com",
-                "homepage": "http://www.jwage.com/"
+                "homepage": "http://www.jwage.com/",
+                "role": "Creator"
             },
             {
                 "name": "Guilherme Blanco",
@@ -304,7 +383,8 @@
             {
                 "name": "Jonathan Wage",
                 "email": "jonwage@gmail.com",
-                "homepage": "http://www.jwage.com/"
+                "homepage": "http://www.jwage.com/",
+                "role": "Creator"
             },
             {
                 "name": "Guilherme Blanco",
@@ -343,12 +423,12 @@
         "source": {
             "type": "git",
             "url": "https://github.com/doctrine/dbal.git",
-            "reference": "9ec63e25b572db79c09cacccb844e33ed435e479"
+            "reference": "9975da983f92c731dcebb5a5f815455163dfcce1"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/doctrine/dbal/zipball/9ec63e25b572db79c09cacccb844e33ed435e479",
-            "reference": "9ec63e25b572db79c09cacccb844e33ed435e479",
+            "url": "https://api.github.com/repos/doctrine/dbal/zipball/9975da983f92c731dcebb5a5f815455163dfcce1",
+            "reference": "9975da983f92c731dcebb5a5f815455163dfcce1",
             "shasum": ""
         },
         "require": {
@@ -362,14 +442,14 @@
         "suggest": {
             "symfony/console": "Allows use of the command line interface"
         },
-        "time": "2013-12-30 07:54:23",
+        "time": "2014-01-01 17:40:31",
         "type": "library",
         "extra": {
             "branch-alias": {
                 "dev-master": "2.5.x-dev"
             }
         },
-        "installation-source": "source",
+        "installation-source": "dist",
         "autoload": {
             "psr-0": {
                 "Doctrine\\DBAL\\": "lib/"
@@ -407,82 +487,6 @@
             "dbal",
             "persistence",
             "queryobject"
-        ]
-    },
-    {
-        "name": "doctrine/cache",
-        "version": "v1.3.0",
-        "version_normalized": "1.3.0.0",
-        "source": {
-            "type": "git",
-            "url": "https://github.com/doctrine/cache.git",
-            "reference": "e16d7adf45664a50fa86f515b6d5e7f670130449"
-        },
-        "dist": {
-            "type": "zip",
-            "url": "https://api.github.com/repos/doctrine/cache/zipball/e16d7adf45664a50fa86f515b6d5e7f670130449",
-            "reference": "e16d7adf45664a50fa86f515b6d5e7f670130449",
-            "shasum": ""
-        },
-        "require": {
-            "php": ">=5.3.2"
-        },
-        "conflict": {
-            "doctrine/common": ">2.2,<2.4"
-        },
-        "require-dev": {
-            "phpunit/phpunit": ">=3.7",
-            "satooshi/php-coveralls": "~0.6"
-        },
-        "time": "2013-10-25 19:04:14",
-        "type": "library",
-        "extra": {
-            "branch-alias": {
-                "dev-master": "1.0.x-dev"
-            }
-        },
-        "installation-source": "dist",
-        "autoload": {
-            "psr-0": {
-                "Doctrine\\Common\\Cache\\": "lib/"
-            }
-        },
-        "notification-url": "https://packagist.org/downloads/",
-        "license": [
-            "MIT"
-        ],
-        "authors": [
-            {
-                "name": "Jonathan H. Wage",
-                "email": "jonwage@gmail.com",
-                "homepage": "http://www.jwage.com/",
-                "role": "Creator"
-            },
-            {
-                "name": "Guilherme Blanco",
-                "email": "guilhermeblanco@gmail.com",
-                "homepage": "http://www.instaclick.com"
-            },
-            {
-                "name": "Roman Borschel",
-                "email": "roman@code-factory.org"
-            },
-            {
-                "name": "Benjamin Eberlei",
-                "email": "kontakt@beberlei.de"
-            },
-            {
-                "name": "Johannes M. Schmitt",
-                "email": "schmittjoh@gmail.com",
-                "homepage": "http://jmsyst.com",
-                "role": "Developer of wrapped JMSSerializerBundle"
-            }
-        ],
-        "description": "Caching library offering an object-oriented API for many cache backends",
-        "homepage": "http://www.doctrine-project.org",
-        "keywords": [
-            "cache",
-            "caching"
         ]
     },
     {
@@ -547,12 +551,12 @@
         "source": {
             "type": "git",
             "url": "https://github.com/doctrine/doctrine2.git",
-            "reference": "58c57c50bf3582a1672bc09733afab4167ebd5ba"
+            "reference": "a7b9140d2fddcab995b2597be4d589155ff1aa8f"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/doctrine/doctrine2/zipball/58c57c50bf3582a1672bc09733afab4167ebd5ba",
-            "reference": "58c57c50bf3582a1672bc09733afab4167ebd5ba",
+            "url": "https://api.github.com/repos/doctrine/doctrine2/zipball/a7b9140d2fddcab995b2597be4d589155ff1aa8f",
+            "reference": "a7b9140d2fddcab995b2597be4d589155ff1aa8f",
             "shasum": ""
         },
         "require": {
@@ -569,7 +573,7 @@
         "suggest": {
             "symfony/yaml": "If you want to use YAML Metadata Mapping Driver"
         },
-        "time": "2013-12-30 08:33:03",
+        "time": "2013-12-31 05:34:20",
         "bin": [
             "bin/doctrine",
             "bin/doctrine.php"
@@ -580,7 +584,7 @@
                 "dev-master": "2.5.x-dev"
             }
         },
-        "installation-source": "source",
+        "installation-source": "dist",
         "autoload": {
             "psr-0": {
                 "Doctrine\\ORM\\": "lib/"
