@@ -41,24 +41,24 @@
     },
     {
         "name": "symfony/property-access",
-        "version": "dev-master",
-        "version_normalized": "9999999-dev",
+        "version": "v2.4.0",
+        "version_normalized": "2.4.0.0",
         "target-dir": "Symfony/Component/PropertyAccess",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/PropertyAccess.git",
-            "reference": "3a6e9c7786b37077d54247bef165f5f8a4f9d128"
+            "reference": "274951234150e303c83099a2429be6be35629fe9"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/symfony/PropertyAccess/zipball/3a6e9c7786b37077d54247bef165f5f8a4f9d128",
-            "reference": "3a6e9c7786b37077d54247bef165f5f8a4f9d128",
+            "url": "https://api.github.com/repos/symfony/PropertyAccess/zipball/274951234150e303c83099a2429be6be35629fe9",
+            "reference": "274951234150e303c83099a2429be6be35629fe9",
             "shasum": ""
         },
         "require": {
             "php": ">=5.3.3"
         },
-        "time": "2013-10-30 08:33:58",
+        "time": "2013-11-13 21:30:16",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -101,18 +101,18 @@
     },
     {
         "name": "symfony/translation",
-        "version": "dev-master",
-        "version_normalized": "9999999-dev",
+        "version": "v2.4.0",
+        "version_normalized": "2.4.0.0",
         "target-dir": "Symfony/Component/Translation",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/Translation.git",
-            "reference": "8addaff4947de4a9342318de62a078d74b1bd603"
+            "reference": "0919e0fc709217f8c9e5049f2603419fdd4a34ff"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/symfony/Translation/zipball/8addaff4947de4a9342318de62a078d74b1bd603",
-            "reference": "8addaff4947de4a9342318de62a078d74b1bd603",
+            "url": "https://api.github.com/repos/symfony/Translation/zipball/0919e0fc709217f8c9e5049f2603419fdd4a34ff",
+            "reference": "0919e0fc709217f8c9e5049f2603419fdd4a34ff",
             "shasum": ""
         },
         "require": {
@@ -126,7 +126,7 @@
             "symfony/config": "",
             "symfony/yaml": ""
         },
-        "time": "2013-10-10 14:19:44",
+        "time": "2013-11-28 10:27:26",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -158,18 +158,18 @@
     },
     {
         "name": "symfony/validator",
-        "version": "dev-master",
-        "version_normalized": "9999999-dev",
+        "version": "v2.4.0",
+        "version_normalized": "2.4.0.0",
         "target-dir": "Symfony/Component/Validator",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/Validator.git",
-            "reference": "bdc313c81420fc7d2984b691de19a0f4bbdae76f"
+            "reference": "12d1f1e64a43ce9cc35151ca89dae1ae8882d991"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/symfony/Validator/zipball/bdc313c81420fc7d2984b691de19a0f4bbdae76f",
-            "reference": "bdc313c81420fc7d2984b691de19a0f4bbdae76f",
+            "url": "https://api.github.com/repos/symfony/Validator/zipball/12d1f1e64a43ce9cc35151ca89dae1ae8882d991",
+            "reference": "12d1f1e64a43ce9cc35151ca89dae1ae8882d991",
             "shasum": ""
         },
         "require": {
@@ -178,19 +178,22 @@
             "symfony/translation": "~2.0"
         },
         "require-dev": {
+            "doctrine/annotations": "~1.0",
+            "doctrine/cache": "~1.0",
             "symfony/config": "~2.2",
             "symfony/http-foundation": "~2.1",
             "symfony/intl": "~2.3",
             "symfony/yaml": "~2.0"
         },
         "suggest": {
-            "doctrine/common": "",
+            "doctrine/annotations": "For using the annotation mapping. You will also need doctrine/cache.",
+            "doctrine/cache": "For using the default cached annotation reader",
             "symfony/config": "",
             "symfony/http-foundation": "",
             "symfony/intl": "",
             "symfony/yaml": ""
         },
-        "time": "2013-10-30 08:31:46",
+        "time": "2013-11-28 10:27:26",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -222,24 +225,24 @@
     },
     {
         "name": "symfony/filesystem",
-        "version": "dev-master",
-        "version_normalized": "9999999-dev",
+        "version": "v2.4.0",
+        "version_normalized": "2.4.0.0",
         "target-dir": "Symfony/Component/Filesystem",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/Filesystem.git",
-            "reference": "e558fd5d593ebe083dca199f52aed5374ab7b57a"
+            "reference": "79acd777762e81d0f3414ca25a602deeeb48240d"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/symfony/Filesystem/zipball/e558fd5d593ebe083dca199f52aed5374ab7b57a",
-            "reference": "e558fd5d593ebe083dca199f52aed5374ab7b57a",
+            "url": "https://api.github.com/repos/symfony/Filesystem/zipball/79acd777762e81d0f3414ca25a602deeeb48240d",
+            "reference": "79acd777762e81d0f3414ca25a602deeeb48240d",
             "shasum": ""
         },
         "require": {
             "php": ">=5.3.3"
         },
-        "time": "2013-09-27 14:57:51",
+        "time": "2013-11-16 15:13:54",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -271,24 +274,24 @@
     },
     {
         "name": "symfony/finder",
-        "version": "dev-master",
-        "version_normalized": "9999999-dev",
+        "version": "v2.4.0",
+        "version_normalized": "2.4.0.0",
         "target-dir": "Symfony/Component/Finder",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/Finder.git",
-            "reference": "e2ce3164ab58b4d54612e630571f158035ee8603"
+            "reference": "72356bf0646b11af1bae666c28a639bd8ede459f"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/symfony/Finder/zipball/e2ce3164ab58b4d54612e630571f158035ee8603",
-            "reference": "e2ce3164ab58b4d54612e630571f158035ee8603",
+            "url": "https://api.github.com/repos/symfony/Finder/zipball/72356bf0646b11af1bae666c28a639bd8ede459f",
+            "reference": "72356bf0646b11af1bae666c28a639bd8ede459f",
             "shasum": ""
         },
         "require": {
             "php": ">=5.3.3"
         },
-        "time": "2013-09-19 09:47:34",
+        "time": "2013-11-26 16:40:27",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -320,18 +323,18 @@
     },
     {
         "name": "symfony/console",
-        "version": "dev-master",
-        "version_normalized": "9999999-dev",
+        "version": "v2.4.0",
+        "version_normalized": "2.4.0.0",
         "target-dir": "Symfony/Component/Console",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/Console.git",
-            "reference": "92cdb410d68c7b6ccb6eb38ad0ffe4e2d1cd9a2c"
+            "reference": "3c1496ae96d24ccc6c340fcc25f71d7a1ab4c12c"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/symfony/Console/zipball/92cdb410d68c7b6ccb6eb38ad0ffe4e2d1cd9a2c",
-            "reference": "92cdb410d68c7b6ccb6eb38ad0ffe4e2d1cd9a2c",
+            "url": "https://api.github.com/repos/symfony/Console/zipball/3c1496ae96d24ccc6c340fcc25f71d7a1ab4c12c",
+            "reference": "3c1496ae96d24ccc6c340fcc25f71d7a1ab4c12c",
             "shasum": ""
         },
         "require": {
@@ -343,7 +346,7 @@
         "suggest": {
             "symfony/event-dispatcher": ""
         },
-        "time": "2013-10-31 16:40:24",
+        "time": "2013-11-27 09:10:40",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -375,24 +378,24 @@
     },
     {
         "name": "symfony/yaml",
-        "version": "dev-master",
-        "version_normalized": "9999999-dev",
+        "version": "v2.4.0",
+        "version_normalized": "2.4.0.0",
         "target-dir": "Symfony/Component/Yaml",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/Yaml.git",
-            "reference": "1f7cabb841e62ec49615bd965ac780fd994b3f64"
+            "reference": "1ae235a1b9d3ad3d9f3860ff20acc072df95b7f5"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/symfony/Yaml/zipball/1f7cabb841e62ec49615bd965ac780fd994b3f64",
-            "reference": "1f7cabb841e62ec49615bd965ac780fd994b3f64",
+            "url": "https://api.github.com/repos/symfony/Yaml/zipball/1ae235a1b9d3ad3d9f3860ff20acc072df95b7f5",
+            "reference": "1ae235a1b9d3ad3d9f3860ff20acc072df95b7f5",
             "shasum": ""
         },
         "require": {
             "php": ">=5.3.3"
         },
-        "time": "2013-10-17 11:48:11",
+        "time": "2013-11-26 16:40:27",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -429,12 +432,12 @@
         "source": {
             "type": "git",
             "url": "https://github.com/propelorm/Propel2.git",
-            "reference": "736a3b3d6e0bcd4a127503fba04b0d5d7e9a6264"
+            "reference": "1c2f26ad33f0bc36aa6a38e16317158a09833bbf"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/propelorm/Propel2/zipball/736a3b3d6e0bcd4a127503fba04b0d5d7e9a6264",
-            "reference": "736a3b3d6e0bcd4a127503fba04b0d5d7e9a6264",
+            "url": "https://api.github.com/repos/propelorm/Propel2/zipball/1c2f26ad33f0bc36aa6a38e16317158a09833bbf",
+            "reference": "1c2f26ad33f0bc36aa6a38e16317158a09833bbf",
             "shasum": ""
         },
         "require": {
@@ -454,7 +457,7 @@
         "suggest": {
             "monolog/monolog": "The recommended logging library to use with Propel."
         },
-        "time": "2013-11-08 08:44:27",
+        "time": "2013-12-31 17:11:48",
         "bin": [
             "bin/propel"
         ],

@@ -1,6 +1,5 @@
 {
     "require": {
-        "propel/propel": "~2.0.0"
-    },
-    "minimum-stability": "dev"
+        "propel/propel": "2.0.*@dev"
+    }
 }
