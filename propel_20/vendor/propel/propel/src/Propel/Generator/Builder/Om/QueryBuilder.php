@@ -438,6 +438,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
         $class = $this->getObjectClassName();
         $tableMapClassName = $this->getTableMapClassName();
         $table = $this->getTable();
+
         $script .= "
     /**
      * Find object by primary key.
@@ -470,7 +471,17 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
      * @return $class|array|mixed the result, formatted by the current formatter
      */
     public function findPk(\$key, \$con = null)
-    {
+    {";
+        if (!$table->hasPrimaryKey()) {
+            $this->declareClass('Propel\\Runtime\\Exception\\LogicException');
+            $script .= "
+        throw new LogicException('The {$this->getObjectName()} object has no primary key');
+    }
+";
+            return $script;
+        }
+
+        $script .= "
         if (\$key === null) {
             return null;
         }";
@@ -506,6 +517,12 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
     protected function addFindPkSimple(&$script)
     {
         $table = $this->getTable();
+
+        // this method is not needed if the table has no primary key
+        if (!$table->hasPrimaryKey()) {
+            return '';
+        }
+
         $platform = $this->getPlatform();
         $tableMapClassName = $this->getTableMapClassName();
         $ARClassName = $this->getObjectClassName();
@@ -535,6 +552,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
         } else {
             $pks []= "\$key";
         }
+
         $pkHashFromRow = $this->getTableMapBuilder()->getInstancePoolKeySnippet($pks);
         $script .= "
     /**
@@ -595,6 +613,13 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
     protected function addFindPkComplex(&$script)
     {
         $class = $this->getObjectClassName();
+        $table = $this->getTable();
+
+        // this method is not needed if the table has no primary key
+        if (!$table->hasPrimaryKey()) {
+            return '';
+        }
+
         $this->declareClasses('\Propel\Runtime\Connection\ConnectionInterface');
         $script .= "
     /**
@@ -650,7 +675,17 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
      * @return ObjectCollection|array|mixed the list of results, formatted by the current formatter
      */
     public function findPks(\$keys, \$con = null)
-    {
+    {";
+        if (!$table->hasPrimaryKey()) {
+            $this->declareClass('Propel\\Runtime\\Exception\\LogicException');
+            $script .= "
+        throw new LogicException('The {$this->getObjectName()} object has no primary key');
+    }
+";
+            return $script;
+        }
+
+        $script .= "
         if (null === \$con) {
             \$con = Propel::getServiceContainer()->getReadConnection(\$this->getDbName());
         }
@@ -682,6 +717,16 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
     public function filterByPrimaryKey(\$key)
     {";
         $table = $this->getTable();
+
+        if (!$table->hasPrimaryKey()) {
+            $this->declareClass('Propel\\Runtime\\Exception\\LogicException');
+            $script .= "
+        throw new LogicException('The {$this->getObjectName()} object has no primary key');
+    }
+";
+            return $script;
+        }
+
         $pks = $table->getPrimaryKey();
         if (1 === count($pks)) {
             // simple primary key
@@ -725,6 +770,17 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
     public function filterByPrimaryKeys(\$keys)
     {";
         $table = $this->getTable();
+
+        if (!$table->hasPrimaryKey()) {
+
+            $this->declareClass('Propel\\Runtime\\Exception\\LogicException');
+            $script .= "
+        throw new LogicException('The {$this->getObjectName()} object has no primary key');
+    }
+";
+            return $script;
+        }
+
         $pks = $table->getPrimaryKey();
         if (1 === count($pks)) {
             // simple primary key
@@ -1303,6 +1359,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
         $table = $this->getTable();
         $class = $this->getObjectClassName();
         $objectName = '$' . $table->getStudlyPhpName();
+
         $script .= "
     /**
      * Exclude object from result
@@ -1329,11 +1386,16 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
             $conditionsString = implode(', ', $conditions);
             $script .= "
             \$this->combine(array(" . $conditionsString . "), Criteria::LOGICAL_OR);";
-        } else {
+        } else if ($table->hasPrimaryKey()) {
             $col = $pks[0];
             $const = $this->getColumnConstant($col);
             $script .= "
             \$this->addUsingAlias($const, " . $objectName . "->get" . $col->getPhpName() . "(), Criteria::NOT_EQUAL);";
+        } else {
+            $this->declareClass('Propel\\Runtime\\Exception\\LogicException');
+            $script .= "
+            throw new LogicException('{$this->getObjectName()} object has no primary key');
+";
         }
         $script .= "
         }

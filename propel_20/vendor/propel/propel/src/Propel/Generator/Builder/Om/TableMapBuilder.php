@@ -112,6 +112,7 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
             '\Propel\Runtime\ActiveQuery\Criteria',
             '\Propel\Runtime\Connection\ConnectionInterface',
             '\Propel\Runtime\Exception\PropelException',
+            '\Propel\Runtime\DataFetcher\DataFetcherInterface',
             '\Propel\Runtime\Propel'
         );
 
@@ -665,6 +666,10 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
 
         $pks = $this->getTable()->getPrimaryKey();
 
+        if (!count($pks)) {
+            return;
+        }
+
         $add = array();
         $removeObjects = array();
         foreach ($pks as $pk) {
@@ -754,21 +759,6 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
      */
     protected function addGetPrimaryKeyHash(&$script)
     {
-        $script .= "
-    /**
-     * Retrieves a string version of the primary key from the DB resultset row that can be used to uniquely identify a row in this table.
-     *
-     * For tables with a single-column primary key, that simple pkey value will be returned.  For tables with
-     * a multi-column primary key, a serialize()d version of the primary key will be returned.
-     *
-     * @param array  \$row       resultset row.
-     * @param int    \$offset    The 0-based offset for reading from the resultset row.
-     * @param string \$indexType One of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_STUDLYPHPNAME
-     *                           TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME, TableMap::TYPE_NUM
-     */
-    public static function getPrimaryKeyHashFromRow(\$row, \$offset = 0, \$indexType = TableMap::TYPE_NUM)
-    {";
-
         // We have to iterate through all the columns so that we know the offset of the primary
         // key columns.
         $n = 0;
@@ -786,6 +776,21 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
         }
 
         $script .= "
+    /**
+     * Retrieves a string version of the primary key from the DB resultset row that can be used to uniquely identify a row in this table.
+     *
+     * For tables with a single-column primary key, that simple pkey value will be returned.  For tables with
+     * a multi-column primary key, a serialize()d version of the primary key will be returned.
+     *
+     * @param array  \$row       resultset row.
+     * @param int    \$offset    The 0-based offset for reading from the resultset row.
+     * @param string \$indexType One of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_STUDLYPHPNAME
+     *                           TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME, TableMap::TYPE_NUM
+     */
+    public static function getPrimaryKeyHashFromRow(\$row, \$offset = 0, \$indexType = TableMap::TYPE_NUM)
+    {";
+        if (count($pk) > 0) {
+            $script .= "
         // If the PK cannot be derived from the row, return NULL.
         if (".implode(' && ', $cond).") {
             return null;
@@ -794,6 +799,12 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
         return ".$this->getInstancePoolKeySnippet($pk).";
     }
 ";
+        } else {
+            $script .= "
+        return null;
+    }
+";
+        }
     }
 
     /**
@@ -1238,16 +1249,23 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
 
         $script .= "
         } else { // it's a primary key, or an array of pks";
-        $script .= "
-            \$criteria = new Criteria(" . $this->getTableMapClass() . "::DATABASE_NAME);";
 
-        if (1 === count($table->getPrimaryKey())) {
-            $pkey = $table->getPrimaryKey();
-            $col = array_shift($pkey);
+        if (!$table->getPrimaryKey()) {
+            $class = $this->getObjectName();
+            $this->declareClass('Propel\\Runtime\\Exception\\LogicException');
             $script .= "
-            \$criteria->add(".$this->getColumnConstant($col).", (array) \$values, Criteria::IN);";
+            throw new LogicException('The $class object has no primary key');";
         } else {
             $script .= "
+            \$criteria = new Criteria(" . $this->getTableMapClass() . "::DATABASE_NAME);";
+
+            if (1 === count($table->getPrimaryKey())) {
+                $pkey = $table->getPrimaryKey();
+                $col = array_shift($pkey);
+                $script .= "
+            \$criteria->add(".$this->getColumnConstant($col).", (array) \$values, Criteria::IN);";
+            } else {
+                $script .= "
             // primary key is composite; we therefore, expect
             // the primary key passed to be an array of pkey values
             if (count(\$values) == count(\$values, COUNT_RECURSIVE)) {
@@ -1255,22 +1273,23 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
                 \$values = array(\$values);
             }
             foreach (\$values as \$value) {";
-            $i = 0;
-            foreach ($table->getPrimaryKey() as $col) {
-                if (0 === $i) {
-                    $script .= "
+                $i = 0;
+                foreach ($table->getPrimaryKey() as $col) {
+                    if (0 === $i) {
+                        $script .= "
                 \$criterion = \$criteria->getNewCriterion(".$this->getColumnConstant($col).", \$value[$i]);";
-                } else {
-                    $script .= "
+                    } else {
+                        $script .= "
                 \$criterion->addAnd(\$criteria->getNewCriterion(".$this->getColumnConstant($col).", \$value[$i]));";
+                    }
+                    $i++;
                 }
-                $i++;
-            }
-            $script .= "
+                $script .= "
                 \$criteria->addOr(\$criterion);";
-            $script .= "
+                $script .= "
             }";
-        } /* if count(table->getPrimaryKeys()) */
+            } /* if count(table->getPrimaryKeys()) */
+        }
 
         $script .= "
         }
