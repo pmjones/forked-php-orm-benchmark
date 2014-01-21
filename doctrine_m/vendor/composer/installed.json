@@ -423,12 +423,12 @@
         "source": {
             "type": "git",
             "url": "https://github.com/doctrine/dbal.git",
-            "reference": "9975da983f92c731dcebb5a5f815455163dfcce1"
+            "reference": "0a7df7c58aeab4d1cef55a78e5ca50299a12a62b"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/doctrine/dbal/zipball/9975da983f92c731dcebb5a5f815455163dfcce1",
-            "reference": "9975da983f92c731dcebb5a5f815455163dfcce1",
+            "url": "https://api.github.com/repos/doctrine/dbal/zipball/0a7df7c58aeab4d1cef55a78e5ca50299a12a62b",
+            "reference": "0a7df7c58aeab4d1cef55a78e5ca50299a12a62b",
             "shasum": ""
         },
         "require": {
@@ -442,14 +442,14 @@
         "suggest": {
             "symfony/console": "Allows use of the command line interface"
         },
-        "time": "2014-01-01 17:40:31",
+        "time": "2014-01-15 00:19:18",
         "type": "library",
         "extra": {
             "branch-alias": {
                 "dev-master": "2.5.x-dev"
             }
         },
-        "installation-source": "dist",
+        "installation-source": "source",
         "autoload": {
             "psr-0": {
                 "Doctrine\\DBAL\\": "lib/"
@@ -491,18 +491,18 @@
     },
     {
         "name": "symfony/console",
-        "version": "v2.4.0",
-        "version_normalized": "2.4.0.0",
+        "version": "v2.4.1",
+        "version_normalized": "2.4.1.0",
         "target-dir": "Symfony/Component/Console",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/Console.git",
-            "reference": "3c1496ae96d24ccc6c340fcc25f71d7a1ab4c12c"
+            "reference": "4c1ed2ff514bd85ee186eebb010ccbdeeab05af7"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/symfony/Console/zipball/3c1496ae96d24ccc6c340fcc25f71d7a1ab4c12c",
-            "reference": "3c1496ae96d24ccc6c340fcc25f71d7a1ab4c12c",
+            "url": "https://api.github.com/repos/symfony/Console/zipball/4c1ed2ff514bd85ee186eebb010ccbdeeab05af7",
+            "reference": "4c1ed2ff514bd85ee186eebb010ccbdeeab05af7",
             "shasum": ""
         },
         "require": {
@@ -514,7 +514,7 @@
         "suggest": {
             "symfony/event-dispatcher": ""
         },
-        "time": "2013-11-27 09:10:40",
+        "time": "2014-01-01 08:14:50",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -551,12 +551,12 @@
         "source": {
             "type": "git",
             "url": "https://github.com/doctrine/doctrine2.git",
-            "reference": "a7b9140d2fddcab995b2597be4d589155ff1aa8f"
+            "reference": "bba5ec27fbbe35224be48878a0c92827ef2f9733"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/doctrine/doctrine2/zipball/a7b9140d2fddcab995b2597be4d589155ff1aa8f",
-            "reference": "a7b9140d2fddcab995b2597be4d589155ff1aa8f",
+            "url": "https://api.github.com/repos/doctrine/doctrine2/zipball/bba5ec27fbbe35224be48878a0c92827ef2f9733",
+            "reference": "bba5ec27fbbe35224be48878a0c92827ef2f9733",
             "shasum": ""
         },
         "require": {
@@ -573,7 +573,7 @@
         "suggest": {
             "symfony/yaml": "If you want to use YAML Metadata Mapping Driver"
         },
-        "time": "2013-12-31 05:34:20",
+        "time": "2014-01-20 08:36:15",
         "bin": [
             "bin/doctrine",
             "bin/doctrine.php"
@@ -584,7 +584,7 @@
                 "dev-master": "2.5.x-dev"
             }
         },
-        "installation-source": "dist",
+        "installation-source": "source",
         "autoload": {
             "psr-0": {
                 "Doctrine\\ORM\\": "lib/"
