@@ -1,6 +1,6 @@
 <?php
 
-require_once(dirname(__FILE__) . '/vendor/doctrine/Doctrine.php');
+require_once(dirname(__FILE__) . '/vendor/doctrine/doctrine1/lib/Doctrine.php');
 spl_autoload_register(array('Doctrine', 'autoload'));
 $manager = Doctrine_Manager::getInstance();
 
