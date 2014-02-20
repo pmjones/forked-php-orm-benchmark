@@ -237,7 +237,7 @@ class PHPUnitTask extends Task
         
         $config = PHPUnit_Util_Configuration::getInstance($configuration->getAbsolutePath());
         
-        if (empty($configuration)) {
+        if (empty($config)) {
             return;
         }
         
@@ -272,6 +272,15 @@ class PHPUnitTask extends Task
         if (isset($phpunit['processIsolation'])) {
             $this->setProcessIsolation($phpunit['processIsolation']);
         }
+        
+        $browsers = $config->getSeleniumBrowserConfiguration();
+        
+        if (!empty($browsers) &&
+            class_exists('PHPUnit_Extensions_SeleniumTestCase')) {  
+            PHPUnit_Extensions_SeleniumTestCase::$browsers = $browsers;
+        }
+        
+        return $phpunit;
     }
 
     /**
@@ -286,8 +295,18 @@ class PHPUnitTask extends Task
             throw new Exception("PHPUnitTask depends on Xdebug being installed to gather code coverage information.");
         }
         
+        $suite = new PHPUnit_Framework_TestSuite('AllTests');
+        
         if ($this->configuration) {
-            $this->handlePHPUnitConfiguration($this->configuration);
+            $arguments = $this->handlePHPUnitConfiguration($this->configuration);
+            
+            if ($arguments['backupGlobals'] === FALSE) {
+                $suite->setBackupGlobals(FALSE);
+            }
+            
+            if ($arguments['backupStaticAttributes'] === TRUE) {
+                $suite->setBackupStaticAttributes(TRUE);
+            }
         }
         
         if ($this->printsummary)
@@ -304,8 +323,6 @@ class PHPUnitTask extends Task
         if ($this->bootstrap) {
             require $this->bootstrap;
         }
-        
-        $suite = new PHPUnit_Framework_TestSuite('AllTests');
         
         foreach ($this->batchtests as $batchtest)
         {

@@ -61,6 +61,12 @@ class PhpDocumentor2Wrapper
     private $title = "API Documentation";
     
     /**
+     * Name of the default package
+     * @var string
+     */
+    private $defaultPackageName = "Default";
+    
+    /**
      * Path to the phpDocumentor 2 source
      * @var string
      */
@@ -102,7 +108,7 @@ class PhpDocumentor2Wrapper
 
     /**
      * Sets the template to use
-     * @param strings $template
+     * @param string $template
      */
     public function setTemplate($template)
     {
@@ -111,7 +117,7 @@ class PhpDocumentor2Wrapper
     
     /**
      * Sets the title of the project
-     * @param strings $title
+     * @param string $title
      */
     public function setTitle($title)
     {
@@ -119,19 +125,20 @@ class PhpDocumentor2Wrapper
     }
     
     /**
+     * Sets the default package name
+     * @param string $defaultPackageName
+     */
+    public function setDefaultPackageName($defaultPackageName)
+    {
+        $this->defaultPackageName = (string) $defaultPackageName;
+    }
+    
+    /**
      * Finds and initializes the phpDocumentor installation
      */
     private function initializePhpDocumentor()
     {
-        $phpDocumentorPath = null;
-        
-        foreach (Phing::explodeIncludePath() as $path) {
-            $testPhpDocumentorPath = $path . DIRECTORY_SEPARATOR . 'phpDocumentor' . DIRECTORY_SEPARATOR . 'src';
-
-            if (file_exists($testPhpDocumentorPath)) {
-                $phpDocumentorPath = $testPhpDocumentorPath;
-            }
-        }
+        $phpDocumentorPath = $this->findPhpDocumentorPath();
 
         if (empty($phpDocumentorPath)) {
             throw new BuildException("Please make sure PhpDocumentor 2 is installed and on the include_path.");
@@ -184,7 +191,7 @@ class PhpDocumentor2Wrapper
         $mapper->populate($projectDescriptor);
         
         $parser->setPath($files->getProjectRoot());
-        $parser->setDefaultPackageName("Default");
+        $parser->setDefaultPackageName($this->defaultPackageName);
         
         $parser->parse($builder, $files);
         
@@ -226,5 +233,26 @@ class PhpDocumentor2Wrapper
         $this->project->log("Transforming...", Project::MSG_VERBOSE);
         
         $this->transformFiles();
+    }
+
+    /**
+     * Find the correct php documentor path
+     *
+     * @return null|string
+     */
+    private function findPhpDocumentorPath()
+    {
+        $phpDocumentorPath = null;
+        $directories = array('phpDocumentor', 'phpdocumentor');
+        foreach ($directories as $directory) {
+            foreach (Phing::explodeIncludePath() as $path) {
+                $testPhpDocumentorPath = $path . DIRECTORY_SEPARATOR . $directory . DIRECTORY_SEPARATOR . 'src';
+                if (file_exists($testPhpDocumentorPath)) {
+                    $phpDocumentorPath = $testPhpDocumentorPath;
+                }
+            }
+        }
+
+        return $phpDocumentorPath;
     }
 }
