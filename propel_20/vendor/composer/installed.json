@@ -46,12 +46,12 @@
         "source": {
             "type": "git",
             "url": "https://github.com/propelorm/Propel2.git",
-            "reference": "528a4df0e5f77e111efde6d912c7967780a6cd26"
+            "reference": "86c753dfe31fb0843fbfdc8d181e62903e3a9f5d"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/propelorm/Propel2/zipball/528a4df0e5f77e111efde6d912c7967780a6cd26",
-            "reference": "528a4df0e5f77e111efde6d912c7967780a6cd26",
+            "url": "https://api.github.com/repos/propelorm/Propel2/zipball/86c753dfe31fb0843fbfdc8d181e62903e3a9f5d",
+            "reference": "86c753dfe31fb0843fbfdc8d181e62903e3a9f5d",
             "shasum": ""
         },
         "require": {
@@ -71,7 +71,7 @@
         "suggest": {
             "monolog/monolog": "The recommended logging library to use with Propel."
         },
-        "time": "2014-01-28 16:08:56",
+        "time": "2014-02-17 08:44:37",
         "bin": [
             "bin/propel"
         ],
@@ -108,18 +108,18 @@
     },
     {
         "name": "symfony/console",
-        "version": "v2.4.1",
-        "version_normalized": "2.4.1.0",
+        "version": "v2.4.2",
+        "version_normalized": "2.4.2.0",
         "target-dir": "Symfony/Component/Console",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/Console.git",
-            "reference": "4c1ed2ff514bd85ee186eebb010ccbdeeab05af7"
+            "reference": "940f217cbc3c8a33e5403e7c595495c4884400fe"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/symfony/Console/zipball/4c1ed2ff514bd85ee186eebb010ccbdeeab05af7",
-            "reference": "4c1ed2ff514bd85ee186eebb010ccbdeeab05af7",
+            "url": "https://api.github.com/repos/symfony/Console/zipball/940f217cbc3c8a33e5403e7c595495c4884400fe",
+            "reference": "940f217cbc3c8a33e5403e7c595495c4884400fe",
             "shasum": ""
         },
         "require": {
@@ -131,7 +131,7 @@
         "suggest": {
             "symfony/event-dispatcher": ""
         },
-        "time": "2014-01-01 08:14:50",
+        "time": "2014-02-11 13:52:09",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -151,7 +151,9 @@
         "authors": [
             {
                 "name": "Fabien Potencier",
-                "email": "fabien@symfony.com"
+                "email": "fabien@symfony.com",
+                "homepage": "http://fabien.potencier.org",
+                "role": "Lead Developer"
             },
             {
                 "name": "Symfony Community",
@@ -163,24 +165,24 @@
     },
     {
         "name": "symfony/filesystem",
-        "version": "v2.4.1",
-        "version_normalized": "2.4.1.0",
+        "version": "v2.4.2",
+        "version_normalized": "2.4.2.0",
         "target-dir": "Symfony/Component/Filesystem",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/Filesystem.git",
-            "reference": "b3c3b5a8108b3e5d604dc23241b4ea84a067fc78"
+            "reference": "7e65abb06d3b38f4be89266fe3fb4a759544e713"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/symfony/Filesystem/zipball/b3c3b5a8108b3e5d604dc23241b4ea84a067fc78",
-            "reference": "b3c3b5a8108b3e5d604dc23241b4ea84a067fc78",
+            "url": "https://api.github.com/repos/symfony/Filesystem/zipball/7e65abb06d3b38f4be89266fe3fb4a759544e713",
+            "reference": "7e65abb06d3b38f4be89266fe3fb4a759544e713",
             "shasum": ""
         },
         "require": {
             "php": ">=5.3.3"
         },
-        "time": "2013-12-31 13:43:26",
+        "time": "2014-01-07 13:28:54",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -200,7 +202,9 @@
         "authors": [
             {
                 "name": "Fabien Potencier",
-                "email": "fabien@symfony.com"
+                "email": "fabien@symfony.com",
+                "homepage": "http://fabien.potencier.org",
+                "role": "Lead Developer"
             },
             {
                 "name": "Symfony Community",
@@ -212,24 +216,24 @@
     },
     {
         "name": "symfony/finder",
-        "version": "v2.4.1",
-        "version_normalized": "2.4.1.0",
+        "version": "v2.4.2",
+        "version_normalized": "2.4.2.0",
         "target-dir": "Symfony/Component/Finder",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/Finder.git",
-            "reference": "6904345cf2b3bbab1f6d6e4ce1724cb99df9f00a"
+            "reference": "b6735d1fc16da13c4c7dddfe78366a4a098cf011"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/symfony/Finder/zipball/6904345cf2b3bbab1f6d6e4ce1724cb99df9f00a",
-            "reference": "6904345cf2b3bbab1f6d6e4ce1724cb99df9f00a",
+            "url": "https://api.github.com/repos/symfony/Finder/zipball/b6735d1fc16da13c4c7dddfe78366a4a098cf011",
+            "reference": "b6735d1fc16da13c4c7dddfe78366a4a098cf011",
             "shasum": ""
         },
         "require": {
             "php": ">=5.3.3"
         },
-        "time": "2014-01-01 08:14:50",
+        "time": "2014-01-07 13:28:54",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -249,7 +253,9 @@
         "authors": [
             {
                 "name": "Fabien Potencier",
-                "email": "fabien@symfony.com"
+                "email": "fabien@symfony.com",
+                "homepage": "http://fabien.potencier.org",
+                "role": "Lead Developer"
             },
             {
                 "name": "Symfony Community",
@@ -261,24 +267,24 @@
     },
     {
         "name": "symfony/property-access",
-        "version": "v2.4.1",
-        "version_normalized": "2.4.1.0",
+        "version": "v2.4.2",
+        "version_normalized": "2.4.2.0",
         "target-dir": "Symfony/Component/PropertyAccess",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/PropertyAccess.git",
-            "reference": "274951234150e303c83099a2429be6be35629fe9"
+            "reference": "37fe0c2dc494b47db4b0850e9dcba3a27cc45c0c"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/symfony/PropertyAccess/zipball/274951234150e303c83099a2429be6be35629fe9",
-            "reference": "274951234150e303c83099a2429be6be35629fe9",
+            "url": "https://api.github.com/repos/symfony/PropertyAccess/zipball/37fe0c2dc494b47db4b0850e9dcba3a27cc45c0c",
+            "reference": "37fe0c2dc494b47db4b0850e9dcba3a27cc45c0c",
             "shasum": ""
         },
         "require": {
             "php": ">=5.3.3"
         },
-        "time": "2013-11-13 21:30:16",
+        "time": "2014-02-11 15:39:28",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -298,7 +304,9 @@
         "authors": [
             {
                 "name": "Fabien Potencier",
-                "email": "fabien@symfony.com"
+                "email": "fabien@symfony.com",
+                "homepage": "http://fabien.potencier.org",
+                "role": "Lead Developer"
             },
             {
                 "name": "Symfony Community",
@@ -321,18 +329,18 @@
     },
     {
         "name": "symfony/translation",
-        "version": "v2.4.1",
-        "version_normalized": "2.4.1.0",
+        "version": "v2.4.2",
+        "version_normalized": "2.4.2.0",
         "target-dir": "Symfony/Component/Translation",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/Translation.git",
-            "reference": "7f76dffd7eaf2c9a3a8f47649404c71440d18c8b"
+            "reference": "b00fd07417e493e08488e87bcebeb9681fc7323b"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/symfony/Translation/zipball/7f76dffd7eaf2c9a3a8f47649404c71440d18c8b",
-            "reference": "7f76dffd7eaf2c9a3a8f47649404c71440d18c8b",
+            "url": "https://api.github.com/repos/symfony/Translation/zipball/b00fd07417e493e08488e87bcebeb9681fc7323b",
+            "reference": "b00fd07417e493e08488e87bcebeb9681fc7323b",
             "shasum": ""
         },
         "require": {
@@ -346,7 +354,7 @@
             "symfony/config": "",
             "symfony/yaml": ""
         },
-        "time": "2013-12-31 13:43:26",
+        "time": "2014-02-03 17:15:33",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -366,7 +374,9 @@
         "authors": [
             {
                 "name": "Fabien Potencier",
-                "email": "fabien@symfony.com"
+                "email": "fabien@symfony.com",
+                "homepage": "http://fabien.potencier.org",
+                "role": "Lead Developer"
             },
             {
                 "name": "Symfony Community",
@@ -378,18 +388,18 @@
     },
     {
         "name": "symfony/validator",
-        "version": "v2.4.1",
-        "version_normalized": "2.4.1.0",
+        "version": "v2.4.2",
+        "version_normalized": "2.4.2.0",
         "target-dir": "Symfony/Component/Validator",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/Validator.git",
-            "reference": "7ea4e53f8d68bf3ae9cca28765d49d7930618730"
+            "reference": "64d7a54f97a5f53a98864a7461822e341f9416b5"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/symfony/Validator/zipball/7ea4e53f8d68bf3ae9cca28765d49d7930618730",
-            "reference": "7ea4e53f8d68bf3ae9cca28765d49d7930618730",
+            "url": "https://api.github.com/repos/symfony/Validator/zipball/64d7a54f97a5f53a98864a7461822e341f9416b5",
+            "reference": "64d7a54f97a5f53a98864a7461822e341f9416b5",
             "shasum": ""
         },
         "require": {
@@ -413,7 +423,7 @@
             "symfony/intl": "",
             "symfony/yaml": ""
         },
-        "time": "2014-01-01 08:14:50",
+        "time": "2014-02-11 13:52:09",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -433,7 +443,9 @@
         "authors": [
             {
                 "name": "Fabien Potencier",
-                "email": "fabien@symfony.com"
+                "email": "fabien@symfony.com",
+                "homepage": "http://fabien.potencier.org",
+                "role": "Lead Developer"
             },
             {
                 "name": "Symfony Community",
@@ -445,24 +457,24 @@
     },
     {
         "name": "symfony/yaml",
-        "version": "v2.4.1",
-        "version_normalized": "2.4.1.0",
+        "version": "v2.4.2",
+        "version_normalized": "2.4.2.0",
         "target-dir": "Symfony/Component/Yaml",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/Yaml.git",
-            "reference": "4e1a237fc48145fae114b96458d799746ad89aa0"
+            "reference": "bb6ddaf8956139d1b8c360b4b713ed0138e876b3"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/symfony/Yaml/zipball/4e1a237fc48145fae114b96458d799746ad89aa0",
-            "reference": "4e1a237fc48145fae114b96458d799746ad89aa0",
+            "url": "https://api.github.com/repos/symfony/Yaml/zipball/bb6ddaf8956139d1b8c360b4b713ed0138e876b3",
+            "reference": "bb6ddaf8956139d1b8c360b4b713ed0138e876b3",
             "shasum": ""
         },
         "require": {
             "php": ">=5.3.3"
         },
-        "time": "2013-12-28 08:12:03",
+        "time": "2014-01-07 13:28:54",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -482,7 +494,9 @@
         "authors": [
             {
                 "name": "Fabien Potencier",
-                "email": "fabien@symfony.com"
+                "email": "fabien@symfony.com",
+                "homepage": "http://fabien.potencier.org",
+                "role": "Lead Developer"
             },
             {
                 "name": "Symfony Community",
