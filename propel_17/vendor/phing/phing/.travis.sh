@@ -31,9 +31,15 @@ installPearTask ()
     phpenv rehash
 
     echo -e "\nInstalling / upgrading phpdepend ... "
-    which pdepend >/dev/null                      &&
-        pear upgrade pear.pdepend.org/PHP_Depend-beta ||
-        pear install pear.pdepend.org/PHP_Depend-beta
+    if [[ $TRAVIS_PHP_VERSION < 5.3 ]]; then
+        which pdepend >/dev/null                      &&
+            pear upgrade pear.pdepend.org/PHP_Depend-1.1.0 ||
+            pear install pear.pdepend.org/PHP_Depend-1.1.0
+    else
+        which pdepend >/dev/null                      &&
+            pear upgrade pear.pdepend.org/PHP_Depend-beta ||
+            pear install pear.pdepend.org/PHP_Depend-beta
+    fi
     phpenv rehash
 
     echo -e "\nInstalling / upgrading phpcs ... "
@@ -53,6 +59,7 @@ installPearTask ()
     pear install --alldeps PEAR_PackageFileManager
     pear install --alldeps PEAR_PackageFileManager2
     pear install Net_Growl
+    pear install HTTP_Request2
 
     # update paths
     phpenv rehash
@@ -70,6 +77,9 @@ installPearTask ()
     	pear install -f phpunit/PHP_TokenStream-1.1.4
     	pear install -f phpunit/PHP_Timer-1.0.3
     	pear install -f phpunit/Text_Template-1.1.1
+        pear upgrade pecl.php.net/Phar ||
+            pear install pecl.php.net/Phar
+        phpenv rehash
     else
     	composer selfupdate --quiet
         composer install

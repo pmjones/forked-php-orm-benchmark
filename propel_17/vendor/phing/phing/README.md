@@ -1,7 +1,7 @@
 P     H     I     N     G
 =========================
 
-  [![Build Status](https://secure.travis-ci.org/phingofficial/phing.png)](http://travis-ci.org/phingofficial/phing)
+  Master: [![Build Status](https://travis-ci.org/phingofficial/phing.png?branch=master)](https://travis-ci.org/phingofficial/phing)
 
   (PH)ing (I)s (N)ot (G)NU make; it's a PHP project build system or build
   tool based on Apache Ant. You can do anything with it that you could do
@@ -52,8 +52,6 @@ Documentation
 
   Documentation is available in various formats in the *docs/docbook5/en/output*
   directory (generated from DocBook sources located in *docs/docbook5/en/source*).
-
-  Additionally, the legacy user guide can be found in *docs/phing_guide*.
 
   For online documentation, you can also visit the Phing website: http://www.phing.info/
 

@@ -30,11 +30,11 @@ require_once 'phing/Task.php';
  * @version   $Id$
  * @package   phing.tasks.system
  */
-class FailTask extends Task { 
-
-    private $message;
-    private $ifCondition;
-    private $unlessCondition;
+class FailTask extends Task 
+{ 
+    protected $message;
+    protected $ifCondition;
+    protected $unlessCondition;
 
     /**
      * A message giving further information on why the build exited.
@@ -77,9 +77,9 @@ class FailTask extends Task {
     public function main()  {
         if ($this->testIfCondition() && $this->testUnlessCondition()) {
             if ($this->message !== null) { 
-                throw new BuildException($this->message);
+                throw new BuildException($this->message, $this->getLocation());
             } else {
-                throw new BuildException("No message");
+                throw new BuildException("No message", $this->getLocation());
             }
         }
     }
@@ -97,7 +97,7 @@ class FailTask extends Task {
     /**
      * @return boolean
      */
-    private function testIfCondition() {
+    protected function testIfCondition() {
         if ($this->ifCondition === null || $this->ifCondition === "") {
             return true;
         }
@@ -108,7 +108,7 @@ class FailTask extends Task {
     /**
      * @return boolean
      */
-    private function testUnlessCondition() {
+    protected function testUnlessCondition() {
         if ($this->unlessCondition === null || $this->unlessCondition ===  "") {
             return true;
         }

@@ -202,13 +202,13 @@ etc.), file system operations, interactive build support, SQL execution, and muc
             $package->addPackageDepWithChannel( 'optional', 'Archive_Tar', 'pear.php.net', '1.3.0');
             $package->addPackageDepWithChannel( 'optional', 'PEAR_PackageFileManager', 'pear.php.net', '1.5.2');
             $package->addPackageDepWithChannel( 'optional', 'Services_Amazon_S3', 'pear.php.net', '0.3.1');
-            $package->addPackageDepWithChannel( 'optional', 'HTTP_Request2', 'pear.php.net', '0.5.2');
+            $package->addPackageDepWithChannel( 'optional', 'HTTP_Request2', 'pear.php.net', '2.1.1');
             $package->addPackageDepWithChannel( 'optional', 'PHP_Depend', 'pear.pdepend.org', '0.10.0');
             $package->addPackageDepWithChannel( 'optional', 'PHP_PMD', 'pear.phpmd.org', '1.1.0');
             $package->addPackageDepWithChannel( 'optional', 'phpcpd', 'pear.phpunit.de', '1.3.3');
             $package->addPackageDepWithChannel( 'optional', 'phploc', 'pear.phpunit.de', '1.6.4');
             $package->addPackageDepWithChannel( 'optional', 'phpDocumentor', 'pear.phpdoc.org', '2.0.0b7');
-            $package->addPackageDepWithChannel( 'optional', 'PHP_CodeSniffer', 'pear.php.net', '1.3.0');
+            $package->addPackageDepWithChannel( 'optional', 'PHP_CodeSniffer', 'pear.php.net', '1.5.0');
             $package->addPackageDepWithChannel( 'optional', 'Net_Growl', 'pear.php.net', '2.6.0');
 
             // now add the replacements, chdir() to source directory

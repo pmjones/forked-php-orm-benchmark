@@ -34,10 +34,8 @@ include_once 'phing/parser/AbstractHandler.php';
 include_once 'phing/parser/ProjectConfigurator.php';
 include_once 'phing/parser/RootHandler.php';
 include_once 'phing/parser/ProjectHandler.php';
-include_once 'phing/parser/TaskHandler.php';
 include_once 'phing/parser/TargetHandler.php';
 include_once 'phing/parser/DataTypeHandler.php';
-include_once 'phing/parser/NestedElementHandler.php';
 
 include_once 'phing/system/util/Properties.php';
 include_once 'phing/util/StringHelper.php';
@@ -199,10 +197,18 @@ class Phing {
      */
     private static function initializeOutputStreams() {
         if (self::$out === null) {
-            self::$out = new OutputStream(STDOUT);
+            if (!defined('STDOUT')) {
+              self::$out = new OutputStream(fopen('php://stdout', 'w'));
+            } else {
+              self::$out = new OutputStream(STDOUT);
+            }
         }
         if (self::$err === null) {
-            self::$err = new OutputStream(STDERR);
+            if (!defined('STDERR')) {
+              self::$err = new OutputStream(fopen('php://stderr', 'w'));
+            } else {
+              self::$err = new OutputStream(STDERR);
+            }
         }
     }
 
@@ -417,9 +423,9 @@ class Phing {
                 }
             } elseif (substr($arg,0,1) == "-") {
                 // we don't have any more args
-                self::$err->write("Unknown argument: $arg" . PHP_EOL);
                 self::printUsage();
-                return;
+                self::$err->write(PHP_EOL);
+                throw new ConfigurationException("Unknown argument: " . $arg);
             } else {
                 // if it's no other arg, it may be the target
                 array_push($this->targets, $arg);
@@ -435,14 +441,20 @@ class Phing {
                 $this->buildFile = new PhingFile(self::DEFAULT_BUILD_FILENAME);
             }
         }
-        // make sure buildfile exists
-        if (!$this->buildFile->exists()) {
-            throw new ConfigurationException("Buildfile: " . $this->buildFile->__toString() . " does not exist!");
-        }
-
-        // make sure it's not a directory
-        if ($this->buildFile->isDirectory()) {
-            throw new ConfigurationException("Buildfile: " . $this->buildFile->__toString() . " is a dir!");
+        
+        try {
+            // make sure buildfile exists
+            if (!$this->buildFile->exists()) {
+                throw new ConfigurationException("Buildfile: " . $this->buildFile->__toString() . " does not exist!");
+            }
+        
+            // make sure it's not a directory
+            if ($this->buildFile->isDirectory()) {
+                throw new ConfigurationException("Buildfile: " . $this->buildFile->__toString() . " is a dir!");
+            }
+        } catch (IOException $e) {
+            // something else happened, buildfile probably not readable
+            throw new ConfigurationException("Buildfile: " . $this->buildFile->__toString() . " is not readable!");
         }
 
         $this->readyToRun = true;
@@ -632,7 +644,7 @@ class Phing {
         foreach($this->listeners as $listenerClassname) {
             try {
                 $clz = Phing::import($listenerClassname);
-            } catch (Exception $x) {
+            } catch (Exception $e) {
                 $msg = "Unable to instantiate specified listener "
                 . "class " . $listenerClassname . " : "
                 . $e->getMessage();
@@ -986,20 +998,30 @@ class Phing {
     }
 
     /**
-     * Import a dot-path notation class path.
-     * @param string $dotPath
+     * Import a path, supporting the following conventions:
+     * - PEAR style (@link http://pear.php.net/manual/en/standards.naming.php)
+     * - PSR-0 (@link https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-0.md)
+     * - dot-path
+     *
+     * @param string $dotPath Path
      * @param mixed $classpath String or object supporting __toString()
      * @return string The unqualified classname (which can be instantiated).
      * @throws BuildException - if cannot find the specified file
      */
     public static function import($dotPath, $classpath = null) {
 
-        /// check if this is a PEAR-style path (@link http://pear.php.net/manual/en/standards.naming.php)
-        if (strpos($dotPath, '.') === false && strpos($dotPath, '_') !== false) {
-            $classname = $dotPath;
-            $dotPath = str_replace('_', '.', $dotPath);
-        } else {
+        if (strpos($dotPath, '.') !== false) {
             $classname = StringHelper::unqualify($dotPath);
+        } else {
+            $classname = $dotPath;
+            $dotPath = ''; 
+            $shortClassName = $classname; 
+            if (($lastNsPos = strripos($shortClassName, '\\'))) { 
+                $namespace = substr($shortClassName, 0, $lastNsPos); 
+                $shortClassName = substr($shortClassName, $lastNsPos + 1); 
+                $dotPath  = str_replace('\\', '.', $namespace) . '.'; 
+            } 
+            $dotPath .= str_replace('_', '.', $shortClassName); 
         }
         
         // first check to see that the class specified hasn't already been included.

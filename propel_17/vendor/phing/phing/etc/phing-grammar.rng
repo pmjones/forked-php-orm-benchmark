@@ -1071,7 +1071,10 @@
         <element name="input">
             <interleave>
                 <attribute name="propertyName"/>
-                <attribute name="message"/>
+                <choice>
+                    <attribute name="message"/>
+                    <text/>
+                </choice>
                 <optional>
                     <attribute name="defaultValue"/>
                 </optional>
@@ -1577,6 +1580,28 @@
         </element>
     </define>
 
+    <!--
+        ===========================================================================================================
+        Optional Type
+        ===========================================================================================================        
+    -->
+    <define name="analyzer">
+        <element name="analyzer">
+            <interleave>
+                <attribute name="type"/>
+                <attribute name="value"/>
+            </interleave>
+        </element>
+    </define>
+
+    <define name="logger">
+        <element name="logger">
+            <interleave>
+                <attribute name="type"/>
+                <attribute name="outfile"/>
+            </interleave>
+        </element>
+    </define>
 
     <!--
         ===========================================================================================================
@@ -2440,6 +2465,20 @@
         Http manipulation
         =========================================        
     -->
+    <define name="header">
+        <element name="header">
+            <attribute name="name"/>
+            <attribute name="value"/>
+        </element>
+    </define>
+
+    <define name="postparameter">
+        <element name="postparameter">
+            <attribute name="name"/>
+            <attribute name="value"/>
+        </element>
+    </define>
+
     <define name="httpget">
         <element name="httpget">
             <interleave>
@@ -2448,16 +2487,38 @@
                 <optional>
                     <attribute name="filename"/>
                 </optional>
+                <optional>
+                    <attribute name="followredirects">
+                        <data type="boolean"/>
+                    </attribute>
+                </optional>
+                <optional>
+                    <attribute name="proxy"/>
+                </optional>
+                <optional>
+                    <attribute name="sslverifypeer">
+                        <data type="boolean"/>
+                    </attribute>
+                </optional>
+                <optional>
+                    <attribute name="authuser"/>
+                </optional>
+                <optional>
+                    <attribute name="authpassword"/>
+                </optional>
+                <optional>
+                    <attribute name="authschema"/>
+                </optional>
+                <zeroOrMore>
+                    <ref name="config"/>
+                </zeroOrMore>
+                <zeroOrMore>
+                    <ref name="header"/>
+                </zeroOrMore>
             </interleave>
         </element>
     </define>
 
-    <define name="header">
-        <element name="header">
-            <attribute name="name"/>
-            <attribute name="val"/>
-        </element>
-    </define>
 
     <define name="httprequest">
         <element name="httprequest">
@@ -2483,11 +2544,17 @@
                 <optional>
                     <attribute name="observerevents"/>
                 </optional>
+                <optional>
+                    <attribute name="method"/>
+                </optional>
                 <zeroOrMore>
                     <ref name="config"/>
                 </zeroOrMore>
                 <zeroOrMore>
                     <ref name="header"/>
+                </zeroOrMore>
+                <zeroOrMore>
+                    <ref name="postparameter"/>
                 </zeroOrMore>
             </interleave>
         </element>
@@ -2650,9 +2717,9 @@
     <define name="jsllint">
         <element name="jsllint">
             <interleave>
-                <choice>
+                <optional>
                     <attribute name="executable"/>
-                </choice>
+                </optional>
                 <choice>
                     <attribute name="file"/>
                     <ref name="fileset"/>
@@ -2677,8 +2744,7 @@
                     <attribute name="tofile"/>
                 </optional>
             </interleave>
-            <ref name="fileset"/>
-        </element>
+       </element>
     </define>
 
     <!-- 
@@ -3278,9 +3344,12 @@
     <define name="phpmd">
         <element name="phpmd">
             <interleave>
-                <optional>
+                <choice>
                     <attribute name="file"/>
-                </optional>
+                    <oneOrMore>
+                         <ref name="fileset"/>
+                    </oneOrMore>
+                </choice>
                 <optional>
                     <attribute name="ruleset"/>
                 </optional>
@@ -3309,9 +3378,12 @@
     -->
     <define name="phpdepend">
         <element name="phpdepend">
-            <optional>
+            <choice>
                 <attribute name="file"/>
-            </optional>
+                <oneOrMore>
+                    <ref name="fileset"/>
+                </oneOrMore>
+            </choice>
             <optional>
                 <attribute name="configfile"/>
             </optional>
@@ -3344,6 +3416,12 @@
                     <data type="boolean"/>
                 </attribute>
             </optional>
+            <oneOrMore>
+                <ref name="logger"/>
+            </oneOrMore>
+            <zeroOrMore>
+                <ref name="analyzer"/>
+            </zeroOrMore>
         </element>
     </define>
 
