@@ -2000,11 +2000,11 @@ class SelectSqlGenerationTest extends \Doctrine\Tests\OrmTestCase
     	$connMock->setDatabasePlatform(new \Doctrine\DBAL\Platforms\SQLServerPlatform());
     	$this->assertSqlGeneration(
             "SELECT u.id FROM Doctrine\Tests\Models\CMS\CmsUser u WHERE CONCAT(u.name, u.status, 's') = ?1",
-            "SELECT c0_.id AS id0 FROM cms_users c0_ WITH (NOLOCK) WHERE (c0_.name + c0_.status + 's') = ?"
+            "SELECT c0_.id AS id0 FROM cms_users c0_ WHERE (c0_.name + c0_.status + 's') = ?"
     	);
     	$this->assertSqlGeneration(
             "SELECT CONCAT(u.id, u.name, u.status) FROM Doctrine\Tests\Models\CMS\CmsUser u WHERE u.id = ?1",
-            "SELECT (c0_.id + c0_.name + c0_.status) AS sclr0 FROM cms_users c0_ WITH (NOLOCK) WHERE c0_.id = ?"
+            "SELECT (c0_.id + c0_.name + c0_.status) AS sclr0 FROM cms_users c0_ WHERE c0_.id = ?"
     	);
 
     	$connMock->setDatabasePlatform($orgPlatform);
@@ -2065,7 +2065,7 @@ class SelectSqlGenerationTest extends \Doctrine\Tests\OrmTestCase
     {
         $this->assertSqlGeneration(
             'SELECT e.id FROM Doctrine\Tests\Models\Company\CompanyOrganization o JOIN o.events e WITH e.id = ?1',
-            'SELECT c0_.id AS id0 FROM company_organizations c1_ INNER JOIN company_events c0_ ON c1_.id = c0_.org_id AND (c0_.id = ?) LEFT JOIN company_auctions c2_ ON c0_.id = c2_.id LEFT JOIN company_raffles c3_ ON c0_.id = c3_.id',
+            'SELECT c0_.id AS id0 FROM company_organizations c1_ INNER JOIN (company_events c0_ LEFT JOIN company_auctions c2_ ON c0_.id = c2_.id LEFT JOIN company_raffles c3_ ON c0_.id = c3_.id) ON c1_.id = c0_.org_id AND (c0_.id = ?)',
             array(Query::HINT_FORCE_PARTIAL_LOAD => false)
         );
     }
