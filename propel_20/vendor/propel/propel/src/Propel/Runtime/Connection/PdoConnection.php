@@ -16,7 +16,7 @@ use Propel\Runtime\DataFetcher\PDODataFetcher;
 /**
  * PDO extension that implements ConnectionInterface and builds statements implementing StatementInterface.
  */
-class PdoConnection extends \PDO implements SqlConnectionInterface
+class PdoConnection extends \PDO implements ConnectionInterface
 {
     /**
      * @var string The datasource name associated to this connection
@@ -118,7 +118,7 @@ class PdoConnection extends \PDO implements SqlConnectionInterface
      *
      * @return bool|mixed Returns the result of the callable on success, or <code>true</code> when the callable doesn't return anything.
      *
-     * @throws Exception Re-throws a possible <code>Exception</code> triggered by the callable.
+     * @throws \Exception Re-throws a possible <code>Exception</code> triggered by the callable.
      */
     public function transaction(callable $callable)
     {

@@ -10,6 +10,7 @@
 
 namespace Propel\Runtime\ActiveQuery;
 
+use Propel\Runtime\ActiveRecord\ActiveRecordInterface;
 use Propel\Runtime\Exception\RuntimeException;
 use Propel\Runtime\Propel;
 use Propel\Runtime\Collection\ObjectCollection;
@@ -21,7 +22,6 @@ use Propel\Runtime\Map\ColumnMap;
 use Propel\Runtime\Map\RelationMap;
 use Propel\Runtime\Map\TableMap;
 use Propel\Runtime\Util\PropelModelPager;
-use Propel\Runtime\ActiveQuery\Criteria;
 use Propel\Runtime\ActiveQuery\Criterion\AbstractCriterion;
 use Propel\Runtime\ActiveQuery\Criterion\InModelCriterion;
 use Propel\Runtime\ActiveQuery\Criterion\BasicModelCriterion;
@@ -713,6 +713,7 @@ class ModelCriteria extends BaseModelCriteria
         }
 
         $className = $this->joins[$relationName]->getTableMap()->getClassName();
+        /** @var self $secondaryCriteriaClass */
         if (null === $secondaryCriteriaClass) {
             $secondaryCriteria = PropelQuery::from($className);
         } else {
@@ -962,9 +963,9 @@ class ModelCriteria extends BaseModelCriteria
      *
      * @param ConnectionInterface $con an optional connection object
      *
-     * @return ObjectCollection|array|mixed the list of results, formatted by the current formatter
+     * @return ObjectCollection|ActiveRecordInterface[]|array|mixed the list of results, formatted by the current formatter
      */
-    public function find($con = null)
+    public function find(ConnectionInterface $con = null)
     {
         if (null === $con) {
             $con = Propel::getServiceContainer()->getReadConnection($this->getDbName());
@@ -988,7 +989,7 @@ class ModelCriteria extends BaseModelCriteria
      *
      * @return mixed the result, formatted by the current formatter
      */
-    public function findOne($con = null)
+    public function findOne(ConnectionInterface $con = null)
     {
         if (null === $con) {
             $con = Propel::getServiceContainer()->getReadConnection($this->getDbName());
@@ -1016,7 +1017,7 @@ class ModelCriteria extends BaseModelCriteria
      *
      * @throws PropelException
      */
-    public function findOneOrCreate($con = null)
+    public function findOneOrCreate(ConnectionInterface $con = null)
     {
         if ($this->joins) {
             throw new PropelException(__METHOD__ .' cannot be used on a query with a join, because Propel cannot transform a SQL JOIN into a subquery. You should split the query in two queries to avoid joins.');
@@ -1048,7 +1049,7 @@ class ModelCriteria extends BaseModelCriteria
      *
      * @return mixed the result, formatted by the current formatter
      */
-    public function findPk($key, $con = null)
+    public function findPk($key, ConnectionInterface $con = null)
     {
         if (null === $con) {
             $con = Propel::getServiceContainer()->getReadConnection($this->getDbName());
@@ -1090,7 +1091,7 @@ class ModelCriteria extends BaseModelCriteria
      *
      * @throws PropelException
      */
-    public function findPks($keys, $con = null)
+    public function findPks($keys, ConnectionInterface $con = null)
     {
         if (null === $con) {
             $con = Propel::getServiceContainer()->getReadConnection($this->getDbName());
@@ -1124,7 +1125,7 @@ class ModelCriteria extends BaseModelCriteria
      *
      * @return mixed the list of results, formatted by the current formatter
      */
-    public function findBy($column, $value, $con = null)
+    public function findBy($column, $value, ConnectionInterface $con = null)
     {
         $method = 'filterBy' . $column;
         $this->$method($value);
@@ -1149,7 +1150,7 @@ class ModelCriteria extends BaseModelCriteria
      *
      * @return mixed the list of results, formatted by the current formatter
      */
-    public function findByArray($conditions, $con = null)
+    public function findByArray($conditions, ConnectionInterface $con = null)
     {
         $this->filterByArray($conditions);
 
@@ -1168,7 +1169,7 @@ class ModelCriteria extends BaseModelCriteria
      *
      * @return mixed the result, formatted by the current formatter
      */
-    public function findOneBy($column, $value, $con = null)
+    public function findOneBy($column, $value, ConnectionInterface $con = null)
     {
         $method = 'filterBy' . $column;
         $this->$method($value);
@@ -1193,7 +1194,7 @@ class ModelCriteria extends BaseModelCriteria
      *
      * @return mixed the list of results, formatted by the current formatter
      */
-    public function findOneByArray($conditions, $con = null)
+    public function findOneByArray($conditions, ConnectionInterface $con = null)
     {
         $this->filterByArray($conditions);
 
@@ -1207,7 +1208,7 @@ class ModelCriteria extends BaseModelCriteria
      *
      * @return integer the number of results
      */
-    public function count($con = null)
+    public function count(ConnectionInterface $con = null)
     {
         if (null === $con) {
             $con = Propel::getServiceContainer()->getReadConnection($this->getDbName());
@@ -1234,7 +1235,7 @@ class ModelCriteria extends BaseModelCriteria
         return $count;
     }
 
-    public function doCount($con = null)
+    public function doCount(ConnectionInterface $con = null)
     {
         $this->configureSelectColumns();
 
@@ -1257,7 +1258,7 @@ class ModelCriteria extends BaseModelCriteria
      *
      * @return PropelModelPager a pager object, supporting iteration
      */
-    public function paginate($page = 1, $maxPerPage = 10, $con = null)
+    public function paginate($page = 1, $maxPerPage = 10, ConnectionInterface $con = null)
     {
         $criteria = $this->isKeepQuery() ? clone $this : $this;
         $pager = new PropelModelPager($criteria, $maxPerPage);
@@ -1457,7 +1458,7 @@ class ModelCriteria extends BaseModelCriteria
      * @throws \Propel\Runtime\Exception\PropelException
      * @throws \Exception|\Propel\Runtime\Exception\PropelException
      */
-    public function update($values, $con = null, $forceIndividualSaves = false)
+    public function update($values, ConnectionInterface $con = null, $forceIndividualSaves = false)
     {
         if (!is_array($values) && !($values instanceof Criteria)) {
             throw new PropelException(__METHOD__ .' expects an array or Criteria as first argument');
@@ -1503,7 +1504,7 @@ class ModelCriteria extends BaseModelCriteria
      *
      * @return integer Number of updated rows
      */
-    public function doUpdate($values, $con, $forceIndividualSaves = false)
+    public function doUpdate($values, ConnectionInterface $con, $forceIndividualSaves = false)
     {
         if ($forceIndividualSaves) {
 
@@ -1543,7 +1544,7 @@ class ModelCriteria extends BaseModelCriteria
      * @param array  $conditions The list of condition names, e.g. array('cond1', 'cond2')
      * @param string $operator   An operator, Criteria::LOGICAL_AND (default) or Criteria::LOGICAL_OR
      *
-     * @return Criterion a Criterion or ModelCriterion object
+     * @return AbstractCriterion A Criterion or ModelCriterion object
      */
     protected function getCriterionForConditions($conditions, $operator = null)
     {
@@ -1798,13 +1799,13 @@ class ModelCriteria extends BaseModelCriteria
     /**
      * Builds, binds and executes a SELECT query based on the current object.
      *
-     * @param $con A connection object
+     * @param ConnectionInterface $con A connection object
      *
      * @return DataFetcherInterface A dataFetcher using the connection, ready to be fetched
      *
      * @throws \Propel\Runtime\Exception\PropelException
      */
-    public function doSelect($con = null)
+    public function doSelect(ConnectionInterface $con = null)
     {
 
         // check that the columns of the main class are already added (if this is the primary ModelCriteria)

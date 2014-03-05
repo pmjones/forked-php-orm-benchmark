@@ -11,12 +11,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/propelorm/Propel2.git",
-                "reference": "86c753dfe31fb0843fbfdc8d181e62903e3a9f5d"
+                "reference": "e8a1d472ad9acfae738ce303d8291d51c84387b0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/propelorm/Propel2/zipball/86c753dfe31fb0843fbfdc8d181e62903e3a9f5d",
-                "reference": "86c753dfe31fb0843fbfdc8d181e62903e3a9f5d",
+                "url": "https://api.github.com/repos/propelorm/Propel2/zipball/e8a1d472ad9acfae738ce303d8291d51c84387b0",
+                "reference": "e8a1d472ad9acfae738ce303d8291d51c84387b0",
                 "shasum": ""
             },
             "require": {
@@ -68,7 +68,7 @@
                 "orm",
                 "persistence"
             ],
-            "time": "2014-02-17 08:44:37"
+            "time": "2014-03-03 09:36:53"
         },
         {
             "name": "psr/log",

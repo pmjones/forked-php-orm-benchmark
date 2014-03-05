@@ -13,7 +13,6 @@ namespace Propel\Generator\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Output\Output;
 use Propel\Generator\Manager\MigrationManager;
 use Propel\Generator\Util\SqlParser;
 
@@ -125,7 +124,7 @@ class MigrationMigrateCommand extends AbstractCommand
                     $output->writeln('No statement was executed. The version was not updated.');
                     $output->writeln(sprintf(
                         'Please review the code in "%s"',
-                        $manager->getMigrationDir() . DIRECTORY_SEPARATOR . $manager->getMigrationClassName($timestamp)
+                        $manager->getWorkingDirectory() . DIRECTORY_SEPARATOR . $manager->getMigrationClassName($timestamp)
                     ));
                     $output->writeln('<error>Migration aborted</error>');
 

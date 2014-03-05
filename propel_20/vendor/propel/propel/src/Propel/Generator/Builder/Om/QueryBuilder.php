@@ -10,8 +10,10 @@
 
 namespace Propel\Generator\Builder\Om;
 
+use Propel\Generator\Model\Column;
 use Propel\Generator\Model\ForeignKey;
 use Propel\Generator\Model\PropelTypes;
+use Propel\Generator\Model\Table;
 
 /**
  * Generates a PHP5 base Query class for user object model (OM).
@@ -396,7 +398,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
     protected function addFactoryOpen(&$script)
     {
         $script .= "
-    public static function create(\$modelAlias = null, \$criteria = null)
+    public static function create(\$modelAlias = null, Criteria \$criteria = null)
     {";
     }
 
@@ -406,7 +408,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
      */
     protected function addFactoryBody(&$script)
     {
-        $classname = $this->getClassNameFromBuilder($this->getNewStubQueryBuilder($this->getTable()), true);
+        $classname = $this->getClassNameFromBuilder($this->getNewStubQueryBuilder($this->getTable()));
         $script .= "
         if (\$criteria instanceof " . $classname . ") {
             return \$criteria;
@@ -470,7 +472,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
      *
      * @return $class|array|mixed the result, formatted by the current formatter
      */
-    public function findPk(\$key, \$con = null)
+    public function findPk(\$key, ConnectionInterface \$con = null)
     {";
         if (!$table->hasPrimaryKey()) {
             $this->declareClass('Propel\\Runtime\\Exception\\LogicException');
@@ -564,7 +566,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
      *
      * @return   $ARClassName A model object, or null if the key is not found
      */
-    protected function findPkSimple(\$key, \$con)
+    protected function findPkSimple(\$key, ConnectionInterface \$con)
     {
         \$sql = '$query';
         try {
@@ -590,9 +592,11 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
         if ($table->getChildrenColumn()) {
             $script .="
             \$cls = {$tableMapClassName}::getOMClass(\$row, 0, false);
+            /** @var $ARClassName \$obj */
             \$obj = new \$cls();";
         } else {
             $script .="
+            /** @var $ARClassName \$obj */
             \$obj = new $ARClassName();";
         }
         $script .= "
@@ -630,7 +634,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
      *
      * @return " . $class . "|array|mixed the result, formatted by the current formatter
      */
-    protected function findPkComplex(\$key, \$con)
+    protected function findPkComplex(\$key, ConnectionInterface \$con)
     {
         // As the query uses a PK condition, no limit(1) is necessary.
         \$criteria = \$this->isKeepQuery() ? clone \$this : \$this;
@@ -650,6 +654,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
     protected function addFindPks(&$script)
     {
         $this->declareClasses(
+            '\Propel\Runtime\Collection\ObjectCollection',
             '\Propel\Runtime\Connection\ConnectionInterface',
             '\Propel\Runtime\Propel'
         );
@@ -674,7 +679,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
      *
      * @return ObjectCollection|array|mixed the list of results, formatted by the current formatter
      */
-    public function findPks(\$keys, \$con = null)
+    public function findPks(\$keys, ConnectionInterface \$con = null)
     {";
         if (!$table->hasPrimaryKey()) {
             $this->declareClass('Propel\\Runtime\\Exception\\LogicException');
@@ -733,7 +738,6 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
             $col = $pks[0];
             $const = $this->getColumnConstant($col);
             $script .= "
-
         return \$this->addUsingAlias($const, \$key, Criteria::EQUAL);";
         } else {
             // composite primary key
@@ -787,7 +791,6 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
             $col = $pks[0];
             $const = $this->getColumnConstant($col);
             $script .= "
-
         return \$this->addUsingAlias($const, \$keys, Criteria::IN);";
         } else {
             // composite primary key
@@ -822,8 +825,9 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
     /**
      * Adds the filterByCol method for this object.
      * @param string &$script The script will be modified in this method.
+     * @param Column $col
      */
-    protected function addFilterByCol(&$script, $col)
+    protected function addFilterByCol(&$script, Column $col)
     {
         $colPhpName = $col->getPhpName();
         $colName = $col->getName();
@@ -1002,7 +1006,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
         } elseif ($col->isBooleanType()) {
             $script .= "
         if (is_string(\$$variableName)) {
-            \$$colName = in_array(strtolower(\$$variableName), array('false', 'off', '-', 'no', 'n', '0', '')) ? false : true;
+            \$$variableName = in_array(strtolower(\$$variableName), array('false', 'off', '-', 'no', 'n', '0', '')) ? false : true;
         }";
         }
         $script .= "
@@ -1015,8 +1019,9 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
     /**
      * Adds the singular filterByCol method for an Array column.
      * @param string &$script The script will be modified in this method.
+     * @param Column $col
      */
-    protected function addFilterByArrayCol(&$script, $col)
+    protected function addFilterByArrayCol(&$script, Column $col)
     {
         $colPhpName = $col->getPhpName();
         $singularPhpName = rtrim($colPhpName, 's');
@@ -1065,7 +1070,6 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
     protected function addFilterByFk(&$script, $fk)
     {
         $this->declareClasses(
-            '\Propel\Runtime\Collection\Collection',
             '\Propel\Runtime\Collection\ObjectCollection',
             '\Propel\Runtime\Exception\PropelException'
         );
@@ -1134,12 +1138,13 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
 
     /**
      * Adds the filterByRefFk method for this object.
-     * @param string &$script The script will be modified in this method.
+     *
+     * @param string     &$script The script will be modified in this method.
+     * @param ForeignKey $fk
      */
-    protected function addFilterByRefFk(&$script, $fk)
+    protected function addFilterByRefFk(&$script, ForeignKey $fk)
     {
         $this->declareClasses(
-            '\Propel\Runtime\Collection\Collection',
             '\Propel\Runtime\Collection\ObjectCollection',
             '\Propel\Runtime\Exception\PropelException'
         );
@@ -1210,9 +1215,10 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
 
     /**
      * Adds the joinRefFk method for this object.
-     * @param string &$script The script will be modified in this method.
+     * @param string     &$script The script will be modified in this method.
+     * @param ForeignKey $fk
      */
-    protected function addJoinRefFk(&$script, $fk)
+    protected function addJoinRefFk(&$script, ForeignKey $fk)
     {
         $queryClass = $this->getQueryClassName();
         $fkTable = $this->getTable()->getDatabase()->getTable($fk->getTableName());
@@ -1280,9 +1286,10 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
 
     /**
      * Adds the useFkQuery method for this object.
-     * @param string &$script The script will be modified in this method.
+     * @param string     &$script The script will be modified in this method.
+     * @param ForeignKey $fk
      */
-    protected function addUseRefFkQuery(&$script, $fk)
+    protected function addUseRefFkQuery(&$script, ForeignKey $fk)
     {
         $fkTable = $this->getTable()->getDatabase()->getTable($fk->getTableName());
         $fkQueryBuilder = $this->getNewStubQueryBuilder($fkTable);
@@ -1297,7 +1304,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
      * Adds a useRelatedQuery method for this object.
      * @param string &$script The script will be modified in this method.
      */
-    protected function addUseRelatedQuery(&$script, $fkTable, $queryClass, $relationName, $joinType)
+    protected function addUseRelatedQuery(&$script, Table $fkTable, $queryClass, $relationName, $joinType)
     {
         $script .= "
     /**
@@ -1320,7 +1327,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
 ";
     }
 
-    protected function addFilterByCrossFK(&$script, $refFK, $crossFK)
+    protected function addFilterByCrossFK(&$script, ForeignKey $refFK, ForeignKey $crossFK)
     {
         $queryClass = $this->getQueryClassName();
         $crossRefTable = $crossFK->getTable();
@@ -1571,18 +1578,16 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
     {
         $script .= "
     /**
-     * Performs a DELETE on the database, given a ".$this->getObjectClassName()." or Criteria object OR a primary key value.
+     * Performs a DELETE on the database based on the current ModelCriteria
      *
-     * @param mixed               \$values Criteria or ".$this->getObjectClassName()." object or primary key or array of primary keys
-     *              which is used to create the DELETE statement
      * @param ConnectionInterface \$con the connection to use
      * @return int The number of affected rows (if supported by underlying database driver).  This includes CASCADE-related rows
      *                if supported by native driver or if emulated using Propel.
      * @throws PropelException Any exceptions caught during processing will be
      *         rethrown wrapped into a PropelException.
      */
-     public function delete(ConnectionInterface \$con = null)
-     {
+    public function delete(ConnectionInterface \$con = null)
+    {
         if (null === \$con) {
             \$con = Propel::getServiceContainer()->getWriteConnection(" . $this->getTableMapClass() . "::DATABASE_NAME);
         }
@@ -1617,8 +1622,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
         }
 
         $script .= "
-
-        {$this->getTableMapClassName()}::removeInstanceFromPool(\$criteria);
+            {$this->getTableMapClassName()}::removeInstanceFromPool(\$criteria);
         ";
 
         $script .= "

@@ -304,7 +304,7 @@ class ConnectionWrapper implements ConnectionInterface, LoggerAwareInterface
         return $this->connection->inTransaction();
     }
 
-   /**
+    /**
      * Executes the given callable within a transaction.
      * This helper method takes care to commit or rollback the transaction.
      *
@@ -314,7 +314,7 @@ class ConnectionWrapper implements ConnectionInterface, LoggerAwareInterface
      *
      * @return bool|mixed Returns the result of the callable on success, or <code>true</code> when the callable doesn't return anything.
      *
-     * @throws Exception Re-throws a possible <code>Exception</code> triggered by the callable.
+     * @throws \Exception Re-throws a possible <code>Exception</code> triggered by the callable.
      */
     public function transaction(callable $callable)
     {
@@ -426,9 +426,12 @@ class ConnectionWrapper implements ConnectionInterface, LoggerAwareInterface
      *
      * @see http://php.net/manual/en/pdo.query.php for a description of the possible parameters.
      *
+     * @param string $statement The SQL statement to prepare and execute.
+     *                          Data inside the query should be properly escaped.
+     *
      * @return StatementInterface
      */
-    public function query()
+    public function query($statement)
     {
         $args = func_get_args();
         $sql = array_shift($args);
