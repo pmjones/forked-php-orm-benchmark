@@ -59,16 +59,16 @@
         },
         {
             "name": "propel/propel1",
-            "version": "1.7.0",
+            "version": "1.7.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/propelorm/Propel.git",
-                "reference": "09058f1443bc287e550b9342a4379aac2e0a0b8f"
+                "reference": "af527736586388c21a5a0a5f97914e7264fe580c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/propelorm/Propel/zipball/09058f1443bc287e550b9342a4379aac2e0a0b8f",
-                "reference": "09058f1443bc287e550b9342a4379aac2e0a0b8f",
+                "url": "https://api.github.com/repos/propelorm/Propel/zipball/af527736586388c21a5a0a5f97914e7264fe580c",
+                "reference": "af527736586388c21a5a0a5f97914e7264fe580c",
                 "shasum": ""
             },
             "require": {
@@ -118,7 +118,7 @@
                 "orm",
                 "persistence"
             ],
-            "time": "2013-10-21 12:52:56"
+            "time": "2014-02-25 09:13:58"
         }
     ],
     "packages-dev": [
