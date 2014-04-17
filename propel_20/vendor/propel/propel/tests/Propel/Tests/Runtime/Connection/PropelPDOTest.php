@@ -30,6 +30,8 @@ use \Exception;
 
 /**
  * Test for PropelPDO subclass.
+ *
+ * @group database
  */
 class PropelPDOTest extends BookstoreTestBase
 {
@@ -78,6 +80,14 @@ class PropelPDOTest extends BookstoreTestBase
             $this->fail("PDO driver does not support calling \$stmt->fetch after the transaction has been closed.\nFails with error ".$e->getMessage());
         }
     }
+
+	public function testPdoSignature()
+	{
+		$con = Propel::getServiceContainer()->getConnection(BookTableMap::DATABASE_NAME);
+		$stmt = $con->prepare('SELECT author.FIRST_NAME, author.LAST_NAME FROM author');
+		$stmt->execute();
+		$stmt->fetchAll(\PDO::FETCH_COLUMN, 0); // should not throw exception: Third parameter not allowed for PDO::FETCH_COLUMN
+	}
 
     public function testCommitAfterFetch()
     {
@@ -342,10 +352,12 @@ class PropelPDOTest extends BookstoreTestBase
         $con = Propel::getServiceContainer()->getConnection(BookTableMap::DATABASE_NAME);
         $con->useDebug(false);
         $stmtClass = $con->getAttribute(PDO::ATTR_STATEMENT_CLASS);
-        $this->assertEquals('Propel\Runtime\Adapter\Pdo\PdoStatement', $stmtClass[0], 'Statement is Propel Statement when debug is false');
+        $expectedClass = (defined('HHVM_VERSION') ? '\\' : '') . 'Propel\Runtime\Adapter\Pdo\PdoStatement';
+
+        $this->assertEquals($expectedClass, $stmtClass[0], 'Statement is Propel Statement when debug is false');
         $con->useDebug(true);
         $stmtClass = $con->getAttribute(PDO::ATTR_STATEMENT_CLASS);
-        $this->assertEquals('Propel\Runtime\Adapter\Pdo\PdoStatement', $stmtClass[0], 'Statement is Propel Statement when debug is true');
+        $this->assertEquals($expectedClass, $stmtClass[0], 'Statement is Propel Statement when debug is true');
     }
 
     public function testDebugLatestQuery()

@@ -10,20 +10,19 @@
 
 namespace Propel\Tests\Runtime\ActiveQuery;
 
-use Propel\Runtime\Propel;
-use Propel\Tests\Helpers\Schemas\SchemasTestBase;
 use Propel\Tests\BookstoreSchemas\Map\BookstoreContestTableMap;
 
-use Propel\Runtime\Map\TableMap;
 use Propel\Runtime\ActiveQuery\ModelCriteria;
+use Propel\Tests\TestCaseFixturesDatabase;
 
 /**
  * Test class for ModelCriteria withs schemas.
  *
  * @author Francois Zaninotto
- * @version    $Id: ModelCriteriaTest.php 2090 2010-12-13 22:37:03Z francois $
+ *
+ * @group database
  */
-class ModelCriteriaWithSchemaTest extends SchemasTestBase
+class ModelCriteriaWithSchemaTest extends TestCaseFixturesDatabase
 {
 
     protected function assertCriteriaTranslation($criteria, $expectedSql, $expectedParams, $message = '')
@@ -58,7 +57,6 @@ class ModelCriteriaWithSchemaTest extends SchemasTestBase
 
     public function doTestReplaceNames($c, $tableMap, $origClause, $columnPhpName = false, $modifiedClause)
     {
-        $this->adapterClass = Propel::getServiceContainer()->getAdapterClass(BookstoreContestTableMap::DATABASE_NAME);
         $c->replaceNames($origClause);
         $columns = $c->replacedColumns;
         if ($columnPhpName) {

@@ -71,6 +71,8 @@ use MyNameSpace\TestKeyTypeTable;
  * method for the exact contents of the database.
  *
  * @author Hans Lellelid <hans@xmpl.org>
+ *
+ * @group database
  */
 class GeneratedObjectTest extends BookstoreTestBase
 {
@@ -1064,6 +1066,9 @@ EOF;
             array('delete'),
             array('save'),
             array('doSave'),
+            array('importFrom'),
+            array('setName'),
+            array('setId'),
         );
     }
 
@@ -1501,7 +1506,7 @@ EOF;
         $this->assertEquals($author, $a);
     }
 
-    public function testUnsavedObjectCreatesSameHashForIdenticalObjects()
+    public function testUnsavedObjectCreatesNotSameHashForIdenticalObjects()
     {
         $book1 = new Book();
         $book1->setTitle('Foo5');
@@ -1517,7 +1522,7 @@ EOF;
         $author2->setLastName('JAne');
         $author2->addBook($book1);
 
-        $this->assertEquals($author1->hashCode(), $author2->hashCode());
+        $this->assertNotEquals($author1->hashCode(), $author2->hashCode());
     }
 
     /**

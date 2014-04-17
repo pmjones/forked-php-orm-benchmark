@@ -32,6 +32,8 @@ use Psr\Log\LoggerAwareInterface;
  */
 class ConnectionWrapper implements ConnectionInterface, LoggerAwareInterface
 {
+    use TransactionTrait;
+
     /**
      * Attribute to use to set whether to cache prepared statements.
      */
@@ -305,23 +307,6 @@ class ConnectionWrapper implements ConnectionInterface, LoggerAwareInterface
     }
 
     /**
-     * Executes the given callable within a transaction.
-     * This helper method takes care to commit or rollback the transaction.
-     *
-     * In case you want the transaction to rollback just throw an Exception of any type.
-     *
-     * @param callable $callable A callable to be wrapped in a transaction
-     *
-     * @return bool|mixed Returns the result of the callable on success, or <code>true</code> when the callable doesn't return anything.
-     *
-     * @throws \Exception Re-throws a possible <code>Exception</code> triggered by the callable.
-     */
-    public function transaction(callable $callable)
-    {
-        return $this->connection->transaction($callable);
-    }
-
-    /**
      * Retrieve a database connection attribute.
      *
      * @param string $attribute The name of the attribute to retrieve,
@@ -349,9 +334,19 @@ class ConnectionWrapper implements ConnectionInterface, LoggerAwareInterface
      */
     public function setAttribute($attribute, $value)
     {
-        if (is_string($attribute) && false !== strpos($attribute, '::')) {
+        if (is_string($attribute)) {
+            if (false === strpos($attribute, '::')) {
+                if (defined('\PDO::' . $attribute)) {
+                    $attribute = '\PDO::' . $attribute;
+                } else {
+                    $attribute = __CLASS__ . '::' . $attribute;
+                }
+            }
             if (!defined($attribute)) {
-                throw new InvalidArgumentException(sprintf('Invalid connection option/attribute name specified: "%s"', $attribute));
+                throw new InvalidArgumentException(sprintf(
+                    'Invalid connection option/attribute name specified: "%s"',
+                    $attribute
+                ));
             }
             $attribute = constant($attribute);
         }
@@ -371,28 +366,28 @@ class ConnectionWrapper implements ConnectionInterface, LoggerAwareInterface
      *  - Add logging and query counting if logging is true.
      *  - Add query caching support if the PropelPDO::PROPEL_ATTR_CACHE_PREPARES was set to true.
      *
-     * @param string $sql            This must be a valid SQL statement for the target database server.
+     * @param string $statement      This must be a valid SQL statement for the target database server.
      * @param array  $driver_options One $array or more key => value pairs to set attribute values
      *                               for the PDOStatement object that this method returns.
      *
      * @return StatementInterface
      */
-    public function prepare($sql, $driver_options = array())
+    public function prepare($statement, $driver_options = null)
     {
         $statementWrapper = null;
 
-        if ($this->isCachePreparedStatements && isset($this->cachedPreparedStatements[$sql])) {
-            $statementWrapper = $this->cachedPreparedStatements[$sql];
+        if ($this->isCachePreparedStatements && isset($this->cachedPreparedStatements[$statement])) {
+            $statementWrapper = $this->cachedPreparedStatements[$statement];
         } else {
-            $statementWrapper = $this->createStatementWrapper($sql);
+            $statementWrapper = $this->createStatementWrapper($statement);
             $statementWrapper->prepare($driver_options);
             if ($this->isCachePreparedStatements) {
-                $this->cachedPreparedStatements[$sql] = $statementWrapper;
+                $this->cachedPreparedStatements[$statement] = $statementWrapper;
             }
         }
 
         if ($this->useDebug) {
-            $this->log($sql);
+            $this->log($statement);
         }
 
         return $statementWrapper;
@@ -647,7 +642,7 @@ class ConnectionWrapper implements ConnectionInterface, LoggerAwareInterface
         do {
             $callingMethod = $backtrace[$i]['function'];
             $i++;
-        } while($callingMethod == "log" && $i < $stackSize);
+        } while ($callingMethod == "log" && $i < $stackSize);
 
         if (!$msg || !$this->isLogEnabledForMethod($callingMethod)) {
             return;

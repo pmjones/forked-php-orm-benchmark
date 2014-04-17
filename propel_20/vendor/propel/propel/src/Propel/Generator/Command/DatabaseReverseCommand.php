@@ -35,9 +35,9 @@ class DatabaseReverseCommand extends AbstractCommand
 
         $this
             ->addOption('output-dir',    null, InputOption::VALUE_REQUIRED, 'The output directory', self::DEFAULT_OUTPUT_DIRECTORY)
-            ->addOption('database-name', null, InputOption::VALUE_REQUIRED, 'The database name to reverse', self::DEFAULT_DATABASE_NAME)
+            ->addOption('database-name', null, InputOption::VALUE_REQUIRED, 'The database name used in the created schema.xml', self::DEFAULT_DATABASE_NAME)
             ->addOption('schema-name',   null, InputOption::VALUE_REQUIRED, 'The schema name to generate', self::DEFAULT_SCHEMA_NAME)
-            ->addArgument('connection',  null, InputArgument::REQUIRED,     'Connection to use')
+            ->addArgument('connection',  InputArgument::REQUIRED,     'Connection to use. Example: \'mysql:host=127.0.0.1;dbname=test;user=root;password=foobar\' (don\'t forget the quote)')
             ->setName('database:reverse')
             ->setAliases(array('reverse'))
             ->setDescription('Reverse-engineer a XML schema file based on given database')
@@ -62,7 +62,7 @@ class DatabaseReverseCommand extends AbstractCommand
 
         $manager = new ReverseManager(new XmlDumper());
         $manager->setGeneratorConfig($generatorConfig);
-        $manager->setLoggerClosure(function($message) use ($input, $output) {
+        $manager->setLoggerClosure(function ($message) use ($input, $output) {
             if ($input->getOption('verbose')) {
                 $output->writeln($message);
             }
@@ -82,6 +82,8 @@ class DatabaseReverseCommand extends AbstractCommand
             $more = $input->getOption('verbose') ? '' : ' You can use the --verbose option to get more information.';
 
             $output->writeln(sprintf('<error>Schema reverse engineering failed.%s</error>', $more));
+
+            return 1;
         }
     }
 }

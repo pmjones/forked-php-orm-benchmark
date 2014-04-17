@@ -133,7 +133,7 @@ interface ConnectionInterface
      *
      * @param callable $callable A callable to be wrapped in a transaction
      *
-     * @return bool|mixed Returns the result of the callable on success, or <code>true</code> when the callable doesn't return anything.
+     * @return mixed Returns the result of the callable.
      *
      * @throws \Exception Re-throws a possible <code>Exception</code> triggered by the callable.
      */
@@ -146,7 +146,7 @@ interface ConnectionInterface
      *                          Data inside the query should be properly escaped.
      *
      * @return int The number of rows that were modified or deleted by the SQL
-     *               statement you issued. If no rows were affected, returns 0.
+     *             statement you issued. If no rows were affected, returns 0.
      */
     public function exec($statement);
 
@@ -161,15 +161,15 @@ interface ConnectionInterface
      * these parameters to bind any user-input, do not include the user-input
      * directly in the query.
      *
-     * @param string $statement This must be a valid SQL statement for the target
-     *                          database server.
-     * @param array $driver_options
+     * @param string $statement      This must be a valid SQL statement for the target
+     *                               database server.
+     * @param array  $driver_options
      *
-     * @return \Propel\Runtime\Connection\StatementInterface|bool A Statement object if the database server
-     *                                 successfully prepares, FALSE otherwise.
+     * @return \Propel\Runtime\Connection\StatementInterface|bool       A Statement object if the database server
+     *                                                                  successfully prepares, FALSE otherwise.
      * @throws \Propel\Runtime\Connection\Exception\ConnectionException depending on error handling.
      */
-    public function prepare($statement, $driver_options = array());
+    public function prepare($statement, $driver_options = null);
 
     /**
      * Executes an SQL statement, returning a result set as a Statement object.
@@ -197,5 +197,5 @@ interface ConnectionInterface
      *                SQL statement. Returns FALSE if the driver does not support
      *                quoting in this way.
      */
-    public function quote($string, $parameter_type = 2);
+    public function quote($string, $parameter_type = \PDO::PARAM_STR);
 }

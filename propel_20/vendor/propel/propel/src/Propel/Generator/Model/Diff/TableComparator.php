@@ -98,16 +98,8 @@ class TableComparator
     {
         $tc = new self();
 
-        $tc->setFromTable(clone $fromTable);
-        $tc->setToTable(clone $toTable);
-
-        if ($toTable->getDatabase() || $fromTable->getDatabase()) {
-            $platform = $toTable->getDatabase()->getPlatform() ?: $fromTable->getDatabase()->getPlatform();
-            if ($platform) {
-                $platform->normalizeTable($tc->getFromTable());
-                $platform->normalizeTable($tc->getToTable());
-            }
-        }
+        $tc->setFromTable($fromTable);
+        $tc->setToTable($toTable);
 
         $differences = 0;
         $differences += $tc->compareColumns($caseInsensitive);
@@ -161,17 +153,17 @@ class TableComparator
             }
         }
 
-        $renamed = [];
         // check for column renamings
         foreach ($this->tableDiff->getAddedColumns() as $addedColumnName => $addedColumn) {
             foreach ($this->tableDiff->getRemovedColumns() as $removedColumnName => $removedColumn) {
-                if (!in_array($addedColumnName, $renamed) && !ColumnComparator::computeDiff($addedColumn, $removedColumn, $caseInsensitive)) {
+                if (!ColumnComparator::computeDiff($addedColumn, $removedColumn, $caseInsensitive)) {
                     // no difference except the name, that's probably a renaming
-                    $renamed[] = $addedColumnName;
                     $this->tableDiff->addRenamedColumn($removedColumn, $addedColumn);
                     $this->tableDiff->removeAddedColumn($addedColumnName);
                     $this->tableDiff->removeRemovedColumn($removedColumnName);
                     $columnDifferences--;
+                    // skip to the next added column
+                    break;
                 }
             }
         }
@@ -221,6 +213,8 @@ class TableComparator
                     $this->tableDiff->removeAddedPkColumn($addedColumnName);
                     $this->tableDiff->removeRemovedPkColumn($removedColumnName);
                     $pkDifferences--;
+                    // skip to the next added column
+                    break;
                 }
             }
         }
@@ -243,16 +237,17 @@ class TableComparator
         $fromTableIndices = array_merge($this->getFromTable()->getIndices(), $this->getFromTable()->getUnices());
         $toTableIndices = array_merge($this->getToTable()->getIndices(), $this->getToTable()->getUnices());
 
-        foreach ($toTableIndices as $toTableIndexPos => $toTableIndex) {
-            foreach ($fromTableIndices as $fromTableIndexPos => $fromTableIndex) {
-                if (false === IndexComparator::computeDiff($fromTableIndex, $toTableIndex, $caseInsensitive)) {
-                    unset($fromTableIndices[$fromTableIndexPos]);
-                    unset($toTableIndices[$toTableIndexPos]);
-                } else {
-                    $test = $caseInsensitive ?
-                        strtolower($fromTableIndex->getName()) == strtolower($toTableIndex->getName()) :
-                        $fromTableIndex->getName() == $toTableIndex->getName();
-                    if ($test) {
+        foreach ($fromTableIndices as $fromTableIndexPos => $fromTableIndex) {
+            foreach ($toTableIndices as $toTableIndexPos => $toTableIndex) {
+                $sameName = $caseInsensitive ?
+                    strtolower($fromTableIndex->getName()) == strtolower($toTableIndex->getName()) :
+                    $fromTableIndex->getName() == $toTableIndex->getName();
+                if ($sameName) {
+                    if (false === IndexComparator::computeDiff($fromTableIndex, $toTableIndex, $caseInsensitive)) {
+                        //no changes
+                        unset($fromTableIndices[$fromTableIndexPos]);
+                        unset($toTableIndices[$toTableIndexPos]);
+                    } else {
                         // same name, but different columns
                         $this->tableDiff->addModifiedIndex($fromTableIndex->getName(), $fromTableIndex, $toTableIndex);
                         unset($fromTableIndices[$fromTableIndexPos]);
@@ -293,14 +288,14 @@ class TableComparator
 
         foreach ($fromTableFks as $fromTableFkPos => $fromTableFk) {
             foreach ($toTableFks as $toTableFkPos => $toTableFk) {
-                if (false === ForeignKeyComparator::computeDiff($fromTableFk, $toTableFk, $caseInsensitive)) {
-                    unset($fromTableFks[$fromTableFkPos]);
-                    unset($toTableFks[$toTableFkPos]);
-                } else {
-                    $test = $caseInsensitive ?
-                        strtolower($fromTableFk->getName()) == strtolower($toTableFk->getName()) :
-                        $fromTableFk->getName() == $toTableFk->getName();
-                    if ($test) {
+                $sameName = $caseInsensitive ?
+                    strtolower($fromTableFk->getName()) == strtolower($toTableFk->getName()) :
+                    $fromTableFk->getName() == $toTableFk->getName();
+                if ($sameName) {
+                    if (false === ForeignKeyComparator::computeDiff($fromTableFk, $toTableFk, $caseInsensitive)) {
+                        unset($fromTableFks[$fromTableFkPos]);
+                        unset($toTableFks[$toTableFkPos]);
+                    } else {
                         // same name, but different columns
                         $this->tableDiff->addModifiedFk($fromTableFk->getName(), $fromTableFk, $toTableFk);
                         unset($fromTableFks[$fromTableFkPos]);

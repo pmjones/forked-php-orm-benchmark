@@ -10,30 +10,13 @@
 
 namespace Propel\Tests;
 
-/**
- * @author William Durand <william.durand1@gmail.com>
- */
+
 class TestCase extends \PHPUnit_Framework_TestCase
 {
-    /**
-     * Depending on this type we return the correct runninOn* results,
-     * also getSql() is based on that.
-     *
-     * If $adapterClass is not available, the adapter type is extracted of this
-     * connection.
-     *
-     * @var ConnectionInterface
-     */
-    protected $con;
-
-    /**
-     *
-     * Depending on this type we return the correct runninOn* results,
-     * also getSql() is based on that.
-     *
-     * @var string
-     */
-    protected $adapterClass = '';
+    protected function getDriver()
+    {
+        return 'sqlite';
+    }
 
     /**
      * Makes the sql compatible with the current database.
@@ -122,12 +105,14 @@ class TestCase extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @return string[]
+     * @return \Propel\Generator\Reverse\SchemaParserInterface
      */
-    protected function getDriver()
+    protected function getParser($con)
     {
-        return $this->adapterClass
-            ? $this->adapterClass
-            :($this->con ? $this->con->getAttribute(\PDO::ATTR_DRIVER_NAME) : 'sqlite');
+        $className = sprintf('\\Propel\\Generator\\Reverse\\%sSchemaParser', ucfirst($this->getDriver()));
+
+        $obj =  new $className($con);
+
+        return $obj;
     }
 }

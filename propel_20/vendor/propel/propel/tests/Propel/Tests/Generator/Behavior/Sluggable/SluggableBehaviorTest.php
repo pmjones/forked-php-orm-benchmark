@@ -10,6 +10,9 @@
 
 namespace Propel\Tests\Generator\Behavior\Sluggable;
 
+use Propel\Runtime\Adapter\Pdo\PgsqlAdapter;
+use Propel\Runtime\Propel;
+use Propel\Tests\Bookstore\Map\BookTableMap;
 use Propel\Tests\Helpers\Bookstore\BookstoreTestBase;
 
 use Propel\Tests\Bookstore\Behavior\Table13;
@@ -25,15 +28,19 @@ use Propel\Tests\Bookstore\Behavior\TableWithScopeQuery;
  * Tests for SluggableBehavior class
  *
  * @author François Zaninotto
+ *
+ * @group database
  */
 class SluggableBehaviorTest extends BookstoreTestBase
 {
-    public static function setUpBeforeClass()
+    protected function setUp()
     {
         //prevent issue DSN not Found
         self::$isInitialized = false;
-        parent::setUpBeforeClass();
+        parent::setUp();
+        include_once(__DIR__.'/SluggableBehaviorTestClasses.php');
     }
+
 
     public function testParameters()
     {
@@ -257,7 +264,7 @@ class SluggableBehaviorTest extends BookstoreTestBase
 
     public function testQueryFindOneBySlug()
     {
-        $this->assertTrue(method_exists('\Propel\Tests\Bookstore\Behavior\Table13Query', 'findOneBySlug'), 'The generated query provides a findOneBySlug() method');
+        $this->assertFalse(method_exists('\Propel\Tests\Bookstore\Behavior\Table13Query', 'findOneBySlug'), 'The generated query does not provide a findOneBySlug() method if the slug column is "slug".');
         $this->assertTrue(method_exists('\Propel\Tests\Bookstore\Behavior\Table14Query', 'findOneBySlug'), 'The generated query provides a findOneBySlug() method even if the slug column doesn\'t have the default name');
 
         Table14Query::create()->deleteAll();
@@ -304,49 +311,85 @@ class SluggableBehaviorTest extends BookstoreTestBase
             $t->save();
 
             $this->assertEquals('hello-world', $t->getSlug());
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $this->fail($e->getMessage());
         }
     }
-}
 
-class TestableTable13 extends Table13
-{
-    public function createSlug()
+    public function testNumberOfQueriesForMakeUniqSlug()
     {
-        return parent::createSlug();
+        Table13Query::create()->deleteAll();
+        $con = Propel::getServiceContainer()->getConnection(Table13TableMap::DATABASE_NAME);
+        $adapter = Propel::getAdapter(Table13TableMap::DATABASE_NAME);
+
+        $expectedCount = 4;
+        if ($adapter instanceof PgsqlAdapter) {
+            $expectedCount++; //because of the SELECT nextval(...) query
+        }
+
+        for ($i=0; $i < 5; $i++) {
+            $nbQuery = $con->getQueryCount();
+
+            $t = new Table13();
+            $t->setTitle('Hello, World');
+            $t->save($con);
+
+            $this->assertLessThanOrEqual($expectedCount, $con->getQueryCount() - $nbQuery, "no more than $expectedCount query to get a slug when it already exist");
+        }
     }
 
-    public function createRawSlug()
+    public function testSlugRegexp()
     {
-        return parent::createRawSlug();
-    }
+        Table13Query::create()->deleteAll();
+        $con = Propel::getServiceContainer()->getConnection(Table13TableMap::DATABASE_NAME);
 
-    public static function cleanupSlugPart($slug, $separator = '-')
-    {
-        return parent::cleanupSlugPart($slug, $separator);
-    }
+        for ($i=0; $i < 3; $i++) {
+            $t = new Table13();
+            $t->setTitle('Hello, World');
+            $t->save($con);
+        }
+        $this->assertEquals('hello-world-2', $t->getSlug());
 
-    public function makeSlugUnique($slug, $separator = '-', $increment = 0)
-    {
-        return parent::makeSlugUnique($slug, $separator, $increment);
-    }
-}
+        $t = new Table13();
+        $t->setTitle('World');
+        $t->save($con);
 
-class TestableTable14 extends Table14
-{
-    public function createSlug()
-    {
-        return parent::createSlug();
-    }
+        $this->assertEquals('world', $t->getSlug());
 
-    public function createRawSlug()
-    {
-        return parent::createRawSlug();
-    }
+        $t = new Table13();
+        $t->setTitle('World');
+        $t->save($con);
 
-    public static function limitSlugSize($slug, $incrementReservedSpace = 3)
-    {
-        return parent::limitSlugSize($slug, $incrementReservedSpace);
+        $this->assertEquals('world-1', $t->getSlug());
+
+        $t = new Table13();
+        $t->setTitle('Hello, World');
+        $t->save($con);
+
+        $this->assertEquals('hello-world-3', $t->getSlug());
+
+        $t = new Table13();
+        $t->setTitle('World');
+        $t->save($con);
+
+        $this->assertEquals('world-2', $t->getSlug());
+
+        $t = new Table13();
+        $t->setTitle('World 000');
+        $t->save($con);
+
+        $this->assertEquals('world-000', $t->getSlug());
+
+        $t = new Table13();
+        $t->setTitle('World');
+        $t->save($con);
+
+        $this->assertEquals('world-101', $t->getSlug());
+
+        $t = new Table13();
+        $t->setTitle('World');
+        $t->save($con);
+
+        $this->assertEquals('world-102', $t->getSlug());
     }
 }

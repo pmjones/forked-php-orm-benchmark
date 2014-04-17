@@ -56,7 +56,7 @@ class ModelJoin extends Join
      *
      * @param TableMap $tableMap The table map to use
      *
-     * @return ModelJoin The current join object, for fluid interface
+     * @return $this|ModelJoin The current join object, for fluid interface
      */
     public function setTableMap(TableMap $tableMap)
     {
@@ -141,6 +141,7 @@ class ModelJoin extends Join
     public function equals($join)
     {
         /** @var ModelJoin $join */
+
         return parent::equals($join)
             && $this->relationMap == $join->getRelationMap()
             && $this->previousJoin == $join->getPreviousJoin()

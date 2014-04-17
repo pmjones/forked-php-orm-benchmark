@@ -229,6 +229,9 @@ abstract class AbstractCriterion
 
     /**
      * Append an AND Criterion onto this Criterion's list.
+     *
+     * @param  AbstractCriterion       $criterion
+     * @return $this|AbstractCriterion
      */
     public function addAnd(AbstractCriterion $criterion)
     {
@@ -241,8 +244,8 @@ abstract class AbstractCriterion
     /**
      * Append an OR Criterion onto this Criterion's list.
      *
-     * @param AbstractCriterion $criterion
-     * @return AbstractCriterion
+     * @param  AbstractCriterion       $criterion
+     * @return $this|AbstractCriterion
      */
     public function addOr(AbstractCriterion $criterion)
     {
@@ -260,7 +263,7 @@ abstract class AbstractCriterion
      * @param  array           $params A list to which Prepared Statement parameters will be appended
      * @return void
      * @throws PropelException - if the expression builder cannot figure out how to turn a specified
-     *                           expression into proper SQL.
+     *                                expression into proper SQL.
      */
     public function appendPsTo(&$sb, array &$params)
     {

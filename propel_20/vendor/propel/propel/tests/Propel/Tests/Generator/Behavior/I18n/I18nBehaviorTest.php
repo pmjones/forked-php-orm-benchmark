@@ -26,11 +26,11 @@ class I18nBehaviorTest extends TestCase
     public function testModifyDatabaseOverridesDefaultLocale()
     {
         $schema = <<<EOF
-<database name="i18n_behavior_test_0">
+<database name="i18n_behavior_test_0" tablePrefix="i18n_">
     <behavior name="i18n">
         <parameter name="default_locale" value="fr_FR" />
     </behavior>
-    <table name="i18n_behavior_test_0">
+    <table name="behavior_test_0">
         <column name="id" primaryKey="true" type="INTEGER" autoIncrement="true" />
         <behavior name="i18n" />
     </table>
@@ -50,6 +50,7 @@ CREATE TABLE i18n_behavior_test_0_i18n
     id INTEGER NOT NULL,
     locale VARCHAR(5) DEFAULT 'fr_FR' NOT NULL,
     PRIMARY KEY (id,locale),
+    UNIQUE (id,locale),
     FOREIGN KEY (id) REFERENCES i18n_behavior_test_0 (id)
         ON DELETE CASCADE
 );
@@ -86,6 +87,7 @@ CREATE TABLE i18n_behavior_test_0_i18n
     id INTEGER NOT NULL,
     locale VARCHAR(5) DEFAULT 'pt_PT' NOT NULL,
     PRIMARY KEY (id,locale),
+    UNIQUE (id,locale),
     FOREIGN KEY (id) REFERENCES i18n_behavior_test_0 (id)
         ON DELETE CASCADE
 );
@@ -210,6 +212,7 @@ CREATE TABLE i18n_behavior_test_0_i18n
     locale VARCHAR(5) DEFAULT 'en_US' NOT NULL,
     bar VARCHAR(100),
     PRIMARY KEY (id,locale),
+    UNIQUE (id,locale),
     FOREIGN KEY (id) REFERENCES i18n_behavior_test_0 (id)
 EOF;
         $this->assertContains($expected, $builder->getSQL());
@@ -226,7 +229,8 @@ EOF;
 CREATE TABLE i18n_behavior_test_0
 (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    foo INTEGER
+    foo INTEGER,
+    UNIQUE (id)
 );
 EOF;
         $this->assertContains($expected, $builder->getSQL());
@@ -258,6 +262,7 @@ CREATE TABLE foo_table
     id INTEGER NOT NULL,
     locale VARCHAR(5) DEFAULT 'en_US' NOT NULL,
     PRIMARY KEY (id,locale),
+    UNIQUE (id,locale),
     FOREIGN KEY (id) REFERENCES i18n_behavior_test_0 (id)
         ON DELETE CASCADE
 );
@@ -291,6 +296,7 @@ CREATE TABLE i18n_behavior_test_0_i18n
     id INTEGER NOT NULL,
     culture VARCHAR(5) DEFAULT 'en_US' NOT NULL,
     PRIMARY KEY (id,culture),
+    UNIQUE (id,culture),
     FOREIGN KEY (id) REFERENCES i18n_behavior_test_0 (id)
         ON DELETE CASCADE
 );
@@ -324,6 +330,7 @@ CREATE TABLE i18n_behavior_test_0_i18n
     id INTEGER NOT NULL,
     locale VARCHAR(5) DEFAULT 'fr_FR' NOT NULL,
     PRIMARY KEY (id,locale),
+    UNIQUE (id,locale),
     FOREIGN KEY (id) REFERENCES i18n_behavior_test_0 (id)
         ON DELETE CASCADE
 );
@@ -357,6 +364,7 @@ CREATE TABLE i18n_behavior_test_0_i18n
     id INTEGER NOT NULL,
     locale VARCHAR(6) DEFAULT 'en_US' NOT NULL,
     PRIMARY KEY (id,locale),
+    UNIQUE (id,locale),
     FOREIGN KEY (id) REFERENCES i18n_behavior_test_0 (id)
         ON DELETE CASCADE
 );

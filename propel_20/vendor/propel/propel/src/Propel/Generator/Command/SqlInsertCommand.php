@@ -28,8 +28,9 @@ class SqlInsertCommand extends AbstractCommand
     protected function configure()
     {
         $this
-            ->addOption('input-dir', null, InputOption::VALUE_REQUIRED,  'The input directory', self::DEFAULT_OUTPUT_DIRECTORY)
-            ->addOption('connection', null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Connection to use. Example: bookstore=mysql:host=127.0.0.1;dbname=test;user=root;password=foobar')
+            ->addOption('input-dir', null, InputOption::VALUE_REQUIRED, 'The input directory', self::DEFAULT_OUTPUT_DIRECTORY)
+            ->addOption('sql-dir', null, InputOption::VALUE_REQUIRED, 'The SQL files directory', self::DEFAULT_OUTPUT_DIRECTORY)
+            ->addOption('connection', null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Connection to use. Example: \'bookstore=mysql:host=127.0.0.1;dbname=test;user=root;password=foobar\' where "bookstore" is your propel database name (used in your schema.xml)')
             ->setName('sql:insert')
             ->setAliases(array('insert-sql'))
             ->setDescription('Insert SQL statements')
@@ -57,12 +58,12 @@ class SqlInsertCommand extends AbstractCommand
         }
 
         $manager->setConnections($connections);
-        $manager->setLoggerClosure(function($message) use ($input, $output) {
+        $manager->setLoggerClosure(function ($message) use ($input, $output) {
             if ($input->getOption('verbose')) {
                 $output->writeln($message);
             }
         });
-        $manager->setWorkingDirectory($input->getOption('input-dir'));
+        $manager->setWorkingDirectory($input->getOption('sql-dir'));
 
         $manager->insertSql();
     }

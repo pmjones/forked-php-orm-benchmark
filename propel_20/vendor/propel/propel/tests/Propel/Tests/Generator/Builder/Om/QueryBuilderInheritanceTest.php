@@ -31,15 +31,32 @@ use Propel\Runtime\Propel;
  * Test class for MultiExtensionQueryBuilder.
  *
  * @author François Zaninotto
- * @version    $Id: QueryBuilderTest.php 1347 2009-12-03 21:06:36Z francois $
+ *
+ * @group database
  */
 class QueryBuilderInheritanceTest extends BookstoreTestBase
 {
-
-    public function testConstruct()
+    public function constructProvider()
     {
-        $query = BookstoreCashierQuery::create();
-        $this->assertTrue($query instanceof BookstoreCashierQuery, 'the create() factory returns an instance of the correct class');
+        return [
+            ['BookstoreCashierQuery'],
+            ['BookstoreEmployeeQuery'],
+            ['BookstoreManagerQuery'],
+            ['BookstoreHeadQuery'],
+            ['DistributionStoreQuery'],
+            ['DistributionOnlineQuery'],
+            ['DistributionVirtualStoreQuery'],
+        ];
+    }
+
+    /**
+     * @dataProvider constructProvider
+     */
+    public function testConstruct($class)
+    {
+        $class = 'Propel\\Tests\\Bookstore\\' . $class;
+        $query = $class::create();
+        $this->assertTrue($query instanceof $class, 'the create() factory returns an instance of the correct class');
     }
 
     public function testFindFilter()

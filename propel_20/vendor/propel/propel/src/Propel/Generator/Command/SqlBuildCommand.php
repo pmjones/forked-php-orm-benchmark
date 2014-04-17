@@ -82,12 +82,16 @@ class SqlBuildCommand extends AbstractCommand
         $manager->setValidate($input->getOption('validate'));
         $manager->setGeneratorConfig($generatorConfig);
         $manager->setSchemas($this->getSchemas($input->getOption('input-dir'), $input->getOption('recursive')));
-        $manager->setLoggerClosure(function($message) use ($input, $output) {
+        $manager->setLoggerClosure(function ($message) use ($input, $output) {
             if ($input->getOption('verbose')) {
                 $output->writeln($message);
             }
         });
         $manager->setWorkingDirectory($input->getOption('output-dir'));
+
+        if ($manager->existSqlMap()) {
+            $output->writeln("<info>sqldb.map won't be saved because it already exists. Remove it to generate a new map.</info>");
+        }
 
         $manager->buildSql();
     }

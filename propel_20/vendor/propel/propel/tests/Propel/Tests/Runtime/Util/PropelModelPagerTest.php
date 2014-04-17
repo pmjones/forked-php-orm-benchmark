@@ -23,6 +23,8 @@ use Propel\Runtime\ActiveQuery\ModelCriteria;
  * Test the utility class PropelModelPager
  *
  * @author Francois Zaninotto
+ *
+ * @group database
  */
 class PropelModelPagerTest extends BookstoreEmptyTestBase
 {
@@ -176,58 +178,6 @@ class PropelModelPagerTest extends BookstoreEmptyTestBase
         $this->assertInternalType('integer', $pager->getLastPage(), 'getLastPage() returns an integer');
     }
 
-    public function testIsFirstOnFirstPage()
-    {
-        $this->createBooks(5);
-        $pager = $this->getPager(3, 1);
-        foreach ($pager as $index => $book) {
-            if ($index == 0) {
-                $this->assertTrue($pager->isFirst());
-            } else {
-                $this->assertFalse($pager->isFirst());
-            }
-        }
-    }
-
-    public function testIsFirstOnNonFirstPage()
-    {
-        $this->createBooks(5);
-        $pager = $this->getPager(3, 2);
-        foreach ($pager as $index => $book) {
-            if ($index == 0) {
-                $this->assertTrue($pager->isFirst());
-            } else {
-                $this->assertFalse($pager->isFirst());
-            }
-        }
-    }
-
-    public function testIsLastOnNonLastPage()
-    {
-        $this->createBooks(5);
-        $pager = $this->getPager(3, 1);
-        foreach ($pager as $index => $book) {
-            if ($index == 2) {
-                $this->assertTrue($pager->isLast());
-            } else {
-                $this->assertFalse($pager->isLast());
-            }
-        }
-    }
-
-    public function testIsLastOnLastPage()
-    {
-        $this->createBooks(5);
-        $pager = $this->getPager(3, 2);
-        foreach ($pager as $index => $book) {
-            if ($index == 1) {
-                $this->assertTrue($pager->isLast());
-            } else {
-                $this->assertFalse($pager->isLast());
-            }
-        }
-    }
-
     public function testIsEmptyIsTrueOnEmptyPagers()
     {
         $pager = $this->getPager(4, 1);
@@ -239,21 +189,6 @@ class PropelModelPagerTest extends BookstoreEmptyTestBase
         $this->createBooks(1);
         $pager = $this->getPager(4, 1);
         $this->assertFalse($pager->isEmpty());
-    }
-
-    public function testIsOddAndIsEven()
-    {
-        $this->createBooks(5);
-        $pager = $this->getPager(4, 1);
-        foreach ($pager as $index => $book) {
-            if ($index % 2) {
-                $this->assertTrue($pager->isOdd());
-                $this->assertFalse($pager->isEven());
-            } else {
-                $this->assertFalse($pager->isOdd());
-                $this->assertTrue($pager->isEven());
-            }
-        }
     }
 
     public function testCountableInterface()
@@ -268,6 +203,23 @@ class PropelModelPagerTest extends BookstoreEmptyTestBase
 
         $pager = $this->getPager(10, 2);
         $this->assertCount(5, $pager);
+    }
+
+    public function testCallIteratorMethods()
+    {
+        $this->createBooks(5);
+        $pager = $this->getPager(10);
+        $methods = ['getPosition', 'isFirst', 'isLast', 'isOdd', 'isEven'];
+        $it = $pager->getIterator();
+        foreach ($it as $item) {
+            foreach ($methods as $method) {
+                $this->assertEquals(
+                    $it->$method(),
+                    $pager->$method(),
+                    $method . '() returns same value for pager and iterator instance'
+                );
+            }
+        }
     }
 
 }

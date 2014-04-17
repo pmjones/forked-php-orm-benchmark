@@ -139,7 +139,7 @@ static public function sortableApplyScopeCriteria(Criteria \$criteria, \$scope, 
  *
 $paramsDoc
  *
- * @return    {$this->queryClassName} The current query, for fluid interface
+ * @return    \$this|{$this->queryClassName} The current query, for fluid interface
  */
 public function inList($methodSignature)
 {
@@ -201,7 +201,7 @@ public function filterByRank(\$rank" . ($useScope ? ", $methodSignature" : "") .
  *
  * @param     string \$order either Criteria::ASC (default) or Criteria::DESC
  *
- * @return    " . $this->queryClassName . " The current query, for fluid interface
+ * @return    \$this|" . $this->queryClassName . " The current query, for fluid interface
  */
 public function orderByRank(\$order = Criteria::ASC)
 {
@@ -398,8 +398,7 @@ public function reorder(\$order, ConnectionInterface \$con = null)
         \$con = Propel::getServiceContainer()->getReadConnection({$this->tableMapClassName}::DATABASE_NAME);
     }
 
-    \$con->beginTransaction();
-    try {
+    \$con->transaction(function () use (\$con, \$order) {
         \$ids = array_keys(\$order);
         \$objects = \$this->findPks(\$ids, \$con);
         foreach (\$objects as \$object) {
@@ -409,13 +408,9 @@ public function reorder(\$order, ConnectionInterface \$con = null)
                 \$object->save(\$con);
             }
         }
-        \$con->commit();
+    });
 
-        return true;
-    } catch (\Propel\Runtime\Exception\PropelException \$e) {
-        \$con->rollback();
-        throw \$e;
-    }
+    return true;
 }
 ";
     }

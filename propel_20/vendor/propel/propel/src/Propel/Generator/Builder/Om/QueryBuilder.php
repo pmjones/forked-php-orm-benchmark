@@ -11,6 +11,7 @@
 namespace Propel\Generator\Builder\Om;
 
 use Propel\Generator\Model\Column;
+use Propel\Generator\Model\CrossForeignKeys;
 use Propel\Generator\Model\ForeignKey;
 use Propel\Generator\Model\PropelTypes;
 use Propel\Generator\Model\Table;
@@ -114,6 +115,8 @@ class QueryBuilder extends AbstractOMBuilder
  * @method     $queryClass innerJoin(\$relation) Adds a INNER JOIN clause to the query
  *";
 
+        $relationQueryClasses = [];
+
         // magic XXXjoinYYY() methods, for IDE completion
         foreach ($this->getTable()->getForeignKeys() as $fk) {
             $relationName = $this->getFKPhpNameAffix($fk);
@@ -123,6 +126,8 @@ class QueryBuilder extends AbstractOMBuilder
  * @method     $queryClass rightJoin" . $relationName . "(\$relationAlias = null) Adds a RIGHT JOIN clause to the query using the " . $relationName . " relation
  * @method     $queryClass innerJoin" . $relationName . "(\$relationAlias = null) Adds a INNER JOIN clause to the query using the " . $relationName . " relation
  *";
+
+            $relationQueryClasses[$this->getNewStubQueryBuilder($fk->getForeignTable())->getQueryClassName(true)] = true;
         }
         foreach ($this->getTable()->getReferrers() as $refFK) {
             $relationName = $this->getRefFKPhpNameAffix($refFK);
@@ -131,6 +136,15 @@ class QueryBuilder extends AbstractOMBuilder
  * @method     $queryClass leftJoin" . $relationName . "(\$relationAlias = null) Adds a LEFT JOIN clause to the query using the " . $relationName . " relation
  * @method     $queryClass rightJoin" . $relationName . "(\$relationAlias = null) Adds a RIGHT JOIN clause to the query using the " . $relationName . " relation
  * @method     $queryClass innerJoin" . $relationName . "(\$relationAlias = null) Adds a INNER JOIN clause to the query using the " . $relationName . " relation
+ *";
+
+            $relationQueryClasses[$this->getNewStubQueryBuilder($refFK->getTable())->getQueryClassName(true)] = true;
+        }
+
+        if (!empty($relationQueryClasses)) {
+            $relationQueryClasses = implode('|', array_keys($relationQueryClasses));
+            $script .= "
+ * @method     $relationQueryClasses endUse() Finalizes a secondary criteria and merges it with its primary Criteria
  *";
         }
 
@@ -146,13 +160,15 @@ class QueryBuilder extends AbstractOMBuilder
  * @method     $modelClass findOneBy" . $column->getPhpName() . "(" . $column->getPhpType() . " \$" . $column->getName() . ") Return the first $modelClass filtered by the " . $column->getName() . " column";
         }
         $script .= "
- *";
+ *
+ * @method     {$modelClass}[]|ObjectCollection find(ConnectionInterface \$con = null) Return $modelClass objects based on current ModelCriteria";
         foreach ($this->getTable()->getColumns() as $column) {
             $script .= "
- * @method     array findBy" . $column->getPhpName() . "(" . $column->getPhpType() . " \$" . $column->getName() . ") Return $modelClass objects filtered by the " . $column->getName() . " column";
+ * @method     {$modelClass}[]|ObjectCollection findBy" . $column->getPhpName() . "(" . $column->getPhpType() . " \$" . $column->getName() . ") Return $modelClass objects filtered by the " . $column->getName() . " column";
         }
 
         $script .= "
+ * @method     {$modelClass}[]|\\Propel\\Runtime\\Util\\PropelModelPager paginate(\$page = 1, \$maxPerPage = 10, ConnectionInterface \$con = null) Issue a SELECT query based on the current ModelCriteria and uses a page and a maximum number of results per page to compute an offset and a limit
  *
  */
 abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
@@ -210,9 +226,8 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
             $this->addJoinRefFk($script, $refFK);
             $this->addUseRefFKQuery($script, $refFK);
         }
-        foreach ($this->getTable()->getCrossFks() as $fkList) {
-            list($refFK, $crossFK) = $fkList;
-            $this->addFilterByCrossFK($script, $refFK, $crossFK);
+        foreach ($this->getTable()->getCrossFks() as $crossFKs) {
+            $this->addFilterByCrossFK($script, $crossFKs);
         }
         $this->addPrune($script);
         $this->addBasePreSelect($script);
@@ -480,6 +495,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
         throw new LogicException('The {$this->getObjectName()} object has no primary key');
     }
 ";
+
             return $script;
         }
 
@@ -564,7 +580,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
      * @param     mixed \$key Primary key to use for the query
      * @param     ConnectionInterface \$con A connection object
      *
-     * @return   $ARClassName A model object, or null if the key is not found
+     * @return $ARClassName A model object, or null if the key is not found
      */
     protected function findPkSimple(\$key, ConnectionInterface \$con)
     {
@@ -687,6 +703,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
         throw new LogicException('The {$this->getObjectName()} object has no primary key');
     }
 ";
+
             return $script;
         }
 
@@ -717,7 +734,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
      *
      * @param     mixed \$key Primary key to use for the query
      *
-     * @return " . $this->getQueryClassName() . " The current query, for fluid interface
+     * @return \$this|" . $this->getQueryClassName() . " The current query, for fluid interface
      */
     public function filterByPrimaryKey(\$key)
     {";
@@ -729,6 +746,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
         throw new LogicException('The {$this->getObjectName()} object has no primary key');
     }
 ";
+
             return $script;
         }
 
@@ -738,6 +756,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
             $col = $pks[0];
             $const = $this->getColumnConstant($col);
             $script .= "
+
         return \$this->addUsingAlias($const, \$key, Criteria::EQUAL);";
         } else {
             // composite primary key
@@ -769,7 +788,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
      *
      * @param     array \$keys The list of primary key to use for the query
      *
-     * @return " . $this->getQueryClassName() . " The current query, for fluid interface
+     * @return \$this|" . $this->getQueryClassName() . " The current query, for fluid interface
      */
     public function filterByPrimaryKeys(\$keys)
     {";
@@ -782,6 +801,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
         throw new LogicException('The {$this->getObjectName()} object has no primary key');
     }
 ";
+
             return $script;
         }
 
@@ -791,6 +811,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
             $col = $pks[0];
             $const = $this->getColumnConstant($col);
             $script .= "
+
         return \$this->addUsingAlias($const, \$keys, Criteria::IN);";
         } else {
             // composite primary key
@@ -906,7 +927,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
         $script .= "
      * @param     string \$comparison Operator to use for the column comparison, defaults to Criteria::EQUAL
      *
-     * @return " . $this->getQueryClassName() . " The current query, for fluid interface
+     * @return \$this|" . $this->getQueryClassName() . " The current query, for fluid interface
      */
     public function filterBy$colPhpName(\$$variableName = null, \$comparison = null)
     {";
@@ -1034,7 +1055,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
      * @param     mixed \$$variableName The value to use as filter
      * @param     string \$comparison Operator to use for the column comparison, defaults to Criteria::CONTAINS_ALL
      *
-     * @return " . $this->getQueryClassName() . " The current query, for fluid interface
+     * @return \$this|" . $this->getQueryClassName() . " The current query, for fluid interface
      */
     public function filterBy$singularPhpName(\$$variableName = null, \$comparison = null)
     {
@@ -1240,7 +1261,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
      * @param     string \$relationAlias optional alias for the relation
      * @param     string \$joinType Accepted values are null, 'left join', 'right join', 'inner join'
      *
-     * @return ". $queryClass . " The current query, for fluid interface
+     * @return \$this|". $queryClass . " The current query, for fluid interface
      */
     public function join" . $relationName . "(\$relationAlias = null, \$joinType = " . $joinType . ")
     {
@@ -1316,7 +1337,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
      *                                   to be used as main alias in the secondary query
      * @param     string \$joinType Accepted values are null, 'left join', 'right join', 'inner join'
      *
-     * @return   $queryClass A secondary query class using the current class as primary query
+     * @return $queryClass A secondary query class using the current class as primary query
      */
     public function use" . $relationName . "Query(\$relationAlias = null, \$joinType = " . $joinType . ")
     {
@@ -1327,17 +1348,19 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
 ";
     }
 
-    protected function addFilterByCrossFK(&$script, ForeignKey $refFK, ForeignKey $crossFK)
+    protected function addFilterByCrossFK(&$script, CrossForeignKeys $crossFKs)
     {
-        $queryClass = $this->getQueryClassName();
-        $crossRefTable = $crossFK->getTable();
-        $foreignTable = $crossFK->getForeignTable();
-        $fkPhpName =  $foreignTable->getPhpName();
-        $crossTableName = $crossRefTable->getName();
-        $relName = $this->getFKPhpNameAffix($crossFK, $plural = false);
-        $objectName = '$' . $foreignTable->getStudlyPhpName();
-        $relationName = $this->getRefFKPhpNameAffix($refFK, $plural = false);
-        $script .= "
+        $relationName = $this->getRefFKPhpNameAffix($crossFKs->getIncomingForeignKey(), $plural = false);
+
+        foreach ($crossFKs->getCrossForeignKeys() as $crossFK) {
+            $queryClass = $this->getQueryClassName();
+            $crossRefTable = $crossFK->getTable();
+            $foreignTable = $crossFK->getForeignTable();
+            $fkPhpName =  $foreignTable->getPhpName();
+            $crossTableName = $crossRefTable->getName();
+            $relName = $this->getFKPhpNameAffix($crossFK, $plural = false);
+            $objectName = '$' . $foreignTable->getStudlyPhpName();
+            $script .= "
     /**
      * Filter the query by a related $fkPhpName object
      * using the $crossTableName table as cross reference
@@ -1355,6 +1378,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
             ->endUse();
     }
 ";
+        }
     }
 
     /**
@@ -1373,7 +1397,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
      *
      * @param   $class $objectName Object to remove from the list of results
      *
-     * @return " . $this->getQueryClassName() . " The current query, for fluid interface
+     * @return \$this|" . $this->getQueryClassName() . " The current query, for fluid interface
      */
     public function prune($objectName = null)
     {
@@ -1393,7 +1417,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
             $conditionsString = implode(', ', $conditions);
             $script .= "
             \$this->combine(array(" . $conditionsString . "), Criteria::LOGICAL_OR);";
-        } else if ($table->hasPrimaryKey()) {
+        } elseif ($table->hasPrimaryKey()) {
             $col = $pks[0];
             $const = $this->getColumnConstant($col);
             $script .= "
@@ -1581,10 +1605,10 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
      * Performs a DELETE on the database based on the current ModelCriteria
      *
      * @param ConnectionInterface \$con the connection to use
-     * @return int The number of affected rows (if supported by underlying database driver).  This includes CASCADE-related rows
-     *                if supported by native driver or if emulated using Propel.
+     * @return int             The number of affected rows (if supported by underlying database driver).  This includes CASCADE-related rows
+     *                         if supported by native driver or if emulated using Propel.
      * @throws PropelException Any exceptions caught during processing will be
-     *         rethrown wrapped into a PropelException.
+     *                         rethrown wrapped into a PropelException.
      */
     public function delete(ConnectionInterface \$con = null)
     {
@@ -1597,12 +1621,10 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
         // Set the correct dbName
         \$criteria->setDbName(" . $this->getTableMapClass() . "::DATABASE_NAME);
 
-        \$affectedRows = 0; // initialize var to track total num of affected rows
-
-        try {
-            // use transaction because \$criteria could contain info
-            // for more than one table or we could emulating ON DELETE CASCADE, etc.
-            \$con->beginTransaction();
+        // use transaction because \$criteria could contain info
+        // for more than one table or we could emulating ON DELETE CASCADE, etc.
+        return \$con->transaction(function () use (\$con, \$criteria) {
+            \$affectedRows = 0; // initialize var to track total num of affected rows
             ";
 
         if ($this->isDeleteCascadeEmulationNeeded()) {
@@ -1628,13 +1650,9 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
         $script .= "
             \$affectedRows += ModelCriteria::delete(\$con);
             {$this->getTableMapClassName()}::clearRelatedInstancePool();
-            \$con->commit();
 
             return \$affectedRows;
-        } catch (PropelException \$e) {
-            \$con->rollBack();
-            throw \$e;
-        }
+        });
     }
 ";
     }
@@ -1816,11 +1834,11 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
         if (null === \$con) {
             \$con = Propel::getServiceContainer()->getWriteConnection(" . $this->getTableMapClass() . "::DATABASE_NAME);
         }
-        \$affectedRows = 0; // initialize var to track total num of affected rows
-        try {
-            // use transaction because \$criteria could contain info
-            // for more than one table or we could emulating ON DELETE CASCADE, etc.
-            \$con->beginTransaction();
+
+        // use transaction because \$criteria could contain info
+        // for more than one table or we could emulating ON DELETE CASCADE, etc.
+        return \$con->transaction(function () use (\$con) {
+            \$affectedRows = 0; // initialize var to track total num of affected rows
             ";
         if ($this->isDeleteCascadeEmulationNeeded()) {
             $script .="\$affectedRows += \$this->doOnDeleteCascade(\$con);
@@ -1837,13 +1855,8 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
             {$this->getTableMapClassName()}::clearInstancePool();
             {$this->getTableMapClassName()}::clearRelatedInstancePool();
 
-            \$con->commit();
-        } catch (PropelException \$e) {
-            \$con->rollBack();
-            throw \$e;
-        }
-
-        return \$affectedRows;
+            return \$affectedRows;
+        });
     }
 ";
     }

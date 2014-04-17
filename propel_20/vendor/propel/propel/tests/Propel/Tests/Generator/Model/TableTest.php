@@ -10,6 +10,9 @@
 
 namespace Propel\Tests\Generator\Model;
 
+use Propel\Generator\Model\Column;
+use Propel\Generator\Model\Database;
+use Propel\Generator\Model\Index;
 use Propel\Generator\Model\Table;
 
 /**
@@ -502,7 +505,20 @@ class TableTest extends ModelTestCase
     public function testAddIndex()
     {
         $table = new Table();
-        $table->addIndex($this->getIndexMock('author_idx'));
+        $index = new Index();
+        $index->addColumn(['name' => 'bla']);
+        $table->addIndex($index);
+
+        $this->assertCount(1, $table->getIndices());
+    }
+
+    /**
+     * @expectedException \Propel\Generator\Exception\InvalidArgumentException
+     */
+    public function testAddEmptyIndex()
+    {
+        $table = new Table();
+        $table->addIndex(new Index());
 
         $this->assertCount(1, $table->getIndices());
     }
@@ -510,9 +526,27 @@ class TableTest extends ModelTestCase
     public function testAddArrayIndex()
     {
         $table = new Table();
-        $table->addIndex(array('name' => 'author_idx'));
+        $table->addIndex(array('name' => 'author_idx', 'columns' => [['name' => 'bla']]));
 
         $this->assertCount(1, $table->getIndices());
+    }
+
+    public function testIsIndex()
+    {
+        $table = new Table();
+        $column1 = new Column('category_id');
+        $column2 = new Column('type');
+        $table->addColumn($column1);
+        $table->addColumn($column2);
+
+        $index = new Index('test_index');
+        $index->setColumns([$column1, $column2]);
+        $table->addIndex($index);
+
+        $this->assertTrue($table->isIndex(['category_id', 'type']));
+        $this->assertTrue($table->isIndex(['type', 'category_id']));
+        $this->assertFalse($table->isIndex(['category_id', 'type2']));
+        $this->assertFalse($table->isIndex(['asd']));
     }
 
     public function testAddUniqueIndex()
@@ -695,35 +729,6 @@ class TableTest extends ModelTestCase
         $this->assertCount(2, $table->getForeignKeysReferencingTable('authors'));
     }
 
-    public function testGetCrossForeignKeys()
-    {
-        $crossTable1 = new Table();
-        $crossTable1->setIsCrossRef(true);
-
-        $crossTable2 = new Table();
-        $crossTable2->setIsCrossRef(true);
-
-        $referrerFK1 = $this->getForeignKeyMock('cross_fk1', array(
-            'table'     => $crossTable1,
-            'other_fks' => array(
-                $this->getForeignKeyMock('cross_fk1_1'),
-                $this->getForeignKeyMock('cross_fk1_2'),
-            ),
-        ));
-
-        $referrerFK2 = $this->getForeignKeyMock('cross_fk2', array(
-            'table'     => $crossTable2,
-            'other_fks' => array($this->getForeignKeyMock('cross_fk2_1')),
-        ));
-
-        $table = new Table();
-        $table->addReferrer($referrerFK1);
-        $table->addReferrer($referrerFK2);
-
-        $this->assertTrue($table->hasCrossForeignKeys());
-        $this->assertCount(3, $table->getCrossFks());
-    }
-
     public function testGetColumnForeignKeys()
     {
         $fk1 = $this->getForeignKeyMock('fk1', array(
@@ -782,6 +787,26 @@ class TableTest extends ModelTestCase
         $table->setAlias('Book');
         $this->assertTrue($table->isAlias());
         $this->assertSame('Book', $table->getAlias());
+    }
+
+    public function testTablePrefix()
+    {
+        $database = new Database();
+        $database->loadMapping(array(
+            'name'                   => 'bookstore',
+            'defaultIdMethod'        => 'native',
+            'defaultPhpNamingMethod' => 'underscore',
+            'tablePrefix'            => 'acme_',
+            'defaultStringFormat'    => 'XML',
+        ));
+
+        $table = new Table();
+        $database->addTable($table);
+        $table->loadMapping(array(
+           'name' => 'books'
+        ));
+        $this->assertEquals('Books', $table->getPhpName());
+        $this->assertEquals('acme_books', $table->getCommonName());
     }
 
     public function testSetContainsForeignPK()

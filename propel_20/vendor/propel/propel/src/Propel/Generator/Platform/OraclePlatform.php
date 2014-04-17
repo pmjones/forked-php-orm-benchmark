@@ -56,7 +56,7 @@ class OraclePlatform extends DefaultPlatform
         $this->setSchemaDomainMapping(new Domain(PropelTypes::BINARY, 'LONG RAW'));
         $this->setSchemaDomainMapping(new Domain(PropelTypes::VARBINARY, 'BLOB'));
         $this->setSchemaDomainMapping(new Domain(PropelTypes::LONGVARBINARY, 'LONG RAW'));
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::OBJECT, 'NVARCHAR2', '2000'));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::OBJECT, 'LONG RAW'));
         $this->setSchemaDomainMapping(new Domain(PropelTypes::PHP_ARRAY, 'NVARCHAR2', '2000'));
         $this->setSchemaDomainMapping(new Domain(PropelTypes::ENUM, 'NUMBER', '3', '0'));
 
@@ -188,7 +188,7 @@ DROP SEQUENCE " . $this->quoteIdentifier($this->getSequenceName($table)) . ";
         // pk constraint name must be 30 chars at most
         $tableName = substr($tableName, 0, min(27, strlen($tableName)));
 
-        return $tableName . '_PK';
+        return $tableName . '_pk';
     }
 
     public function getPrimaryKeyDDL(Table $table)

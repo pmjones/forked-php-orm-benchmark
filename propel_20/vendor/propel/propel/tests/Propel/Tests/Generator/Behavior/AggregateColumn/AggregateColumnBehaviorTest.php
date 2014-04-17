@@ -10,11 +10,10 @@
 
 namespace Propel\Tests\Generator\Behavior\AggregateColumn;
 
-use Propel\Runtime\ActiveQuery\Criteria;
+use Propel\Runtime\Propel;
 use Propel\Tests\Bookstore\Behavior\AggregateColumn;
 use Propel\Tests\Bookstore\Behavior\AggregateComment;
 use Propel\Tests\Bookstore\Behavior\AggregateCommentQuery;
-use Propel\Tests\Bookstore\Behavior\Map\AggregateCommentTableMap;
 use Propel\Tests\Bookstore\Behavior\AggregatePost;
 use Propel\Tests\Bookstore\Behavior\AggregatePostQuery;
 use Propel\Tests\Bookstore\Behavior\Map\AggregatePostTableMap;
@@ -24,15 +23,21 @@ use Propel\Tests\Bookstore\Behavior\AggregatePoll;
 use Propel\Tests\Bookstore\Behavior\AggregatePollQuery;
 use Propel\Tests\Helpers\Bookstore\BookstoreTestBase;
 
-use Propel\Runtime\Connection\ConnectionInterface;
 
 /**
  * Tests for AggregateColumnBehavior class
  *
  * @author François Zaninotto
+ *
+ * @group database
  */
 class AggregateColumnBehaviorTest extends BookstoreTestBase
 {
+    protected function setUp()
+    {
+        parent::setUp();
+        include_once(__DIR__.'/AggregateColumnsBehaviorTestClasses.php');
+    }
 
     public function testParameters()
     {
@@ -210,63 +215,6 @@ class AggregateColumnBehaviorTest extends BookstoreTestBase
         $item2->save($this->con);
 
         return array($poll, $item1, $item2);
-    }
-
-}
-
-class TestableComment extends AggregateComment
-{
-    // overrides the parent save() to bypass behavior hooks
-    public function save(ConnectionInterface $con = null)
-    {
-        $con->beginTransaction();
-        try {
-            $affectedRows = $this->doSave($con);
-            AggregateCommentTableMap::addInstanceToPool($this);
-            $con->commit();
-
-            return $affectedRows;
-        } catch (PropelException $e) {
-            $con->rollBack();
-            throw $e;
-        }
-    }
-
-    // overrides the parent delete() to bypass behavior hooks
-    public function delete(ConnectionInterface $con = null)
-    {
-        $con->beginTransaction();
-        try {
-            TestableAggregateCommentQuery::create()
-                ->filterByPrimaryKey($this->getPrimaryKey())
-                ->delete($con);
-            $con->commit();
-            $this->setDeleted(true);
-        } catch (PropelException $e) {
-            $con->rollBack();
-            throw $e;
-        }
-    }
-
-}
-
-class TestableAggregateCommentQuery extends AggregateCommentQuery
-{
-    public static function create($modelAlias = null, Criteria $criteria = null)
-    {
-        return new TestableAggregateCommentQuery();
-    }
-
-    // overrides the parent basePreDelete() to bypass behavior hooks
-    protected function basePreDelete(ConnectionInterface $con)
-    {
-        return $this->preDelete($con);
-    }
-
-    // overrides the parent basePostDelete() to bypass behavior hooks
-    protected function basePostDelete($affectedRows, ConnectionInterface $con)
-    {
-        return $this->postDelete($affectedRows, $con);
     }
 
 }

@@ -13,6 +13,7 @@ use Propel\Tests\Helpers\PlatformDatabaseBuildTimeBase;
  * we really need that kind of information.
  *
  * @group mysql
+ * @group database
  */
 class Issue617Test extends PlatformDatabaseBuildTimeBase
 {
@@ -93,8 +94,8 @@ CREATE TABLE `issue617_user`
     `full_name` VARCHAR(50) NOT NULL,
     `group_id` INTEGER,
     PRIMARY KEY (`id`),
-    INDEX `issue617_user_FI_1` (`group_id`),
-    CONSTRAINT `issue617_user_FK_1`
+    INDEX `issue617_user_fi_5936b3` (`group_id`),
+    CONSTRAINT `issue617_user_fk_5936b3`
         FOREIGN KEY (`group_id`)
         REFERENCES `issue617_group` (`id`)
         ON DELETE SET NULL
@@ -150,9 +151,9 @@ CREATE TABLE `issue617_group`
         $sql = $this->database->getPlatform()->getModifyDatabaseDDL($diff);
 
         $expected = '
-ALTER TABLE `issue617_user` DROP FOREIGN KEY `issue617_user_FK_1`;
+ALTER TABLE `issue617_user` DROP FOREIGN KEY `issue617_user_fk_5936b3`;
 
-DROP INDEX `issue617_user_FI_1` ON `issue617_user`;
+DROP INDEX `issue617_user_fi_5936b3` ON `issue617_user`;
 
 ALTER TABLE `issue617_user`
 

@@ -23,7 +23,8 @@ use Propel\Runtime\ActiveQuery\ModelCriteria;
  * Test class for ArrayFormatter.
  *
  * @author Francois Zaninotto
- * @version    $Id$
+ *
+ * @group database
  */
 class ArrayFormatterTest extends BookstoreEmptyTestBase
 {
@@ -67,7 +68,7 @@ class ArrayFormatterTest extends BookstoreEmptyTestBase
     {
         $con = Propel::getServiceContainer()->getConnection(BookTableMap::DATABASE_NAME);
 
-        $dataFetcher = $con->query("SELECT * FROM book WHERE book.TITLE = 'Quicksilver'");
+        $dataFetcher = $con->query("SELECT id, title, isbn, price, publisher_id, author_id FROM book WHERE book.TITLE = 'Quicksilver'");
         $formatter = new ArrayFormatter();
         $formatter->init(new ModelCriteria('bookstore', '\Propel\Tests\Bookstore\Book'));
         $books = $formatter->format($dataFetcher);

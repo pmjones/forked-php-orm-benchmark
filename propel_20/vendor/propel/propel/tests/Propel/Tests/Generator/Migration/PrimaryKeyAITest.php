@@ -2,6 +2,9 @@
 
 namespace Propel\Tests\Generator\Migration;
 
+/**
+ * @group database
+ */
 class PrimaryKeyAITest extends MigrationTestCase
 {
 
@@ -95,6 +98,9 @@ class PrimaryKeyAITest extends MigrationTestCase
         $this->migrateAndTest($originXml, $targetXml);
     }
 
+    /**
+     * @group mysql
+     */
     public function testChangeSize()
     {
         $originXml = '

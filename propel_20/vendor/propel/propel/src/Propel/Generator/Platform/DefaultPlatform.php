@@ -472,7 +472,7 @@ DROP TABLE IF EXISTS " . $this->quoteIdentifier($table->getName()) . ";
     {
         $tableName = $table->getCommonName();
 
-        return $tableName . '_PK';
+        return $tableName . '_pk';
     }
 
     /**
@@ -855,7 +855,7 @@ ALTER TABLE %s%s;
 
         // create indices, foreign keys
         foreach ($tableDiff->getModifiedIndices() as $indexModification) {
-            list(, $toIndex) = $indexModification;
+            list($oldIndex, $toIndex) = $indexModification;
             $ret .= $this->getAddIndexDDL($toIndex);
         }
         foreach ($tableDiff->getAddedIndices() as $index) {
@@ -1029,7 +1029,7 @@ ALTER TABLE %s MODIFY %s;
     /**
      * Builds the DDL SQL to modify a list of columns
      *
-     * @param ColumnDiff[] $columnDiffs
+     * @param  ColumnDiff[] $columnDiffs
      * @return string
      */
     public function getModifyColumnsDDL($columnDiffs)
@@ -1080,7 +1080,7 @@ ALTER TABLE %s ADD %s;
     /**
      * Builds the DDL SQL to remove a list of columns
      *
-     * @param Column[] $columns
+     * @param  Column[] $columns
      * @return string
      */
     public function getAddColumnsDDL($columns)
@@ -1196,6 +1196,11 @@ ALTER TABLE %s ADD
     public function supportsInsertNullPk()
     {
         return true;
+    }
+
+    public function supportsIndexSize()
+    {
+        return false;
     }
 
     /**
@@ -1370,11 +1375,18 @@ if (is_resource($columnValueAccessor)) {
     {
         if ($table->hasForeignKeys()) {
             foreach ($table->getForeignKeys() as $fk) {
-                if (!$fk->getForeignTable()->isUnique($fk->getForeignColumnObjects())) {
+                if ($fk->getForeignTable() && !$fk->getForeignTable()->isUnique($fk->getForeignColumnObjects())) {
                     $unique = new Unique();
                     $unique->setColumns($fk->getForeignColumnObjects());
                     $fk->getForeignTable()->addUnique($unique);
                 }
+            }
+        }
+
+        if (!$this->supportsIndexSize() && $table->getIndices()) {
+            // when the plafform does not support index sizes we reset it
+            foreach ($table->getIndices() as $index) {
+                $index->resetColumnsSize();
             }
         }
     }

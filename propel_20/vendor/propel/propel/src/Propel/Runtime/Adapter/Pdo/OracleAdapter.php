@@ -17,7 +17,7 @@ use Propel\Runtime\Connection\ConnectionInterface;
 use Propel\Runtime\Connection\StatementInterface;
 use Propel\Runtime\Exception\InvalidArgumentException;
 use Propel\Runtime\Map\ColumnMap;
-use Propel\Runtime\Util\PropelColumnTypes;
+use Propel\Generator\Model\PropelTypes;
 
 /**
  * Oracle adapter.
@@ -65,6 +65,14 @@ class OracleAdapter extends PdoAdapter implements SqlAdapterInterface
     public function concatString($s1, $s2)
     {
         return "CONCAT($s1, $s2)";
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function compareRegex($left, $right)
+    {
+        return sprintf("REGEXP_LIKE(%s, %s)", $left, $right);
     }
 
     /**
@@ -209,7 +217,7 @@ class OracleAdapter extends PdoAdapter implements SqlAdapterInterface
      */
     public function bindValue(StatementInterface $stmt, $parameter, $value, ColumnMap $cMap, $position = null)
     {
-        if (PropelColumnTypes::CLOB_EMU === $cMap->getType()) {
+        if (PropelTypes::CLOB_EMU === $cMap->getType()) {
             return $stmt->bindParam(':p'.$position, $value, $cMap->getPdoType(), strlen($value));
         }
 

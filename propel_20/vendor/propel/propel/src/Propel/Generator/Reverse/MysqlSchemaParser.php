@@ -87,16 +87,51 @@ class MysqlSchemaParser extends AbstractSchemaParser
     }
 
     /**
-     *
+     * @param  Database $database
+     * @param  Table[]  $additionalTables
+     * @return int
      */
-    public function parse(Database $database)
+    public function parse(Database $database, array $additionalTables = array())
     {
-        $this->addVendorInfo = $this->getGeneratorConfig()->getBuildProperty('addVendorInfo');
+        if ($this->getGeneratorConfig()) {
+            $this->addVendorInfo = $this->getGeneratorConfig()->getBuildProperty('addVendorInfo');
+        }
 
+        $this->parseTables($database);
+        foreach ($additionalTables as $table) {
+            $this->parseTables($database, $table);
+        }
+
+        // Now populate only columns.
+        foreach ($database->getTables() as $table) {
+            $this->addColumns($table);
+        }
+
+        // Now add indices and constraints.
+        foreach ($database->getTables() as $table) {
+            $this->addForeignKeys($table);
+            $this->addIndexes($table);
+            $this->addPrimaryKey($table);
+
+            $this->addTableVendorInfo($table);
+        }
+
+        return count($database->getTables());
+    }
+
+    protected function parseTables(Database $database, $filterTable = null)
+    {
         $sql = 'SHOW FULL TABLES';
-        if ($schema = $database->getSchema()) {
+
+        if ($filterTable) {
+            if ($schema = $filterTable->getSchema()) {
+                $sql .= ' FROM ' . $database->getPlatform()->quoteIdentifier($schema);
+            }
+            $sql .= sprintf(" LIKE '%s'", $filterTable->getCommonName());
+        } else if ($schema = $database->getSchema()) {
             $sql .= ' FROM ' . $database->getPlatform()->quoteIdentifier($schema);
         }
+
         $dataFetcher = $this->dbh->query($sql);
 
         // First load the tables (important that this happen before filling out details of tables)
@@ -111,25 +146,12 @@ class MysqlSchemaParser extends AbstractSchemaParser
 
             $table = new Table($name);
             $table->setIdMethod($database->getDefaultIdMethod());
+            if ($filterTable && $filterTable->getSchema()) {
+                $table->setSchema($filterTable->getSchema());
+            }
             $database->addTable($table);
             $tables[] = $table;
         }
-
-        // Now populate only columns.
-        foreach ($tables as $table) {
-            $this->addColumns($table);
-        }
-
-        // Now add indices and constraints.
-        foreach ($tables as $table) {
-            $this->addForeignKeys($table);
-            $this->addIndexes($table);
-            $this->addPrimaryKey($table);
-
-            $this->addTableVendorInfo($table);
-        }
-
-        return count($tables);
     }
 
     /**
@@ -151,8 +173,8 @@ class MysqlSchemaParser extends AbstractSchemaParser
      * Factory method creating a Column object
      * based on a row from the 'show columns from ' MySQL query result.
      *
-     * @param array $row An associative array with the following keys:
-     *                       Field, Type, Null, Key, Default, Extra.
+     * @param  array  $row An associative array with the following keys:
+     *                     Field, Type, Null, Key, Default, Extra.
      * @return Column
      */
     public function getColumnFromRow($row, Table $table)
@@ -264,13 +286,13 @@ class MysqlSchemaParser extends AbstractSchemaParser
         $foreignKeys = array(); // local store to avoid duplicates
 
         // Get the information on all the foreign keys
-        $pattern = '/CONSTRAINT `([^`]+)` FOREIGN KEY \((.+)\) REFERENCES `([^`]*)` \((.+)\)(.*)/';
+        $pattern = '/CONSTRAINT `([^`]+)` FOREIGN KEY \((.+)\) REFERENCES `([^\s]+)` \((.+)\)(.*)/';
         if (preg_match_all($pattern, $row[1], $matches)) {
             $tmpArray = array_keys($matches[0]);
             foreach ($tmpArray as $curKey) {
                 $name    = $matches[1][$curKey];
                 $rawlcol = $matches[2][$curKey];
-                $ftbl    = $matches[3][$curKey];
+                $ftbl    = str_replace('`', '', $matches[3][$curKey]);
                 $rawfcol = $matches[4][$curKey];
                 $fkey    = $matches[5][$curKey];
 
@@ -310,7 +332,15 @@ class MysqlSchemaParser extends AbstractSchemaParser
 
                 $localColumns = array();
                 $foreignColumns = array();
+                if ($table->guessSchemaName() != $database->getSchema() && false == strpos($ftbl, $database->getPlatform()->getSchemaDelimiter())) {
+                    $ftbl = $table->guessSchemaName() . $database->getPlatform()->getSchemaDelimiter() . $ftbl;
+                }
+
                 $foreignTable = $database->getTable($ftbl, true);
+
+                if (!$foreignTable) {
+                    continue;
+                }
 
                 foreach ($fcols as $fcol) {
                     $foreignColumns[] = $foreignTable->getColumn($fcol);
@@ -322,7 +352,9 @@ class MysqlSchemaParser extends AbstractSchemaParser
                 if (!isset($foreignKeys[$name])) {
                     $fk = new ForeignKey($name);
                     $fk->setForeignTableCommonName($foreignTable->getCommonName());
-                    $fk->setForeignSchemaName($foreignTable->getSchema());
+                    if ($table->guessSchemaName() != $foreignTable->guessSchemaName()) {
+                        $fk->setForeignSchemaName($foreignTable->guessSchemaName());
+                    }
                     $fk->setOnDelete($fkactions['ON DELETE']);
                     $fk->setOnUpdate($fkactions['ON UPDATE']);
                     $table->addForeignKey($fk);
@@ -347,9 +379,11 @@ class MysqlSchemaParser extends AbstractSchemaParser
         // Loop through the returned results, grouping the same key_name together
         // adding each column for that key.
 
+        /** @var $indexes Index[] */
         $indexes = array();
         while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
             $colName = $row['Column_name'];
+            $colSize = $row['Sub_part'];
             $name = $row['Key_name'];
 
             if ('PRIMARY' === $name) {
@@ -367,10 +401,20 @@ class MysqlSchemaParser extends AbstractSchemaParser
                     $vi = $this->getNewVendorInfoObject($row);
                     $indexes[$name]->addVendorInfo($vi);
                 }
-                $table->addIndex($indexes[$name]);
             }
 
-            $indexes[$name]->addColumn($table->getColumn($colName));
+            $indexes[$name]->addColumn([
+                'name' => $colName,
+                'size' => $colSize
+            ]);
+        }
+
+        foreach ($indexes as $index) {
+            if ($index instanceof Unique) {
+                $table->addUnique($index);
+            } else {
+                $table->addIndex($index);
+            }
         }
     }
 

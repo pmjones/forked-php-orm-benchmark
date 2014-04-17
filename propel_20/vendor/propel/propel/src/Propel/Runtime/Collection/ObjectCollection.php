@@ -15,7 +15,6 @@ use Propel\Runtime\Propel;
 use Propel\Runtime\Collection\Exception\ReadOnlyModelException;
 use Propel\Runtime\Collection\Exception\UnsupportedRelationException;
 use Propel\Runtime\Connection\ConnectionInterface;
-use Propel\Runtime\Exception\PropelException;
 use Propel\Runtime\Exception\RuntimeException;
 use Propel\Runtime\Map\RelationMap;
 use Propel\Runtime\Map\TableMap;
@@ -42,17 +41,12 @@ class ObjectCollection extends Collection
         if (null === $con) {
             $con = $this->getWriteConnection();
         }
-        $con->beginTransaction();
-        try {
+        $con->transaction(function () use ($con) {
             /** @var $element ActiveRecordInterface */
             foreach ($this as $element) {
                 $element->save($con);
             }
-            $con->commit();
-        } catch (PropelException $e) {
-            $con->rollback();
-            throw $e;
-        }
+        });
     }
 
     /**
@@ -68,17 +62,12 @@ class ObjectCollection extends Collection
         if (null === $con) {
             $con = $this->getWriteConnection();
         }
-        $con->beginTransaction();
-        try {
+        $con->transaction(function () use ($con) {
             /** @var $element ActiveRecordInterface */
             foreach ($this as $element) {
                 $element->delete($con);
             }
-            $con->commit();
-        } catch (PropelException $e) {
-            $con->rollback();
-            throw $e;
-        }
+        });
     }
 
     /**
@@ -122,13 +111,13 @@ class ObjectCollection extends Collection
      * Get an array representation of the collection
      * Each object is turned into an array and the result is returned
      *
-     * @param string $keyColumn If null, the returned array uses an incremental index.
-     *                               Otherwise, the array is indexed using the specified column
-     * @param boolean $usePrefix If true, the returned array prefixes keys
-     *                               with the model class name ('Article_0', 'Article_1', etc).
-     * @param string $keyType (optional) One of the class type constants TableMap::TYPE_PHPNAME,
-     *                               TableMap::TYPE_STUDLYPHPNAME, TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME,
-     *                               TableMap::TYPE_NUM. Defaults to TableMap::TYPE_PHPNAME.
+     * @param string  $keyColumn              If null, the returned array uses an incremental index.
+     *                                        Otherwise, the array is indexed using the specified column
+     * @param boolean $usePrefix              If true, the returned array prefixes keys
+     *                                        with the model class name ('Article_0', 'Article_1', etc).
+     * @param string  $keyType                (optional) One of the class type constants TableMap::TYPE_PHPNAME,
+     *                                        TableMap::TYPE_STUDLYPHPNAME, TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME,
+     *                                        TableMap::TYPE_NUM. Defaults to TableMap::TYPE_PHPNAME.
      * @param boolean $includeLazyLoadColumns (optional) Whether to include lazy loaded columns. Defaults to TRUE.
      * @param array   $alreadyDumpedObjects   List of objects to skip to avoid recursion
      *
@@ -170,10 +159,10 @@ class ObjectCollection extends Collection
     /**
      * Get an array representation of the collection
      *
-     * @param string $keyColumn If null, the returned array uses an incremental index.
-     *                                 Otherwise, the array is indexed using the specified column
+     * @param string  $keyColumn If null, the returned array uses an incremental index.
+     *                           Otherwise, the array is indexed using the specified column
      * @param boolean $usePrefix If true, the returned array prefixes keys
-     *                                 with the model class name ('Article_0', 'Article_1', etc).
+     *                           with the model class name ('Article_0', 'Article_1', etc).
      *
      * <code>
      *   $bookCollection->getArrayCopy();
@@ -331,12 +320,27 @@ class ObjectCollection extends Collection
     public function search($element)
     {
         if ($element instanceof ActiveRecordInterface) {
-            if (null !== $elt = $this->getIdenticalObject($element)) {
-                $element = $elt;
+            $hashCode = $element->hashCode();
+            foreach ($this as $pos => $obj) {
+                if ($hashCode === $obj->hashCode()) {
+                    return $pos;
+                }
             }
-        }
 
-        return parent::search($element);
+            return false;
+        } else {
+            return parent::search($element);
+        }
+    }
+
+    /**
+     * @param $element
+     */
+    public function removeObject($element)
+    {
+        if (false !== ($pos = $this->search($element))) {
+            $this->remove($pos);
+        }
     }
 
     /**
@@ -344,23 +348,6 @@ class ObjectCollection extends Collection
      */
     public function contains($element)
     {
-        if ($element instanceof ActiveRecordInterface) {
-            if (null !== $elt = $this->getIdenticalObject($element)) {
-                $element = $elt;
-            }
-        }
-
-        return parent::contains($element);
-    }
-
-    private function getIdenticalObject(ActiveRecordInterface $object)
-    {
-        foreach ($this as $obj) {
-            if ($obj instanceof ActiveRecordInterface && $obj->hashCode() === $object->hashCode()) {
-                return $obj;
-            }
-        }
-
-        return null;
+        return false !== $this->search($element);
     }
 }

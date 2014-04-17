@@ -580,15 +580,15 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
                 $script .= ", '" . $this->getRefFKPhpNameAffix($fkey, true) . "');";
             }
         }
-        foreach ($this->getTable()->getCrossFks() as $fkList) {
-            /** @var ForeignKey $crossFK */
-            list(, $crossFK) = $fkList;
-            $relationName = $this->getFKPhpNameAffix($crossFK);
-            $pluralName = "'" . $this->getFKPhpNameAffix($crossFK, true) . "'";
-            $onDelete = $crossFK->hasOnDelete() ? "'" . $crossFK->getOnDelete() . "'" : 'null';
-            $onUpdate = $crossFK->hasOnUpdate() ? "'" . $crossFK->getOnUpdate() . "'" : 'null';
-            $script .= "
+        foreach ($this->getTable()->getCrossFks() as $crossFKs) {
+            foreach ($crossFKs->getCrossForeignKeys() as $crossFK) {
+                $relationName = $this->getFKPhpNameAffix($crossFK);
+                $pluralName = "'" . $this->getFKPhpNameAffix($crossFK, true) . "'";
+                $onDelete = $crossFK->hasOnDelete() ? "'" . $crossFK->getOnDelete() . "'" : 'null';
+                $onUpdate = $crossFK->hasOnUpdate() ? "'" . $crossFK->getOnUpdate() . "'" : 'null';
+                $script .= "
         \$this->addRelation('$relationName', '" . addslashes($this->getNewStubObjectBuilder($crossFK->getForeignTable())->getFullyQualifiedClassName()) . "', RelationMap::MANY_TO_MANY, array(), $onDelete, $onUpdate, $pluralName);";
+            }
         }
         $script .= "
     } // buildRelations()
@@ -734,8 +734,8 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
 
     /**
      * Checks whether any registered behavior on that table has a modifier for a hook
-     * @param  string $hookName The name of the hook as called from one of this class methods, e.g. "preSave"
-     * @param null $modifier
+     * @param  string  $hookName The name of the hook as called from one of this class methods, e.g. "preSave"
+     * @param  null    $modifier
      * @return boolean
      */
     public function hasBehaviorModifier($hookName, $modifier = null)
@@ -839,6 +839,11 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
         $n = 0;
 
         if ($table->hasCompositePrimaryKey()) {
+            $script .= "
+            \$pks = [];
+            ";
+
+            $pks = array();
             foreach ($table->getColumns() as $col) {
                 if (!$col->isLazyLoad()) {
                     if ($col->isPrimaryKey()) {
@@ -915,7 +920,7 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
      * @param int     \$colnum Column to examine for OM class information (first is 0).
      * @param boolean \$withPrefix Whether or not to return the path with the class name
      * @throws PropelException Any exceptions caught during processing will be
-     *         rethrown wrapped into a PropelException.
+     *                         rethrown wrapped into a PropelException.
      *
      * @return string The OM class
      */
@@ -1027,8 +1032,8 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
      *                           TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME, TableMap::TYPE_NUM.
      *
      * @throws PropelException Any exceptions caught during processing will be
-     *         rethrown wrapped into a PropelException.
-     * @return array (" . $this->getObjectClassName(). " object, last column rank)
+     *                         rethrown wrapped into a PropelException.
+     * @return array           (" . $this->getObjectClassName(). " object, last column rank)
      */
     public static function populateObject(\$row, \$offset = 0, \$indexType = TableMap::TYPE_NUM)
     {
@@ -1082,7 +1087,7 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
      * @param DataFetcherInterface \$dataFetcher
      * @return array
      * @throws PropelException Any exceptions caught during processing will be
-     *         rethrown wrapped into a PropelException.
+     *                         rethrown wrapped into a PropelException.
      */
     public static function populateObjects(DataFetcherInterface \$dataFetcher)
     {
@@ -1149,7 +1154,7 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
      * @param Criteria \$criteria object containing the columns to add.
      * @param string   \$alias    optional table alias
      * @throws PropelException Any exceptions caught during processing will be
-     *         rethrown wrapped into a PropelException.
+     *                         rethrown wrapped into a PropelException.
      */
     public static function addSelectColumns(Criteria \$criteria, \$alias = null)
     {
@@ -1187,7 +1192,7 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
      * This method is not needed for general use but a specific application could have a need.
      * @return TableMap
      * @throws PropelException Any exceptions caught during processing will be
-     *         rethrown wrapped into a PropelException.
+     *                         rethrown wrapped into a PropelException.
      */
     public static function getTableMap()
     {
@@ -1230,11 +1235,11 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
      *
      * @param mixed               \$values Criteria or ".$this->getObjectClassName()." object or primary key or array of primary keys
      *              which is used to create the DELETE statement
-     * @param ConnectionInterface \$con the connection to use
-     * @return int The number of affected rows (if supported by underlying database driver).  This includes CASCADE-related rows
-     *                if supported by native driver or if emulated using Propel.
+     * @param  ConnectionInterface \$con the connection to use
+     * @return int             The number of affected rows (if supported by underlying database driver).  This includes CASCADE-related rows
+     *                         if supported by native driver or if emulated using Propel.
      * @throws PropelException Any exceptions caught during processing will be
-     *         rethrown wrapped into a PropelException.
+     *                         rethrown wrapped into a PropelException.
      */
      public static function doDelete(\$values, ConnectionInterface \$con = null)
      {
@@ -1336,7 +1341,7 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
      * @param ConnectionInterface \$con the ConnectionInterface connection to use
      * @return mixed           The new primary key.
      * @throws PropelException Any exceptions caught during processing will be
-     *         rethrown wrapped into a PropelException.
+     *                         rethrown wrapped into a PropelException.
      */
     public static function doInsert(\$criteria, ConnectionInterface \$con = null)
     {
@@ -1388,18 +1393,11 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
         // Set the correct dbName
         \$query = " . $this->getQueryClassName() . "::create()->mergeWith(\$criteria);
 
-        try {
-            // use transaction because \$criteria could contain info
-            // for more than one table (I guess, conceivably)
-            \$con->beginTransaction();
-            \$pk = \$query->doInsert(\$con);
-            \$con->commit();
-        } catch (PropelException \$e) {
-            \$con->rollBack();
-            throw \$e;
-        }
-
-        return \$pk;
+        // use transaction because \$criteria could contain info
+        // for more than one table (I guess, conceivably)
+        return \$con->transaction(function () use (\$con, \$query) {
+            return \$query->doInsert(\$con);
+        });
     }
 ";
     }

@@ -17,14 +17,16 @@ use Propel\Tests\Helpers\Bookstore\BookstoreTestBase;
  * Tests the generated Object behavior hooks.
  *
  * @author Francois Zaninotto
+ *
+ * @group database
  */
 class ObjectBehaviorTest extends BookstoreTestBase
 {
-    public static function setUpBeforeClass()
+    protected function setUp()
     {
-        //prevent issue with wrong DSN
+        //prevent issue DSN not Found
         self::$isInitialized = false;
-        parent::setUpBeforeClass();
+        parent::setUp();
     }
 
     public function testObjectAttributes()

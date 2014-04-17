@@ -90,7 +90,7 @@ interface PlatformInterface
 
     /**
      * @return string The RDBMS-specific SQL fragment for <code>NULL</code>
-     * or <code>NOT NULL</code>.
+     *                or <code>NOT NULL</code>.
      */
     public function getNullString($notNull);
 
@@ -160,6 +160,22 @@ interface PlatformInterface
      * @return string Quoted identifier.
      */
     public function quoteIdentifier($text);
+
+    /**
+     * @param bool $enabled
+     */
+    public function setIdentifierQuoting($enabled = true);
+
+    /**
+     * @return boolean
+     */
+    public function getIdentifierQuoting();
+
+    /**
+     * Whether RDBMS supports native index sizes.
+     * @return boolean
+     */
+    public function supportsIndexSize();
 
     /**
      * Whether RDBMS supports native ON DELETE triggers (e.g. ON DELETE CASCADE).
@@ -243,4 +259,12 @@ interface PlatformInterface
      * @param Table $table The table object which gets modified.
      */
     public function normalizeTable(Table $table);
+
+
+    /**
+     * Get the PHP snippet for binding a value to a column.
+     * Warning: duplicates logic from AdapterInterface::bindValue().
+     * Any code modification here must be ported there.
+     */
+    public function getColumnBindingPHP(Column $column, $identifier, $columnValueAccessor, $tab = "            ");
 }

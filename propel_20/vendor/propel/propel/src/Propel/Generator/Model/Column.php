@@ -344,7 +344,7 @@ class Column extends MappingModel
      */
     public function getUppercasedName()
     {
-    	return strtoupper($this->name);
+        return strtoupper($this->name);
     }
 
     /**
@@ -1191,6 +1191,16 @@ class Column extends MappingModel
     }
 
     /**
+     * Returns true if this table has a default value (and which is not NULL).
+     *
+     * @return bool
+     */
+    public function hasDefaultValue()
+    {
+        return null !== $this->getDefaultValue();
+    }
+
+    /**
      * Returns a string that will give this column a default value in PHP.
      *
      * @return string
@@ -1221,7 +1231,7 @@ class Column extends MappingModel
     /**
      * Sets a string that will give this column a default value.
      *
-     * @param ColumnDefaultValue|mixed $defaultValue The column's default value
+     * @param  ColumnDefaultValue|mixed $defaultValue The column's default value
      * @return Column
      */
     public function setDefaultValue($defaultValue)

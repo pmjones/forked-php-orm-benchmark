@@ -87,7 +87,7 @@ abstract class AbstractFormatter
      * @param BaseModelCriteria    $criteria
      * @param DataFetcherInterface $dataFetcher
      *
-     * @return AbstractFormatter The current formatter object
+     * @return $this|AbstractFormatter The current formatter object
      */
     public function init(BaseModelCriteria $criteria, DataFetcherInterface $dataFetcher = null)
     {
@@ -236,7 +236,10 @@ abstract class AbstractFormatter
     protected function getWorkerObject($col, $class)
     {
         if (isset($this->currentObjects[$col])) {
+            $this->currentObjects[$col]->clearAllReferences();
             $this->currentObjects[$col]->clear();
+            
+            // TODO: also consider to return always a new $class(), it's a little fast that clear the previous and is must secure to clear all data/references!
         } else {
             $this->currentObjects[$col] = new $class();
         }
@@ -247,8 +250,8 @@ abstract class AbstractFormatter
     /**
      * Gets a Propel object hydrated from a selection of columns in statement row
      *
-     * @param array $row associative array indexed by column number,
-     *                   as returned by DataFetcher::fetch()
+     * @param array  $row   associative array indexed by column number,
+     *                      as returned by DataFetcher::fetch()
      * @param string $class The classname of the object to create
      * @param int    $col   The start column for the hydration (modified)
      *

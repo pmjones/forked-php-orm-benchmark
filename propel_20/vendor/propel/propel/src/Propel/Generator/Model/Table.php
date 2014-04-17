@@ -55,6 +55,7 @@ class Table extends ScopedMappingModel implements IdMethod
     private $unices;
     private $idMethodParameters;
     private $commonName;
+    private $originCommonName;
     private $description;
     private $phpName;
     private $idMethod;
@@ -66,7 +67,9 @@ class Table extends ScopedMappingModel implements IdMethod
      */
     private $database;
 
-    /** @var ForeignKey[] */
+    /**
+     * @var ForeignKey[]
+     */
     private $referrers;
     private $containsForeignPK;
     /**
@@ -166,12 +169,16 @@ class Table extends ScopedMappingModel implements IdMethod
     {
         parent::setupObject();
 
-        $this->commonName = $this->database->getTablePrefix() . $this->getAttribute('name');
+        $this->commonName = $this->originCommonName = $this->getAttribute('name');
 
         // retrieves the method for converting from specified name to a PHP name.
         $this->phpNamingMethod = $this->getAttribute('phpNamingMethod', $this->database->getDefaultPhpNamingMethod());
 
         $this->phpName = $this->getAttribute('phpName', $this->buildPhpName($this->getStdSeparatedName()));
+
+        if ($this->database->getTablePrefix()) {
+            $this->commonName = $this->database->getTablePrefix() . $this->commonName;
+        }
 
         $this->idMethod = $this->getAttribute('idMethod', $this->database->getDefaultIdMethod());
         $this->allowPkInsert = $this->booleanValue($this->getAttribute('allowPkInsert'));
@@ -247,10 +254,6 @@ class Table extends ScopedMappingModel implements IdMethod
         if ($this->heavyIndexing) {
             $this->doHeavyIndexing();
         }
-
-        // Name any indices which are missing a name using the
-        // appropriate algorithm.
-        $this->doNaming();
 
         // if idMethod is "native" and in fact there are no autoIncrement
         // columns in the table, then change it to "none"
@@ -334,7 +337,7 @@ class Table extends ScopedMappingModel implements IdMethod
             }
 
             // no matching index defined in the schema, so we have to create one
-            $name = sprintf('I_referenced_%s_%s', $foreignKey->getName(), ++$counter);
+            $name = sprintf('i_referenced_%s_%s', $foreignKey->getName(), ++$counter);
             if ($this->hasIndex($name)) {
                 // if we have already a index with this name, then it looks like the columns of this index have just
                 // been changed, so remove it and inject it again. This is the case if a referenced table is handled
@@ -359,7 +362,7 @@ class Table extends ScopedMappingModel implements IdMethod
             // MySQL needs indices on any columns that serve as foreign keys.
             // These are not auto-created prior to 4.1.2.
 
-            $name = substr_replace($foreignKey->getName(), 'FI_',  strrpos($foreignKey->getName(), 'FK_'), 3);
+            $name = substr_replace($foreignKey->getName(), 'fi_',  strrpos($foreignKey->getName(), 'fk_'), 3);
             if ($this->hasIndex($name)) {
                 // if we already have an index with this name, then it looks like the columns of this index have just
                 // been changed, so remove it and inject it again. This is the case if a referenced table is handled
@@ -439,63 +442,6 @@ class Table extends ScopedMappingModel implements IdMethod
     }
 
     /**
-     * Names composing objects which haven't yet been named.	This
-     * currently consists of foreign-key and index entities.
-     */
-    public function doNaming()
-    {
-        for ($i = 0, $size = count($this->foreignKeys); $i < $size; $i++) {
-            $fk = $this->foreignKeys[$i];
-            $name = $fk->getName();
-            if (empty($name)) {
-                $name = $this->acquireConstraintName('FK', $i + 1);
-                $fk->setName($name);
-            }
-        }
-
-        for ($i = 0, $size = count($this->indices); $i < $size; $i++) {
-            $index = $this->indices[$i];
-            $name = $index->getName();
-            if (empty($name)) {
-                $name = $this->acquireConstraintName('I', $i + 1);
-                $index->setName($name);
-            }
-        }
-
-        for ($i = 0, $size = count($this->unices); $i < $size; $i++) {
-            $index = $this->unices[$i];
-            $name = $index->getName();
-            if (empty($name)) {
-                $name = $this->acquireConstraintName('U', $i + 1);
-                $index->setName($name);
-            }
-        }
-
-        // NOTE: Most RDBMSes can apparently name unique column
-        // constraints/indices themselves (using MySQL and Oracle
-        // as test cases), so we'll assume that we needn't add an
-        // entry to the system name list for these.
-    }
-
-    /**
-     * Macro to a constraint name.
-     *
-     * @param  string          $nameType Constraint type
-     * @param  integer         $nbr      Unique number for this constraint type
-     * @return string          Unique name for constraint
-     * @throws EngineException
-     */
-    private function acquireConstraintName($nameType, $nbr)
-    {
-        return NameFactory::generateName(NameFactory::CONSTRAINT_GENERATOR, [
-            $this->database,
-            $this->getCommonName(),
-            $nameType,
-            $nbr
-        ]);
-    }
-
-    /**
      * Returns the name of the base class used for superclass of all objects
      * of this table.
      *
@@ -527,7 +473,7 @@ class Table extends ScopedMappingModel implements IdMethod
     /**
      * Adds a new column to the table.
      *
-     * @param  Column|array $col
+     * @param  Column|array    $col
      * @throws EngineException
      * @return Column
      */
@@ -580,7 +526,7 @@ class Table extends ScopedMappingModel implements IdMethod
     /**
      * Removes a column from the table.
      *
-     * @param Column|string $column The Column or its name
+     * @param  Column|string   $column The Column or its name
      * @throws EngineException
      */
     public function removeColumn($column)
@@ -629,7 +575,7 @@ class Table extends ScopedMappingModel implements IdMethod
     /**
      * Adds a new foreign key to this table.
      *
-     * @param ForeignKey|array $foreignKey The foreign key mapping
+     * @param  ForeignKey|array $foreignKey The foreign key mapping
      * @return ForeignKey
      */
     public function addForeignKey($foreignKey)
@@ -722,7 +668,7 @@ class Table extends ScopedMappingModel implements IdMethod
      * adds the missing referrers and is non-destructive.
      * Warning: only use when all the tables were created.
      *
-     * @param boolean $throwErrors
+     * @param  boolean        $throwErrors
      * @throws BuildException
      */
     public function setupReferrers($throwErrors = false)
@@ -796,20 +742,45 @@ class Table extends ScopedMappingModel implements IdMethod
     /**
      * Returns the list of cross foreign keys.
      *
-     * @return ForeignKey[][]
+     * @return CrossForeignKeys[]
      */
     public function getCrossFks()
     {
         $crossFks = [];
         foreach ($this->referrers as $refFK) {
             if ($refFK->getTable()->isCrossRef()) {
-                foreach ($refFK->getOtherFks() as $crossFK) {
-                    $crossFks[] = [ $refFK, $crossFK ];
+                $crossFK = new CrossForeignKeys($refFK, $this);
+                foreach ($refFK->getOtherFks() as $fk) {
+                    if ($fk->isAtLeastOneLocalPrimaryKeyIsRequired() &&
+                        $crossFK->isAtLeastOneLocalPrimaryKeyNotCovered($fk)) {
+                        $crossFK->addCrossForeignKey($fk);
+                    }
+                }
+                if ($crossFK->hasCrossForeignKeys()) {
+                    $crossFks[] = $crossFK;
                 }
             }
         }
 
         return $crossFks;
+    }
+
+    /**
+     * Returns all required(notNull && no defaultValue) primary keys which are not in $primaryKeys.
+     *
+     * @param  Column[] $primaryKeys
+     * @return Column[]
+     */
+    public function getOtherRequiredPrimaryKeys(array $primaryKeys)
+    {
+        $pks = [];
+        foreach ($this->getPrimaryKey() as $primaryKey) {
+            if ($primaryKey->isNotNull() && !$primaryKey->hasDefaultValue() && !in_array($primaryKey, $primaryKeys, true)) {
+                $pks = $primaryKey;
+            }
+        }
+
+        return $pks;
     }
 
     /**
@@ -856,7 +827,7 @@ class Table extends ScopedMappingModel implements IdMethod
     /**
      * Adds a new parameter for the strategy that generates primary keys.
      *
-     * @param IdMethodParameter|array $idMethodParameter
+     * @param  IdMethodParameter|array $idMethodParameter
      * @return IdMethodParameter
      */
     public function addIdMethodParameter($idMethodParameter)
@@ -915,13 +886,20 @@ class Table extends ScopedMappingModel implements IdMethod
      *
      * @param  Index|array $index
      * @return Index
+     *
+     * @throw  InvalidArgumentException
      */
     public function addIndex($index)
     {
         if ($index instanceof Index) {
+            if ($this->hasIndex($index->getName())) {
+                throw new InvalidArgumentException(sprintf('Index "%s" already exist.', $index->getName()));
+            }
+            if (!$index->getColumns()) {
+                throw new InvalidArgumentException(sprintf('Index "%s" has no columns.', $index->getName()));
+            }
             $index->setTable($this);
             // force the name to be created if empty.
-            $index->getName();
             $this->indices[] = $index;
 
             return $index;
@@ -929,6 +907,9 @@ class Table extends ScopedMappingModel implements IdMethod
 
         $idx = new Index();
         $idx->loadMapping($index);
+        foreach((array)@$index['columns'] as $column) {
+            $idx->addColumn($column);
+        }
 
         return $this->addIndex($idx);
     }
@@ -965,8 +946,6 @@ class Table extends ScopedMappingModel implements IdMethod
     {
         return $this->database->getGeneratorConfig();
     }
-
-
 
     /**
      * Returns whether or not the table behaviors offer additional builders.
@@ -1033,11 +1012,11 @@ class Table extends ScopedMappingModel implements IdMethod
     }
 
     /**
-     * Returns the schema name.
+     * Returns the schema name from this table or from its database.
      *
      * @return string
      */
-    private function guessSchemaName()
+    public function guessSchemaName()
     {
         return $this->schema ?: $this->database->getSchema();
     }
@@ -1114,7 +1093,7 @@ class Table extends ScopedMappingModel implements IdMethod
     /**
      * Returns the auto generated PHP name value for a given name.
      *
-     * @param string $name
+     * @param  string $name
      * @return string
      */
     private function buildPhpName($name)
@@ -1135,7 +1114,7 @@ class Table extends ScopedMappingModel implements IdMethod
     }
 
     /**
-     * Returns the common name (without schema name).
+     * Returns the common name (without schema name), but with table prefix if defined.
      *
      * @return string
      */
@@ -1151,7 +1130,17 @@ class Table extends ScopedMappingModel implements IdMethod
      */
     public function setCommonName($name)
     {
-        $this->commonName = $name;
+        $this->commonName = $this->originCommonName = $name;
+    }
+
+    /**
+     * Returns the unmodified common name (not modified by table prefix).
+     *
+     * @return string
+     */
+    public function getOriginCommonName()
+    {
+        return $this->originCommonName;
     }
 
     /**
@@ -1480,7 +1469,7 @@ class Table extends ScopedMappingModel implements IdMethod
      * Checks if $keys are a unique constraint in the table.
      * (through primaryKey, through a regular unices constraints or for single keys when it has isUnique=true)
      *
-     * @param Column[]|string[] $keys
+     * @param  Column[]|string[] $keys
      * @return boolean
      */
     public function isUnique(array $keys)
@@ -1647,10 +1636,10 @@ class Table extends ScopedMappingModel implements IdMethod
     }
 
     /**
-     * Returns the foreign keys that include column in it's list of local
+     * Returns the foreign keys that include $column in it's list of local
      * columns.
      *
-     * Eg. Foreign key (a, b, c) references tbl(x, y, z) will be returned of col
+     * Eg. Foreign key (a, b, c) references tbl(x, y, z) will be returned of $column
      * is either a, b or c.
      *
      * @param  string $column Name of the column
@@ -1773,6 +1762,19 @@ class Table extends ScopedMappingModel implements IdMethod
                 return $col;
             }
         }
+    }
+
+    public function __clone()
+    {
+        $columns = [];
+        foreach ($this->columns as $oldCol) {
+            $col = clone $oldCol;
+            $columns[] = $col;
+            $this->columnsByName[$col->getName()] = $col;
+            $this->columnsByLowercaseName[strtolower($col->getName())] = $col;
+            $this->columnsByPhpName[$col->getPhpName()] = $col;
+        }
+        $this->columns = $columns;
     }
 
     /**

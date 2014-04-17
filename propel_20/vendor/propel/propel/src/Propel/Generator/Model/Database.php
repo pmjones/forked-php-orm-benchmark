@@ -460,7 +460,6 @@ class Database extends ScopedMappingModel
         if (!$table instanceof Table) {
             $tbl = new Table();
             $tbl->setDatabase($this);
-            $tbl->setSchema($this->getSchema());
             $tbl->loadMapping($table);
 
             return $this->addTable($tbl);
@@ -470,10 +469,6 @@ class Database extends ScopedMappingModel
 
         if (isset($this->tablesByName[$table->getName()])) {
             throw new EngineException(sprintf('Table "%s" declared twice', $table->getName()));
-        }
-
-        if (null === $table->getSchema()) {
-            $table->setSchema($this->getSchema());
         }
 
         $this->tables[] = $table;
@@ -570,7 +565,7 @@ class Database extends ScopedMappingModel
         $oldSchema = $this->schema;
         if ($this->schema !== $schema && $this->getPlatform()) {
             $schemaDelimiter = $this->getPlatform()->getSchemaDelimiter();
-            $fixHash = function(&$array) use ($schema, $oldSchema, $schemaDelimiter) {
+            $fixHash = function (&$array) use ($schema, $oldSchema, $schemaDelimiter) {
                 foreach ($array as $k => $v) {
                     if ($schema && $this->getPlatform()->supportsSchemas()) {
                         if (false === strpos($k, $schemaDelimiter)) {
@@ -798,7 +793,6 @@ class Database extends ScopedMappingModel
     protected function setupTableReferrers()
     {
         foreach ($this->tables as $table) {
-            $table->doNaming();
             $table->setupReferrers();
         }
     }
@@ -809,10 +803,10 @@ class Database extends ScopedMappingModel
         foreach ($this->getTables() as $table) {
             $columns = [];
             foreach ($table->getColumns() as $column) {
-                $columns[] = sprintf("    %s %s %s %s %s %s (%s)",
+                $columns[] = sprintf("      %s %s %s %s %s %s (%s)",
                     $column->getName(),
                     $column->getType(),
-                    $column->getSize(),
+                    $column->getSize() ? '(' . $column->getSize() . ')' : '',
                     $column->isPrimaryKey() ? 'PK' : '',
                     $column->isNotNull() ? 'NOT NULL' : '',
                     $column->getDefaultValueString() ? "'".$column->getDefaultValueString()."'" : '',
@@ -821,7 +815,56 @@ class Database extends ScopedMappingModel
                 );
             }
 
-            $tables[] = sprintf("  %s (%s): \n%s", $table->getName(), $table->getCommonName(), implode("\n", $columns));
+            $fks = [];
+            foreach ($table->getForeignKeys() as $fk) {
+                $fks[] = sprintf("      %s to %s.%s (%s => %s)",
+                    $fk->getName(),
+                    $fk->getForeignSchemaName(),
+                    $fk->getForeignTableCommonName(),
+                    join(', ', $fk->getLocalColumns()),
+                    join(', ', $fk->getForeignColumns())
+                );
+            }
+
+            $indices = [];
+            foreach ($table->getIndices() as $index) {
+                $indexColumns = [];
+                foreach ($index->getColumns() as $indexColumnName) {
+                    $indexColumns[] = sprintf('%s (%s)', $indexColumnName, $index->getColumnSize($indexColumnName));
+                }
+                $indices[] = sprintf("      %s (%s)",
+                    $index->getName(),
+                    join(', ', $indexColumns)
+                );
+            }
+
+            $unices = [];
+            foreach ($table->getUnices() as $index) {
+                $unices[] = sprintf("      %s (%s)",
+                    $index->getName(),
+                    join(', ', $index->getColumns())
+                );
+            }
+
+            $tableDef = sprintf("  %s (%s):\n%s",
+                $table->getName(),
+                $table->getCommonName(),
+                implode("\n", $columns)
+            );
+
+            if ($fks) {
+                $tableDef .= "\n    FKs:\n" . implode("\n", $fks);
+            }
+
+            if ($indices) {
+                $tableDef .= "\n    indices:\n" . implode("\n", $indices);
+            }
+
+            if ($unices) {
+                $tableDef .= "\n    unices:\n". implode("\n", $unices);
+            }
+
+            $tables[] = $tableDef;
         }
 
         return sprintf("%s:\n%s",
@@ -868,5 +911,18 @@ class Database extends ScopedMappingModel
     public function getDefaultMutatorVisibility()
     {
         return $this->defaultMutatorVisibility;
+    }
+
+    public function __clone()
+    {
+        $tables = [];
+        foreach ($this->tables as $oldTable) {
+            $table = clone $oldTable;
+            $tables[] = $table;
+            $this->tablesByName[$table->getName()] = $table;
+            $this->tablesByLowercaseName[strtolower($table->getName())] = $table;
+            $this->tablesByPhpName[$table->getPhpName()] = $table;
+        }
+        $this->tables = $tables;
     }
 }

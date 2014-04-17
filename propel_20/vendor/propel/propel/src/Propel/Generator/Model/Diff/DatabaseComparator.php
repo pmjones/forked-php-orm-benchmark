@@ -34,6 +34,14 @@ class DatabaseComparator
      */
     protected $toDatabase;
 
+    /**
+     * Whether we should detect renamings and track it via `addRenamedTable` at the
+     * DatabaseDiff object.
+     *
+     * @var bool
+     */
+    protected $withRenaming = false;
+
     public function __construct($databaseDiff = null)
     {
         $this->databaseDiff = (null === $databaseDiff) ? new DatabaseDiff() : $databaseDiff;
@@ -92,16 +100,44 @@ class DatabaseComparator
      * @param  boolean              $caseInsensitive
      * @return DatabaseDiff|Boolean
      */
-    public static function computeDiff(Database $fromDatabase, Database $toDatabase, $caseInsensitive = false)
+    public static function computeDiff(Database $fromDatabase, Database $toDatabase, $caseInsensitive = false, $withRenaming = false)
     {
         $dc = new self();
         $dc->setFromDatabase($fromDatabase);
         $dc->setToDatabase($toDatabase);
+        $dc->setWithRenaming($withRenaming);
+
+        $platform = $toDatabase->getPlatform() ?: $fromDatabase->getPlatform();
+
+        if ($platform) {
+            foreach ($fromDatabase->getTables() as $table) {
+                $platform->normalizeTable($table);
+            }
+            foreach ($toDatabase->getTables() as $table) {
+                $platform->normalizeTable($table);
+            }
+        }
 
         $differences = 0;
         $differences += $dc->compareTables($caseInsensitive);
 
         return ($differences > 0) ? $dc->getDatabaseDiff() : false;
+    }
+
+    /**
+     * @param boolean $withRenaming
+     */
+    public function setWithRenaming($withRenaming)
+    {
+        $this->withRenaming = $withRenaming;
+    }
+
+    /**
+     * @return boolean
+     */
+    public function getWithRenaming()
+    {
+        return $this->withRenaming;
     }
 
     /**
@@ -119,13 +155,8 @@ class DatabaseComparator
         $toDatabaseTables = $this->toDatabase->getTables();
         $databaseDifferences = 0;
 
-        $platform = $this->toDatabase->getPlatform() ?: $this->fromDatabase->getPlatform();
-
         // check for new tables in $toDatabase
         foreach ($toDatabaseTables as $table) {
-            if ($platform) {
-                $platform->normalizeTable($table);
-            }
             if (!$this->fromDatabase->hasTable($table->getName(), $caseInsensitive) && !$table->isSkipSql()) {
                 $this->databaseDiff->addAddedTable($table->getName(), $table);
                 $databaseDifferences++;
@@ -152,17 +183,21 @@ class DatabaseComparator
             }
         }
 
-        $renamed = [];
         // check for table renamings
         foreach ($this->databaseDiff->getAddedTables() as $addedTableName => $addedTable) {
             foreach ($this->databaseDiff->getRemovedTables() as $removedTableName => $removedTable) {
-                if (!in_array($addedTableName, $renamed) && !TableComparator::computeDiff($addedTable, $removedTable, $caseInsensitive)) {
+                if (!TableComparator::computeDiff($addedTable, $removedTable, $caseInsensitive)) {
                     // no difference except the name, that's probably a renaming
-                    $renamed[] = $addedTableName;
-                    $this->databaseDiff->addRenamedTable($removedTableName, $addedTableName);
-                    $this->databaseDiff->removeAddedTable($addedTableName);
-                    $this->databaseDiff->removeRemovedTable($removedTableName);
-                    $databaseDifferences--;
+                    if ($this->getWithRenaming()) {
+                        $this->databaseDiff->addRenamedTable($removedTableName, $addedTableName);
+                        $this->databaseDiff->removeAddedTable($addedTableName);
+                        $this->databaseDiff->removeRemovedTable($removedTableName);
+                        $databaseDifferences--;
+                    } else {
+                        $this->databaseDiff->addPossibleRenamedTable($removedTableName, $addedTableName);
+                    }
+                    // skip to the next added table
+                    break;
                 }
             }
         }

@@ -27,6 +27,8 @@ use Propel\Runtime\ActiveQuery\ModelCriteria;
  * Test class for OnDemandFormatter.
  *
  * @author Francois Zaninotto
+ *
+ * @group database
  */
 class OnDemandFormatterTest extends BookstoreEmptyTestBase
 {
@@ -59,7 +61,7 @@ class OnDemandFormatterTest extends BookstoreEmptyTestBase
         $this->assertTrue(Propel::isInstancePoolingEnabled());
         $books = $formatter->format($stmt);
         $this->assertFalse(Propel::isInstancePoolingEnabled());
-        $books->closeCursor();
+        $books->getIterator()->closeCursor();
         $this->assertTrue(Propel::isInstancePoolingEnabled());
     }
 
@@ -74,7 +76,7 @@ class OnDemandFormatterTest extends BookstoreEmptyTestBase
         $this->assertFalse(Propel::isInstancePoolingEnabled());
         $books = $formatter->format($stmt);
         $this->assertFalse(Propel::isInstancePoolingEnabled());
-        $books->closeCursor();
+        $books->getIterator()->closeCursor();
         $this->assertFalse(Propel::isInstancePoolingEnabled());
         Propel::enableInstancePooling();
     }
@@ -144,7 +146,7 @@ class OnDemandFormatterTest extends BookstoreEmptyTestBase
             $book->save($con);
         }
 
-        $stmt = $con->query('SELECT * FROM book ORDER BY book.ID ASC');
+        $stmt = $con->query('SELECT id, title, isbn, price, publisher_id, author_id FROM book ORDER BY book.ID ASC');
         $formatter = new OnDemandFormatter();
         $formatter->init(new ModelCriteria('bookstore', 'Propel\Tests\Bookstore\Book'));
         $books = $formatter->format($stmt);
@@ -166,7 +168,7 @@ class OnDemandFormatterTest extends BookstoreEmptyTestBase
         $con = Propel::getServiceContainer()->getConnection(BookTableMap::DATABASE_NAME);
         BookstoreDataPopulator::populate($con);
 
-        $stmt = $con->query("SELECT * FROM book WHERE book.TITLE = 'Quicksilver'");
+        $stmt = $con->query("SELECT id, title, isbn, price, publisher_id, author_id FROM book WHERE book.TITLE = 'Quicksilver'");
         $formatter = new OnDemandFormatter();
         $formatter->init(new ModelCriteria('bookstore', 'Propel\Tests\Bookstore\Book'));
         $books = $formatter->format($stmt);

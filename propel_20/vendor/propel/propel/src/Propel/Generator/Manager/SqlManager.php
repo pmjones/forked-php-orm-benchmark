@@ -68,34 +68,6 @@ class SqlManager extends AbstractManager
     }
 
     /**
-     * @return array
-     */
-    public function getDatabases()
-    {
-        if (null === $this->databases) {
-            $databases = array();
-            foreach ($this->getDataModels() as $dataModel) {
-                foreach ($dataModel->getDatabases() as $database) {
-                    if (!isset($databases[$database->getName()])) {
-                        $databases[$database->getName()] = $database;
-                    } else {
-                        $tables = $database->getTables();
-                        // Merge tables from different schema.xml to the same database
-                        foreach ($tables as $table) {
-                            if (!$databases[$database->getName()]->hasTable($table->getName(), true)) {
-                                $databases[$database->getName()]->addTable($table);
-                            }
-                        }
-                    }
-                }
-            }
-            $this->databases = $databases;
-        }
-
-        return $this->databases;
-    }
-
-    /**
      * @return string
      */
     public function getSqlDbMapFilename()
@@ -128,7 +100,19 @@ class SqlManager extends AbstractManager
             $sqlDbMapContent .= sprintf("%s=%s\n", $filename, $datasource);
         }
 
-        file_put_contents($this->getSqlDbMapFilename(), $sqlDbMapContent);
+        if (!$this->existSqlMap()) {
+            file_put_contents($this->getSqlDbMapFilename(), $sqlDbMapContent);
+        }
+    }
+
+    /**
+     * Checks if the sqldb.map exists.
+     *
+     * @return bool
+     */
+    public function existSqlMap()
+    {
+        return file_exists($this->getSqlDbMapFilename());
     }
 
     /**
@@ -168,9 +152,7 @@ class SqlManager extends AbstractManager
             }
 
             $con = $this->getConnectionInstance($database);
-            $con->beginTransaction();
-
-            try {
+            $con->transaction(function () use ($con, $sqls) {
                 foreach ($sqls as $sql) {
                     try {
                         $stmt = $con->prepare($sql);
@@ -180,12 +162,7 @@ class SqlManager extends AbstractManager
                         throw new \Exception($message, 0, $e);
                     }
                 }
-
-                $con->commit();
-            } catch (\PDOException $e) {
-                $con->rollback();
-                throw $e;
-            }
+            });
 
             $this->log(sprintf('%d queries executed for %s database.', count($sqls), $database));
         }
@@ -196,7 +173,7 @@ class SqlManager extends AbstractManager
     /**
      * Returns a ConnectionInterface instance for a given datasource.
      *
-     * @param string $datasource
+     * @param  string              $datasource
      * @return ConnectionInterface
      */
     protected function getConnectionInstance($datasource)

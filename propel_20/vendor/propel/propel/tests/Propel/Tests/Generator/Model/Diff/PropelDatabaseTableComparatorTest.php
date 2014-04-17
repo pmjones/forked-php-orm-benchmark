@@ -301,6 +301,7 @@ class PropelDatabaseTableComparatorTest extends TestCase
         $dc = new DatabaseComparator();
         $dc->setFromDatabase($d1);
         $dc->setToDatabase($d2);
+        $dc->setWithRenaming(true);
         $nbDiffs = $dc->compareTables();
         $databaseDiff = $dc->getDatabaseDiff();
         $this->assertEquals(1, $nbDiffs);
@@ -309,6 +310,7 @@ class PropelDatabaseTableComparatorTest extends TestCase
         $this->assertEquals(array(), $databaseDiff->getAddedTables());
         $this->assertEquals(array(), $databaseDiff->getRemovedTables());
     }
+
 
     public function testCompareSeveralTableDifferences()
     {
@@ -357,12 +359,61 @@ class PropelDatabaseTableComparatorTest extends TestCase
         $dc->setToDatabase($d2);
         $nbDiffs = $dc->compareTables();
         $databaseDiff = $dc->getDatabaseDiff();
-        $this->assertEquals(4, $nbDiffs);
-        $this->assertEquals(array('Bar' => 'Bar2'), $databaseDiff->getRenamedTables());
-        $this->assertEquals(array('Biz' => $t5), $databaseDiff->getAddedTables());
-        $this->assertEquals(array('Baz' => $t11), $databaseDiff->getRemovedTables());
+        $this->assertEquals(5, $nbDiffs);
+        $this->assertEquals(array(), $databaseDiff->getRenamedTables());
+        $this->assertEquals(array('Bar2' => $t4, 'Biz' => $t5), $databaseDiff->getAddedTables());
+        $this->assertEquals(array('Baz' => $t11, 'Bar' => $t2), $databaseDiff->getRemovedTables());
         $tableDiff = TableComparator::computeDiff($t1, $t3);
         $this->assertEquals(array('Foo_Table' => $tableDiff), $databaseDiff->getModifiedTables());
+    }
+
+    public function testCompareSeveralRenamedSameTables()
+    {
+        $d1 = new Database();
+        $t1 = new Table('table1');
+        $c1 = new Column('col1');
+        $c1->getDomain()->copy($this->platform->getDomainForType('INTEGER'));
+        $t1->addColumn($c1);
+        $d1->addTable($t1);
+        $t2 = new Table('table2');
+        $c2 = new Column('col1');
+        $c2->getDomain()->copy($this->platform->getDomainForType('INTEGER'));
+        $t2->addColumn($c2);
+        $d1->addTable($t2);
+        $t3 = new Table('table3');
+        $c3 = new Column('col1');
+        $c3->getDomain()->copy($this->platform->getDomainForType('INTEGER'));
+        $t3->addColumn($c3);
+        $d1->addTable($t3);
+
+        $d2 = new Database();
+        $t4 = new Table('table4');
+        $c4 = new Column('col1');
+        $c4->getDomain()->copy($this->platform->getDomainForType('INTEGER'));
+        $t4->addColumn($c4);
+        $d2->addTable($t4);
+        $t5 = new Table('table5');
+        $c5 = new Column('col1');
+        $c5->getDomain()->copy($this->platform->getDomainForType('INTEGER'));
+        $t5->addColumn($c5);
+        $d2->addTable($t5);
+        $t6 = new Table('table3');
+        $c6 = new Column('col1');
+        $c6->getDomain()->copy($this->platform->getDomainForType('INTEGER'));
+        $t6->addColumn($c6);
+        $d2->addTable($t6);
+
+        // table1 and table2 were removed and table4, table5 added with same columns (does not always mean its a rename, hence we
+        // can not guarantee it)
+        $dc = new DatabaseComparator();
+        $dc->setFromDatabase($d1);
+        $dc->setToDatabase($d2);
+        $nbDiffs = $dc->compareTables();
+        $databaseDiff = $dc->getDatabaseDiff();
+        $this->assertEquals(4, $nbDiffs);
+        $this->assertEquals(0, count($databaseDiff->getRenamedTables()));
+        $this->assertEquals(array('table4', 'table5'), array_keys($databaseDiff->getAddedTables()));
+        $this->assertEquals(array('table1', 'table2'), array_keys($databaseDiff->getRemovedTables()));
     }
 
 }

@@ -93,7 +93,7 @@ class ModelManager extends AbstractManager
                                 foreach ($col->getChildren() as $child) {
                                     $overwrite = true;
                                     foreach (array('queryinheritance') as $target) {
-                                        if (!$child->getAncestor()) {
+                                        if (!$child->getAncestor() && $child->getClassName() == $table->getPhpName()) {
                                             continue;
                                         }
                                         $builder = $generatorConfig->getConfiguredBuilder($table, $target);
@@ -153,8 +153,8 @@ class ModelManager extends AbstractManager
      * This method assumes that the DataModelBuilder class has been initialized
      * with the build properties.
      *
-     * @param AbstractOMBuilder $builder
-     * @param boolean           $overwrite
+     * @param  AbstractOMBuilder $builder
+     * @param  boolean           $overwrite
      * @return int
      */
     protected function doBuild(AbstractOMBuilder $builder, $overwrite = true)

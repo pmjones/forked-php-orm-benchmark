@@ -51,7 +51,7 @@ CREATE TABLE foo5
     dfgdsgf NVARCHAR2(2000)
 );
 
-ALTER TABLE foo5 ADD CONSTRAINT foo5_PK PRIMARY KEY (id);
+ALTER TABLE foo5 ADD CONSTRAINT foo5_pk PRIMARY KEY (id);
 
 CREATE SEQUENCE foo5_SEQ
     INCREMENT BY 1 START WITH 1 NOMAXVALUE NOCYCLE NOCACHE ORDER;
@@ -90,13 +90,13 @@ ALTER TABLE foo1 RENAME TO foo2;
     public function testGetModifyTableDDL($tableDiff)
     {
         $expected = "
-ALTER TABLE foo DROP CONSTRAINT foo1_FK_2;
+ALTER TABLE foo DROP CONSTRAINT foo1_fk_2;
 
-ALTER TABLE foo DROP CONSTRAINT foo1_FK_1;
+ALTER TABLE foo DROP CONSTRAINT foo1_fk_1;
 
-DROP INDEX bar_baz_FK;
+DROP INDEX bar_baz_fk;
 
-DROP INDEX bar_FK;
+DROP INDEX bar_fk;
 
 ALTER TABLE foo RENAME COLUMN bar TO bar1;
 
@@ -112,11 +112,11 @@ ALTER TABLE foo
     baz3 NVARCHAR2(2000)
 );
 
-CREATE INDEX bar_FK ON foo (bar1);
+CREATE INDEX bar_fk ON foo (bar1);
 
-CREATE INDEX baz_FK ON foo (baz3);
+CREATE INDEX baz_fk ON foo (baz3);
 
-ALTER TABLE foo ADD CONSTRAINT foo1_FK_1
+ALTER TABLE foo ADD CONSTRAINT foo1_fk_1
     FOREIGN KEY (bar1) REFERENCES foo2 (bar);
 ";
         $this->assertEquals($expected, $this->getPlatform()->getModifyTableDDL($tableDiff));
@@ -149,9 +149,9 @@ ALTER TABLE foo ADD
     public function testGetModifyTablePrimaryKeysDDL($tableDiff)
     {
         $expected = "
-ALTER TABLE foo DROP CONSTRAINT foo_PK;
+ALTER TABLE foo DROP CONSTRAINT foo_pk;
 
-ALTER TABLE foo ADD CONSTRAINT foo_PK PRIMARY KEY (id,bar);
+ALTER TABLE foo ADD CONSTRAINT foo_pk PRIMARY KEY (id,bar);
 ";
         $this->assertEquals($expected, $this->getPlatform()->getModifyTablePrimaryKeyDDL($tableDiff));
     }
@@ -162,13 +162,13 @@ ALTER TABLE foo ADD CONSTRAINT foo_PK PRIMARY KEY (id,bar);
     public function testGetModifyTableIndicesDDL($tableDiff)
     {
         $expected = "
-DROP INDEX bar_FK;
+DROP INDEX bar_fk;
 
-CREATE INDEX baz_FK ON foo (baz);
+CREATE INDEX baz_fk ON foo (baz);
 
-DROP INDEX bar_baz_FK;
+DROP INDEX bar_baz_fk;
 
-CREATE INDEX bar_baz_FK ON foo (id,bar,baz);
+CREATE INDEX bar_baz_fk ON foo (id,bar,baz);
 ";
         $this->assertEquals($expected, $this->getPlatform()->getModifyTableIndicesDDL($tableDiff));
     }
@@ -179,14 +179,14 @@ CREATE INDEX bar_baz_FK ON foo (id,bar,baz);
     public function testGetModifyTableForeignKeysDDL($tableDiff)
     {
         $expected = "
-ALTER TABLE foo1 DROP CONSTRAINT foo1_FK_1;
+ALTER TABLE foo1 DROP CONSTRAINT foo1_fk_1;
 
-ALTER TABLE foo1 ADD CONSTRAINT foo1_FK_3
+ALTER TABLE foo1 ADD CONSTRAINT foo1_fk_3
     FOREIGN KEY (baz) REFERENCES foo2 (baz);
 
-ALTER TABLE foo1 DROP CONSTRAINT foo1_FK_2;
+ALTER TABLE foo1 DROP CONSTRAINT foo1_fk_2;
 
-ALTER TABLE foo1 ADD CONSTRAINT foo1_FK_2
+ALTER TABLE foo1 ADD CONSTRAINT foo1_fk_2
     FOREIGN KEY (bar,id) REFERENCES foo2 (bar,id);
 ";
         $this->assertEquals($expected, $this->getPlatform()->getModifyTableForeignKeysDDL($tableDiff));
@@ -198,11 +198,11 @@ ALTER TABLE foo1 ADD CONSTRAINT foo1_FK_2
     public function testGetModifyTableForeignKeysSkipSqlDDL($tableDiff)
     {
         $expected = "
-ALTER TABLE foo1 DROP CONSTRAINT foo1_FK_1;
+ALTER TABLE foo1 DROP CONSTRAINT foo1_fk_1;
 ";
         $this->assertEquals($expected, $this->getPlatform()->getModifyTableForeignKeysDDL($tableDiff));
         $expected = "
-ALTER TABLE foo1 ADD CONSTRAINT foo1_FK_1
+ALTER TABLE foo1 ADD CONSTRAINT foo1_fk_1
     FOREIGN KEY (bar) REFERENCES foo2 (bar);
 ";
         $this->assertEquals($expected, $this->getPlatform()->getModifyTableForeignKeysDDL($tableDiff->getReverseDiff()));
@@ -395,7 +395,39 @@ DROP TABLE foo1 CASCADE CONSTRAINTS;
 
 DROP SEQUENCE foo1_SEQ;
 
-ALTER TABLE foo3 RENAME TO foo4;
+DROP TABLE foo3 CASCADE CONSTRAINTS;
+
+DROP SEQUENCE foo3_SEQ;
+
+CREATE TABLE foo4
+(
+    id NUMBER NOT NULL,
+    yipee NUMBER
+)
+PCTFREE 20
+INITRANS 4
+STORAGE
+(
+    MINEXTENTS 1
+    MAXEXTENTS 99
+    PCTINCREASE 0
+)
+TABLESPACE L_128K;
+
+ALTER TABLE foo4 ADD CONSTRAINT foo4_pk PRIMARY KEY (id)
+USING INDEX
+PCTFREE 20
+INITRANS 4
+STORAGE
+(
+    MINEXTENTS 1
+    MAXEXTENTS 99
+    PCTINCREASE 0
+)
+TABLESPACE IL_128K;
+
+CREATE SEQUENCE foo4_SEQ
+    INCREMENT BY 1 START WITH 1 NOMAXVALUE NOCYCLE NOCACHE ORDER;
 
 CREATE TABLE foo5
 (
@@ -413,7 +445,7 @@ STORAGE
 )
 TABLESPACE L_128K;
 
-ALTER TABLE foo5 ADD CONSTRAINT foo5_PK PRIMARY KEY (id)
+ALTER TABLE foo5 ADD CONSTRAINT foo5_pk PRIMARY KEY (id)
 USING INDEX
 PCTFREE 20
 INITRANS 4

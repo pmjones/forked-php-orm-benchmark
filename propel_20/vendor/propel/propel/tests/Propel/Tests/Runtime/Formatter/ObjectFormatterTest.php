@@ -27,7 +27,8 @@ use Propel\Runtime\ActiveQuery\ModelCriteria;
  * Test class for ObjectFormatter.
  *
  * @author Francois Zaninotto
- * @version    $Id$
+ *
+ * @group database
  */
 class ObjectFormatterTest extends BookstoreEmptyTestBase
 {
@@ -81,7 +82,7 @@ class ObjectFormatterTest extends BookstoreEmptyTestBase
     {
         $con = Propel::getServiceContainer()->getConnection(BookTableMap::DATABASE_NAME);
 
-        $stmt = $con->query("SELECT * FROM book WHERE book.TITLE = 'Quicksilver'");
+        $stmt = $con->query("SELECT id, title, isbn, price, publisher_id, author_id FROM book WHERE book.TITLE = 'Quicksilver'");
         $formatter = new ObjectFormatter();
         $formatter->init(new ModelCriteria('bookstore', '\Propel\Tests\Bookstore\Book'));
         $books = $formatter->format($stmt);
