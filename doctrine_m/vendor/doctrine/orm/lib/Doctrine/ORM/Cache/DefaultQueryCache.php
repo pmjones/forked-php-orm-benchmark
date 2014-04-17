@@ -128,7 +128,8 @@ class DefaultQueryCache implements QueryCache
             }
 
             if ( ! $hasRelation) {
-                $result[$index]  = $this->uow->createEntity($entityEntry->class, $entityEntry->data, self::$hints);
+
+                $result[$index]  = $this->uow->createEntity($entityEntry->class, $entityEntry->resolveAssociationEntries($this->em), self::$hints);
 
                 continue;
             }
@@ -151,7 +152,7 @@ class DefaultQueryCache implements QueryCache
                         return null;
                     }
 
-                    $data[$name] = $this->uow->createEntity($assocEntry->class, $assocEntry->data, self::$hints);
+                    $data[$name] = $this->uow->createEntity($assocEntry->class, $assocEntry->resolveAssociationEntries($this->em), self::$hints);
 
                     if ($this->cacheLogger !== null) {
                         $this->cacheLogger->entityCacheHit($assocRegion->getName(), $assocKey);
@@ -178,7 +179,7 @@ class DefaultQueryCache implements QueryCache
                         return null;
                     }
 
-                    $element = $this->uow->createEntity($assocEntry->class, $assocEntry->data, self::$hints);
+                    $element = $this->uow->createEntity($assocEntry->class, $assocEntry->resolveAssociationEntries($this->em), self::$hints);
 
                     $collection->hydrateSet($assocIndex, $element);
 

@@ -434,7 +434,7 @@ Starting with 2.4, the IDENTITY() DQL function also works for composite primary 
 .. code-block:: php
 
     <?php
-    $query = $em->createQuery('SELECT IDENTITY(c.location, 'latitude') AS latitude, IDENTITY(c.location, 'longitude') AS longitude FROM Checkpoint c WHERE c.user = ?1');
+    $query = $em->createQuery("SELECT IDENTITY(c.location, 'latitude') AS latitude, IDENTITY(c.location, 'longitude') AS longitude FROM Checkpoint c WHERE c.user = ?1");
 
 Joins between entities without associations were not possible until version
 2.4, where you can generate an arbitrary join with the following syntax:
@@ -1141,7 +1141,7 @@ Scalar Hydration:
 Single Scalar Hydration
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-If you a query which returns just a single scalar value you can use
+If you have a query which returns just a single scalar value you can use
 single scalar hydration:
 
 .. code-block:: php
@@ -1363,7 +1363,7 @@ can mark a many-to-one or one-to-one association as fetched temporarily to batch
 
     <?php
     $query = $em->createQuery("SELECT u FROM MyProject\User u");
-    $query->setFetchMode("MyProject\User", "address", "EAGER");
+    $query->setFetchMode("MyProject\User", "address", \Doctrine\ORM\Mapping\ClassMetadata::FETCH_EAGER);
     $query->execute();
 
 Given that there are 10 users and corresponding addresses in the database the executed queries will look something like:
@@ -1512,7 +1512,7 @@ Items
 .. code-block:: php
 
     UpdateItem  ::= SingleValuedPathExpression "=" NewValue
-    OrderByItem ::= (SimpleArithmeticExpression | SingleValuedPathExpression | ScalarExpression | ResultVariable) ["ASC" | "DESC"]
+    OrderByItem ::= (SimpleArithmeticExpression | SingleValuedPathExpression | ScalarExpression | ResultVariable | FunctionDeclaration) ["ASC" | "DESC"]
     GroupByItem ::= IdentificationVariable | ResultVariable | SingleValuedPathExpression
     NewValue    ::= SimpleArithmeticExpression | "NULL"
 
@@ -1647,7 +1647,7 @@ QUANTIFIED/BETWEEN/COMPARISON/LIKE/NULL/EXISTS
     InstanceOfExpression     ::= IdentificationVariable ["NOT"] "INSTANCE" ["OF"] (InstanceOfParameter | "(" InstanceOfParameter {"," InstanceOfParameter}* ")")
     InstanceOfParameter      ::= AbstractSchemaName | InputParameter
     LikeExpression           ::= StringExpression ["NOT"] "LIKE" StringPrimary ["ESCAPE" char]
-    NullComparisonExpression ::= (InputParameter | NullIfExpression | CoalesceExpression | SingleValuedPathExpression | ResultVariable) "IS" ["NOT"] "NULL"
+    NullComparisonExpression ::= (InputParameter | NullIfExpression | CoalesceExpression | AggregateExpression | FunctionDeclaration | IdentificationVariable | SingleValuedPathExpression | ResultVariable) "IS" ["NOT"] "NULL"
     ExistsExpression         ::= ["NOT"] "EXISTS" "(" Subselect ")"
     ComparisonOperator       ::= "=" | "<" | "<=" | "<>" | ">" | ">=" | "!="
 
@@ -1682,6 +1682,6 @@ Functions
             "TRIM" "(" [["LEADING" | "TRAILING" | "BOTH"] [char] "FROM"] StringPrimary ")" |
             "LOWER" "(" StringPrimary ")" |
             "UPPER" "(" StringPrimary ")" |
-            "IDENTITY" "(" SingleValuedAssociationPathExpression ")"
+            "IDENTITY" "(" SingleValuedAssociationPathExpression {"," string} ")"
 
 

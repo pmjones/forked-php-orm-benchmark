@@ -4,8 +4,6 @@ namespace Doctrine\Tests\ORM\Query;
 use Doctrine\ORM\Query,
     Doctrine\ORM\Query\QueryException;
 
-require_once __DIR__ . '/../../TestInit.php';
-
 class LanguageRecognitionTest extends \Doctrine\Tests\OrmTestCase
 {
     private $_em;
@@ -592,7 +590,7 @@ class LanguageRecognitionTest extends \Doctrine\Tests\OrmTestCase
     }
 
     /**
-     * @gorup DDC-1858
+     * @group DDC-1858
      */
     public function testHavingSupportIsNullExpression()
     {
@@ -600,11 +598,19 @@ class LanguageRecognitionTest extends \Doctrine\Tests\OrmTestCase
     }
 
     /**
-     * @gorup DDC-1858
+     * @group DDC-1858
      */
     public function testHavingSupportLikeExpression()
     {
         $this->assertValidDQL("SELECT _u.id, count(_articles) as uuuu FROM Doctrine\Tests\Models\CMS\CmsUser _u LEFT JOIN _u.articles _articles GROUP BY _u HAVING uuuu LIKE '3'");
+    }
+
+    /**
+     * @group DDC-3018
+     */
+    public function testNewLiteralExpression()
+    {
+        $this->assertValidDQL("SELECT new " . __NAMESPACE__ . "\\DummyStruct(u.id, 'foo', 1, true) FROM Doctrine\Tests\Models\CMS\CmsUser u");
     }
 }
 
@@ -624,4 +630,11 @@ class DQLKeywordsModelGroup
     private $id;
     /** @Column */
     private $from;
+}
+
+class DummyStruct
+{
+    public function __construct($id, $arg1, $arg2, $arg3)
+    {
+    }
 }

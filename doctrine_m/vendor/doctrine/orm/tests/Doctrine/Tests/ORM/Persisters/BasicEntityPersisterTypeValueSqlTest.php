@@ -9,8 +9,6 @@ use Doctrine\Tests\Models\CustomType\CustomTypeChild;
 use Doctrine\Tests\Models\CustomType\CustomTypeFriend;
 use Doctrine\Common\Collections\Expr\Comparison;
 
-require_once __DIR__ . '/../../TestInit.php';
-
 class BasicEntityPersisterTypeValueSqlTest extends \Doctrine\Tests\OrmTestCase
 {
     protected $_persister;
@@ -87,7 +85,7 @@ class BasicEntityPersisterTypeValueSqlTest extends \Doctrine\Tests\OrmTestCase
         $method     = new \ReflectionMethod($persister, 'getSelectColumnsSQL');
         $method->setAccessible(true);
 
-        $this->assertEquals('t0."simple-entity-id" AS simpleentityid1, t0."simple-entity-value" AS simpleentityvalue2', $method->invoke($persister));
+        $this->assertEquals('t0."simple-entity-id" AS simpleentityid_1, t0."simple-entity-value" AS simpleentityvalue_2', $method->invoke($persister));
     }
 
     /**

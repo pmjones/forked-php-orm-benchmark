@@ -2,6 +2,7 @@
 
 namespace Doctrine\Tests\DBAL\Functional;
 
+use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\DBAL\Connection;
 use PDO;
@@ -436,6 +437,63 @@ class DataAccessTest extends \Doctrine\Tests\DbalFunctionalTestCase
     }
 
     /**
+     * @dataProvider getTrimExpressionData
+     */
+    public function testTrimExpression($value, $position, $char, $expectedResult)
+    {
+        $sql = 'SELECT ' .
+            $this->_conn->getDatabasePlatform()->getTrimExpression($value, $position, $char) . ' AS trimmed ' .
+            'FROM fetch_table';
+
+        $row = $this->_conn->fetchAssoc($sql);
+        $row = array_change_key_case($row, CASE_LOWER);
+
+        $this->assertEquals($expectedResult, $row['trimmed']);
+    }
+
+    public function getTrimExpressionData()
+    {
+        return array(
+            array('test_string', AbstractPlatform::TRIM_UNSPECIFIED, false, 'foo'),
+            array('test_string', AbstractPlatform::TRIM_LEADING, false, 'foo'),
+            array('test_string', AbstractPlatform::TRIM_TRAILING, false, 'foo'),
+            array('test_string', AbstractPlatform::TRIM_BOTH, false, 'foo'),
+            array('test_string', AbstractPlatform::TRIM_UNSPECIFIED, "'f'", 'oo'),
+            array('test_string', AbstractPlatform::TRIM_UNSPECIFIED, "'o'", 'f'),
+            array('test_string', AbstractPlatform::TRIM_UNSPECIFIED, "'.'", 'foo'),
+            array('test_string', AbstractPlatform::TRIM_LEADING, "'f'", 'oo'),
+            array('test_string', AbstractPlatform::TRIM_LEADING, "'o'", 'foo'),
+            array('test_string', AbstractPlatform::TRIM_LEADING, "'.'", 'foo'),
+            array('test_string', AbstractPlatform::TRIM_TRAILING, "'f'", 'foo'),
+            array('test_string', AbstractPlatform::TRIM_TRAILING, "'o'", 'f'),
+            array('test_string', AbstractPlatform::TRIM_TRAILING, "'.'", 'foo'),
+            array('test_string', AbstractPlatform::TRIM_BOTH, "'f'", 'oo'),
+            array('test_string', AbstractPlatform::TRIM_BOTH, "'o'", 'f'),
+            array('test_string', AbstractPlatform::TRIM_BOTH, "'.'", 'foo'),
+            array("' foo '", AbstractPlatform::TRIM_UNSPECIFIED, false, 'foo'),
+            array("' foo '", AbstractPlatform::TRIM_LEADING, false, 'foo '),
+            array("' foo '", AbstractPlatform::TRIM_TRAILING, false, ' foo'),
+            array("' foo '", AbstractPlatform::TRIM_BOTH, false, 'foo'),
+            array("' foo '", AbstractPlatform::TRIM_UNSPECIFIED, "'f'", ' foo '),
+            array("' foo '", AbstractPlatform::TRIM_UNSPECIFIED, "'o'", ' foo '),
+            array("' foo '", AbstractPlatform::TRIM_UNSPECIFIED, "'.'", ' foo '),
+            array("' foo '", AbstractPlatform::TRIM_UNSPECIFIED, "' '", 'foo'),
+            array("' foo '", AbstractPlatform::TRIM_LEADING, "'f'", ' foo '),
+            array("' foo '", AbstractPlatform::TRIM_LEADING, "'o'", ' foo '),
+            array("' foo '", AbstractPlatform::TRIM_LEADING, "'.'", ' foo '),
+            array("' foo '", AbstractPlatform::TRIM_LEADING, "' '", 'foo '),
+            array("' foo '", AbstractPlatform::TRIM_TRAILING, "'f'", ' foo '),
+            array("' foo '", AbstractPlatform::TRIM_TRAILING, "'o'", ' foo '),
+            array("' foo '", AbstractPlatform::TRIM_TRAILING, "'.'", ' foo '),
+            array("' foo '", AbstractPlatform::TRIM_TRAILING, "' '", ' foo'),
+            array("' foo '", AbstractPlatform::TRIM_BOTH, "'f'", ' foo '),
+            array("' foo '", AbstractPlatform::TRIM_BOTH, "'o'", ' foo '),
+            array("' foo '", AbstractPlatform::TRIM_BOTH, "'.'", ' foo '),
+            array("' foo '", AbstractPlatform::TRIM_BOTH, "' '", 'foo'),
+        );
+    }
+
+    /**
      * @group DDC-1014
      */
     public function testDateArithmetics()
@@ -462,6 +520,36 @@ class DataAccessTest extends \Doctrine\Tests\DbalFunctionalTestCase
         $this->assertEquals('2009-12-22', date('Y-m-d', strtotime($row['sub_days'])), "Subtracting date should end up on 2009-12-22");
         $this->assertEquals('2010-03-01', date('Y-m-d', strtotime($row['add_month'])), "Adding month should end up on 2010-03-01");
         $this->assertEquals('2009-11-01', date('Y-m-d', strtotime($row['sub_month'])), "Adding month should end up on 2009-11-01");
+    }
+
+    public function testLocateExpression()
+    {
+        $platform = $this->_conn->getDatabasePlatform();
+
+        $sql = 'SELECT ';
+        $sql .= $platform->getLocateExpression('test_string', "'oo'") .' AS locate1, ';
+        $sql .= $platform->getLocateExpression('test_string', "'foo'") .' AS locate2, ';
+        $sql .= $platform->getLocateExpression('test_string', "'bar'") .' AS locate3, ';
+        $sql .= $platform->getLocateExpression('test_string', 'test_string') .' AS locate4, ';
+        $sql .= $platform->getLocateExpression("'foo'", 'test_string') .' AS locate5, ';
+        $sql .= $platform->getLocateExpression("'barfoobaz'", 'test_string') .' AS locate6, ';
+        $sql .= $platform->getLocateExpression("'bar'", 'test_string') .' AS locate7, ';
+        $sql .= $platform->getLocateExpression('test_string', "'oo'", 2) .' AS locate8, ';
+        $sql .= $platform->getLocateExpression('test_string', "'oo'", 3) .' AS locate9 ';
+        $sql .= 'FROM fetch_table';
+
+        $row = $this->_conn->fetchAssoc($sql);
+        $row = array_change_key_case($row, CASE_LOWER);
+
+        $this->assertEquals(2, $row['locate1']);
+        $this->assertEquals(1, $row['locate2']);
+        $this->assertEquals(0, $row['locate3']);
+        $this->assertEquals(1, $row['locate4']);
+        $this->assertEquals(1, $row['locate5']);
+        $this->assertEquals(4, $row['locate6']);
+        $this->assertEquals(0, $row['locate7']);
+        $this->assertEquals(2, $row['locate8']);
+        $this->assertEquals(0, $row['locate9']);
     }
 
     public function testQuoteSQLInjection()

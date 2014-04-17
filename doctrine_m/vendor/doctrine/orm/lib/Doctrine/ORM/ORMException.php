@@ -264,12 +264,13 @@ class ORMException extends Exception
 
     /**
      * @param string $className
+     * @param string $fieldName
      *
      * @return ORMException
      */
-    public static function invalidSecondLevelCache($className)
+    public static function missingIdentifierField($className, $fieldName)
     {
-        return new self(sprintf('Invalid cache class "%s". It must be a Doctrine\ORM\Cache.', $className));
+        return new self("The identifier $fieldName is missing for a query of " . $className);
     }
 
     /**
@@ -278,9 +279,12 @@ class ORMException extends Exception
      *
      * @return ORMException
      */
-    public static function missingIdentifierField($className, $fieldName)
+    public static function unrecognizedIdentifierFields($className, $fieldNames)
     {
-        return new self("The identifier $fieldName is missing for a query of " . $className);
+        return new self(
+            "Unrecognized identifier fields: '" . implode("', '", $fieldNames) . "' " .
+            "are not present on class '" . $className . "'."
+        );
     }
 
     /**
