@@ -5,11 +5,9 @@ namespace Doctrine\Tests\DBAL\Platforms;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Schema\Comparator;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint;
-use Doctrine\DBAL\Types\Type;
+use Doctrine\DBAL\Schema\Index;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Schema\TableDiff;
-use Doctrine\DBAL\Schema\Schema;
-use Doctrine\DBAL\Schema\Index;
 
 abstract class AbstractMySQLPlatformTestCase extends AbstractPlatformTestCase
 {
@@ -538,5 +536,24 @@ abstract class AbstractMySQLPlatformTestCase extends AbstractPlatformTestCase
         $comparator = new Comparator();
 
         $this->assertEmpty($this->_platform->getAlterTableSQL($comparator->diffTable($table, $diffTable)));
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function getQuotedAlterTableRenameColumnSQL()
+    {
+        return array(
+            "ALTER TABLE mytable " .
+            "CHANGE unquoted1 unquoted INT NOT NULL COMMENT 'Unquoted 1', " .
+            "CHANGE unquoted2 `where` INT NOT NULL COMMENT 'Unquoted 2', " .
+            "CHANGE unquoted3 `foo` INT NOT NULL COMMENT 'Unquoted 3', " .
+            "CHANGE `create` reserved_keyword INT NOT NULL COMMENT 'Reserved keyword 1', " .
+            "CHANGE `table` `from` INT NOT NULL COMMENT 'Reserved keyword 2', " .
+            "CHANGE `select` `bar` INT NOT NULL COMMENT 'Reserved keyword 3', " .
+            "CHANGE quoted1 quoted INT NOT NULL COMMENT 'Quoted 1', " .
+            "CHANGE quoted2 `and` INT NOT NULL COMMENT 'Quoted 2', " .
+            "CHANGE quoted3 `baz` INT NOT NULL COMMENT 'Quoted 3'"
+        );
     }
 }

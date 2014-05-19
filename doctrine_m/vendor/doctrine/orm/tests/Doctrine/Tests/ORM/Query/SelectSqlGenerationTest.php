@@ -1707,6 +1707,10 @@ class SelectSqlGenerationTest extends \Doctrine\Tests\OrmTestCase
             "SELECT c0_.id AS sclr_0, c0_.country AS sclr_1, c0_.city AS sclr_2, c1_.name AS sclr_3, c2_.email AS sclr_4 FROM cms_users c1_ INNER JOIN cms_emails c2_ ON c1_.email_id = c2_.id INNER JOIN cms_addresses c0_ ON c1_.id = c0_.user_id ORDER BY c1_.name ASC"
         );
 
+        $this->assertSqlGeneration(
+            "SELECT new Doctrine\Tests\Models\CMS\CmsUserDTO(a.id, (SELECT 1 FROM Doctrine\Tests\Models\CMS\CmsUser su), a.country, a.city), new Doctrine\Tests\Models\CMS\CmsAddressDTO(u.name, e.email) FROM Doctrine\Tests\Models\CMS\CmsUser u JOIN u.email e JOIN u.address a ORDER BY u.name",
+            "SELECT c0_.id AS sclr_0, (SELECT 1 AS sclr_2 FROM cms_users c1_) AS sclr_1, c0_.country AS sclr_3, c0_.city AS sclr_4, c2_.name AS sclr_5, c3_.email AS sclr_6 FROM cms_users c2_ INNER JOIN cms_emails c3_ ON c2_.email_id = c3_.id INNER JOIN cms_addresses c0_ ON c2_.id = c0_.user_id ORDER BY c2_.name ASC"
+        );
     }
 
     /**
@@ -2179,6 +2183,17 @@ class SelectSqlGenerationTest extends \Doctrine\Tests\OrmTestCase
         $this->assertSqlGeneration(
             "SELECT u.name AS foo FROM Doctrine\Tests\Models\CMS\CmsUser u HAVING foo LIKE '3'",
             "SELECT c0_.name AS name_0 FROM cms_users c0_ HAVING name_0 LIKE '3'"
+        );
+    }
+    
+    /**
+     * @group DDC-3085
+     */
+    public function testHavingSupportResultVariableNullComparisonExpression()
+    {
+        $this->assertSqlGeneration(
+            "SELECT u AS user, SUM(a.id) AS score FROM Doctrine\Tests\Models\CMS\CmsUser u LEFT JOIN Doctrine\Tests\Models\CMS\CmsAddress a WITH a.user = u GROUP BY u HAVING score IS NOT NULL AND score >= 5",
+            "SELECT c0_.id AS id_0, c0_.status AS status_1, c0_.username AS username_2, c0_.name AS name_3, SUM(c1_.id) AS sclr_4 FROM cms_users c0_ LEFT JOIN cms_addresses c1_ ON (c1_.user_id = c0_.id) GROUP BY c0_.id, c0_.status, c0_.username, c0_.name, c0_.email_id HAVING sclr_4 IS NOT NULL AND sclr_4 >= 5"
         );
     }
 

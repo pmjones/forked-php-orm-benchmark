@@ -353,12 +353,12 @@
         "source": {
             "type": "git",
             "url": "https://github.com/doctrine/dbal.git",
-            "reference": "e422e5e41876d33b0bce924b51a941f292f2e018"
+            "reference": "6252da0cf1ed04cc790af533f0841bf5c01de44e"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/doctrine/dbal/zipball/e422e5e41876d33b0bce924b51a941f292f2e018",
-            "reference": "e422e5e41876d33b0bce924b51a941f292f2e018",
+            "url": "https://api.github.com/repos/doctrine/dbal/zipball/6252da0cf1ed04cc790af533f0841bf5c01de44e",
+            "reference": "6252da0cf1ed04cc790af533f0841bf5c01de44e",
             "shasum": ""
         },
         "require": {
@@ -366,13 +366,16 @@
             "php": ">=5.3.2"
         },
         "require-dev": {
-            "phpunit/phpunit": "3.7.*",
+            "phpunit/phpunit": "4.0.*",
             "symfony/console": "2.*"
         },
         "suggest": {
-            "symfony/console": "Allows use of the command line interface"
+            "symfony/console": "For helpful console commands such as SQL execution and import of files."
         },
-        "time": "2014-04-17 15:09:42",
+        "time": "2014-05-16 11:43:27",
+        "bin": [
+            "bin/doctrine-dbal"
+        ],
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -491,18 +494,18 @@
     },
     {
         "name": "symfony/console",
-        "version": "v2.4.3",
-        "version_normalized": "2.4.3.0",
+        "version": "v2.4.4",
+        "version_normalized": "2.4.4.0",
         "target-dir": "Symfony/Component/Console",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/Console.git",
-            "reference": "ef20f1f58d7f693ee888353962bd2db336e3bbcb"
+            "reference": "2e452005b1e1d003d23702d227e23614679eb5ca"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/symfony/Console/zipball/ef20f1f58d7f693ee888353962bd2db336e3bbcb",
-            "reference": "ef20f1f58d7f693ee888353962bd2db336e3bbcb",
+            "url": "https://api.github.com/repos/symfony/Console/zipball/2e452005b1e1d003d23702d227e23614679eb5ca",
+            "reference": "2e452005b1e1d003d23702d227e23614679eb5ca",
             "shasum": ""
         },
         "require": {
@@ -514,7 +517,7 @@
         "suggest": {
             "symfony/event-dispatcher": ""
         },
-        "time": "2014-03-01 17:35:04",
+        "time": "2014-04-27 13:34:57",
         "type": "library",
         "extra": {
             "branch-alias": {
@@ -553,16 +556,16 @@
         "source": {
             "type": "git",
             "url": "https://github.com/doctrine/doctrine2.git",
-            "reference": "54d9f05e39bc6c0943a48dfb523675c931a1435b"
+            "reference": "04aea73a850dad408c068f43c875e52fbd14004e"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/doctrine/doctrine2/zipball/54d9f05e39bc6c0943a48dfb523675c931a1435b",
-            "reference": "54d9f05e39bc6c0943a48dfb523675c931a1435b",
+            "url": "https://api.github.com/repos/doctrine/doctrine2/zipball/04aea73a850dad408c068f43c875e52fbd14004e",
+            "reference": "04aea73a850dad408c068f43c875e52fbd14004e",
             "shasum": ""
         },
         "require": {
-            "doctrine/collections": "~1.1",
+            "doctrine/collections": "~1.2",
             "doctrine/dbal": ">=2.5-dev,<2.6-dev",
             "ext-pdo": "*",
             "php": ">=5.3.2",
@@ -576,7 +579,7 @@
         "suggest": {
             "symfony/yaml": "If you want to use YAML Metadata Mapping Driver"
         },
-        "time": "2014-04-17 20:21:06",
+        "time": "2014-05-17 17:08:37",
         "bin": [
             "bin/doctrine",
             "bin/doctrine.php"

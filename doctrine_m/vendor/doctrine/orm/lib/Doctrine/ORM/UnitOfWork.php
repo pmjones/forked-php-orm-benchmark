@@ -483,6 +483,8 @@ class UnitOfWork implements PropertyChangedListener
             $this->entityChangeSets[$oid] = $changeset;
             $this->getEntityPersister(get_class($entity))->update($entity);
         }
+
+        $this->extraUpdates = array();
     }
 
     /**
@@ -2553,12 +2555,6 @@ class UnitOfWork implements PropertyChangedListener
                 if ($entity instanceof NotifyPropertyChanged) {
                     $entity->addPropertyChangedListener($this);
                 }
-
-                // inject ObjectManager into just loaded proxies.
-                if ($overrideLocalValues && $entity instanceof ObjectManagerAware) {
-                    $entity->injectObjectManager($this->em, $class);
-                }
-
             } else {
                 $overrideLocalValues = isset($hints[Query::HINT_REFRESH]);
 
@@ -2566,14 +2562,14 @@ class UnitOfWork implements PropertyChangedListener
                 if (isset($hints[Query::HINT_REFRESH_ENTITY])) {
                     $overrideLocalValues = $hints[Query::HINT_REFRESH_ENTITY] === $entity;
                 }
-
-                // inject ObjectManager upon refresh.
-                if ($overrideLocalValues && $entity instanceof ObjectManagerAware) {
-                    $entity->injectObjectManager($this->em, $class);
-                }
             }
 
             if ($overrideLocalValues) {
+                // inject ObjectManager upon refresh.
+                if ($entity instanceof ObjectManagerAware) {
+                    $entity->injectObjectManager($this->em, $class);
+                }
+
                 $this->originalEntityData[$oid] = $data;
             }
         } else {
