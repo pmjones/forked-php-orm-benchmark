@@ -197,7 +197,7 @@ abstract class AbstractOMBuilder extends DataModelBuilder
     {
         $pkg = ($this->getTable()->getPackage() ? $this->getTable()->getPackage() : $this->getDatabase()->getPackage());
         if (!$pkg) {
-            $pkg = $this->getBuildProperty('targetPackage');
+            $pkg = $this->getBuildProperty('generator.targetPackage');
         }
 
         return $pkg;
@@ -529,7 +529,7 @@ abstract class AbstractOMBuilder extends DataModelBuilder
         }
 
         if (null === $classname) {
-            return $this->getBuildProperty('classPrefix') . $col->getFQConstantName();
+            return $this->getBuildProperty('generator.objectModel.classPrefix') . $col->getFQConstantName();
         }
 
         // was it overridden in schema.xml ?
@@ -789,7 +789,7 @@ abstract class AbstractOMBuilder extends DataModelBuilder
                         continue;
                     }
                     $script .= "
-" . $tab . '// ' . $behavior->getName() . " behavior
+" . $tab . '// ' . $behavior->getId() . " behavior
 ";
                     $script .= preg_replace('/^/m', $tab, $addedScript);
                 }
