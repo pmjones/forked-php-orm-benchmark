@@ -1,8 +1,8 @@
 <?php
 
-require_once dirname(__FILE__) . '/Yii2MWithCacheTestSuite.php';
+require_once dirname(__FILE__) . '/Yii2MTestSuite.php';
 
-class Yii2MScalarHydrateTestSuite extends Yii2MWithCacheTestSuite
+class Yii2MScalarHydrateTestSuite extends Yii2MTestSuite
 {
     public function runHydrate($i)
     {        

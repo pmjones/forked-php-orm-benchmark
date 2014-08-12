@@ -58,6 +58,9 @@ abstract class AbstractTestSuite
 	
 	public function runTest($methodName, $nbTest = self::NB_TEST)
 	{
+        // start profiling
+        xhprof_enable();
+
 		$this->clearCache();
 
 		$timer = new sfTimer();
@@ -67,6 +70,24 @@ abstract class AbstractTestSuite
 		}
         $this->commit();
 		$t = $timer->getElapsedTime();
+
+         // stop profiler
+        $xhprof_data = xhprof_disable();
+        // display raw xhprof data for the profiler run
+//        print_r($xhprof_data);
+        $XHPROF_ROOT = '/home/cebe/dev/xhprof';
+        include_once $XHPROF_ROOT . "/xhprof_lib/utils/xhprof_lib.php";
+        include_once $XHPROF_ROOT . "/xhprof_lib/utils/xhprof_runs.php";
+        // save raw data for this profiler run using default
+        // implementation of iXHProfRuns.
+        $xhprof_runs = new XHProfRuns_Default('/tmp');
+        // save the run under a namespace "xhprof_foo"
+        $run_id = $xhprof_runs->save_run($xhprof_data, "xhprof_foo", time() . get_class($this) . "_$methodName");
+//        echo "---------------\n".
+//        "Assuming you have set up the http based UI for \n".
+//        "XHProf at some address, you can view run at \n".
+//        "http://localhost/dev/xhprof/xhprof_html/index.php?run=$run_id&source=xhprof_foo\n".
+//        "---------------\n";
 
 		return $t * 1000;
 	}
