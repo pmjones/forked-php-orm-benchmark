@@ -73,6 +73,7 @@ class SqlitePlatformTest extends AbstractPlatformTestCase
 
     /**
      * @group DBAL-752
+     * @group DBAL-924
      */
     public function testGeneratesTypeDeclarationForTinyIntegers()
     {
@@ -81,11 +82,11 @@ class SqlitePlatformTest extends AbstractPlatformTestCase
             $this->_platform->getTinyIntTypeDeclarationSQL(array())
         );
         $this->assertEquals(
-            'TINYINT',
+            'INTEGER',
             $this->_platform->getTinyIntTypeDeclarationSQL(array('autoincrement' => true))
         );
         $this->assertEquals(
-            'TINYINT',
+            'INTEGER',
             $this->_platform->getTinyIntTypeDeclarationSQL(
                 array('autoincrement' => true, 'primary' => true))
         );
@@ -101,6 +102,7 @@ class SqlitePlatformTest extends AbstractPlatformTestCase
 
     /**
      * @group DBAL-752
+     * @group DBAL-924
      */
     public function testGeneratesTypeDeclarationForSmallIntegers()
     {
@@ -109,11 +111,15 @@ class SqlitePlatformTest extends AbstractPlatformTestCase
             $this->_platform->getSmallIntTypeDeclarationSQL(array())
         );
         $this->assertEquals(
-            'SMALLINT',
+            'INTEGER',
             $this->_platform->getSmallIntTypeDeclarationSQL(array('autoincrement' => true))
         );
         $this->assertEquals(
-            'SMALLINT',
+            'INTEGER',
+            $this->_platform->getTinyIntTypeDeclarationSQL(array('autoincrement' => true, 'unsigned' => true))
+        );
+        $this->assertEquals(
+            'INTEGER',
             $this->_platform->getSmallIntTypeDeclarationSQL(
                 array('autoincrement' => true, 'primary' => true))
         );
@@ -129,6 +135,7 @@ class SqlitePlatformTest extends AbstractPlatformTestCase
 
     /**
      * @group DBAL-752
+     * @group DBAL-924
      */
     public function testGeneratesTypeDeclarationForMediumIntegers()
     {
@@ -137,11 +144,15 @@ class SqlitePlatformTest extends AbstractPlatformTestCase
             $this->_platform->getMediumIntTypeDeclarationSQL(array())
         );
         $this->assertEquals(
-            'MEDIUMINT',
+            'INTEGER',
             $this->_platform->getMediumIntTypeDeclarationSQL(array('autoincrement' => true))
         );
         $this->assertEquals(
-            'MEDIUMINT',
+            'INTEGER',
+            $this->_platform->getMediumIntTypeDeclarationSQL(array('autoincrement' => true, 'unsigned' => true))
+        );
+        $this->assertEquals(
+            'INTEGER',
             $this->_platform->getMediumIntTypeDeclarationSQL(
                 array('autoincrement' => true, 'primary' => true))
         );
@@ -167,6 +178,10 @@ class SqlitePlatformTest extends AbstractPlatformTestCase
         );
         $this->assertEquals(
             'INTEGER',
+            $this->_platform->getIntegerTypeDeclarationSQL(array('autoincrement' => true, 'unsigned' => true))
+        );
+        $this->assertEquals(
+            'INTEGER',
             $this->_platform->getIntegerTypeDeclarationSQL(
                 array('autoincrement' => true, 'primary' => true))
         );
@@ -182,6 +197,7 @@ class SqlitePlatformTest extends AbstractPlatformTestCase
 
     /**
      * @group DBAL-752
+     * @group DBAL-924
      */
     public function testGeneratesTypeDeclarationForBigIntegers()
     {
@@ -190,11 +206,15 @@ class SqlitePlatformTest extends AbstractPlatformTestCase
             $this->_platform->getBigIntTypeDeclarationSQL(array())
         );
         $this->assertEquals(
-            'BIGINT',
+            'INTEGER',
             $this->_platform->getBigIntTypeDeclarationSQL(array('autoincrement' => true))
         );
         $this->assertEquals(
-            'BIGINT',
+            'INTEGER',
+            $this->_platform->getBigIntTypeDeclarationSQL(array('autoincrement' => true, 'unsigned' => true))
+        );
+        $this->assertEquals(
+            'INTEGER',
             $this->_platform->getBigIntTypeDeclarationSQL(
                 array('autoincrement' => true, 'primary' => true))
         );
@@ -493,6 +513,20 @@ class SqlitePlatformTest extends AbstractPlatformTestCase
             'DROP TABLE mytable',
             'CREATE TABLE mytable (unquoted INTEGER NOT NULL, "where" INTEGER NOT NULL, "foo" INTEGER NOT NULL, reserved_keyword INTEGER NOT NULL, "from" INTEGER NOT NULL, "bar" INTEGER NOT NULL, quoted INTEGER NOT NULL, "and" INTEGER NOT NULL, "baz" INTEGER NOT NULL)',
             'INSERT INTO mytable (unquoted, "where", "foo", reserved_keyword, "from", "bar", quoted, "and", "baz") SELECT unquoted1, unquoted2, unquoted3, "create", "table", "select", "quoted1", "quoted2", "quoted3" FROM __temp__mytable',
+            'DROP TABLE __temp__mytable',
+        );
+	}
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function getQuotedAlterTableChangeColumnLengthSQL()
+    {
+        return array(
+            'CREATE TEMPORARY TABLE __temp__mytable AS SELECT unquoted1, unquoted2, unquoted3, "create", "table", "select" FROM mytable',
+            'DROP TABLE mytable',
+            'CREATE TABLE mytable (unquoted1 VARCHAR(255) NOT NULL, unquoted2 VARCHAR(255) NOT NULL, unquoted3 VARCHAR(255) NOT NULL, "create" VARCHAR(255) NOT NULL, "table" VARCHAR(255) NOT NULL, "select" VARCHAR(255) NOT NULL)',
+            'INSERT INTO mytable (unquoted1, unquoted2, unquoted3, "create", "table", "select") SELECT unquoted1, unquoted2, unquoted3, "create", "table", "select" FROM __temp__mytable',
             'DROP TABLE __temp__mytable',
         );
     }
