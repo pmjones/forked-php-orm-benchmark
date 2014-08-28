@@ -72,7 +72,6 @@ class UrlValidatorTest extends \PHPUnit_Framework_TestCase
         return array(
             array('http://a.pl'),
             array('http://www.google.com'),
-            array('http://www.google.com.'),
             array('http://www.google.museum'),
             array('https://google.com/'),
             array('https://google.com:80/'),
@@ -86,7 +85,6 @@ class UrlValidatorTest extends \PHPUnit_Framework_TestCase
             array('http://symfony.com/#?'),
             array('http://www.symfony.com/doc/current/book/validation.html#supported-constraints'),
             array('http://very.long.domain.name.com/'),
-            array('http://localhost/'),
             array('http://127.0.0.1/'),
             array('http://127.0.0.1:80/'),
             array('http://[::1]/'),
@@ -154,7 +152,6 @@ class UrlValidatorTest extends \PHPUnit_Framework_TestCase
             array('http://127.0.0.1:aa/'),
             array('ftp://[::1]/'),
             array('http://[::1'),
-            array('http://hello.☎/'),
         );
     }
 

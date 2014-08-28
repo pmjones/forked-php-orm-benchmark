@@ -21,8 +21,6 @@ use Propel\Generator\Manager\ModelManager;
  */
 class ModelBuildCommand extends AbstractCommand
 {
-    const DEFAULT_OUTPUT_DIRECTORY                  = 'generated-classes';
-
     /**
      * {@inheritdoc}
      */
@@ -32,7 +30,7 @@ class ModelBuildCommand extends AbstractCommand
 
         $this
             ->addOption('mysql-engine', null, InputOption::VALUE_REQUIRED,  'MySQL engine (MyISAM, InnoDB, ...)')
-            ->addOption('output-dir', null, InputOption::VALUE_REQUIRED, 'The output directory', self::DEFAULT_OUTPUT_DIRECTORY)
+            ->addOption('output-dir', null, InputOption::VALUE_REQUIRED, 'The output directory')
             ->addOption('object-class', null, InputOption::VALUE_REQUIRED, 'The object class generator name')
             ->addOption('object-stub-class', null, InputOption::VALUE_REQUIRED, 'The object stub class generator name')
             ->addOption('object-multiextend-class', null, InputOption::VALUE_REQUIRED, 'The object multiextend class generator name')
@@ -64,6 +62,14 @@ class ModelBuildCommand extends AbstractCommand
         foreach ($inputOptions as $key => $option) {
             if (null !== $option) {
                 switch ($key) {
+                    case 'input-dir':
+                        if ('.' !== $option) {
+                            $configOptions['propel']['paths']['schemaDir'] = $option;
+                        }
+                        break;
+                    case 'output-dir':
+                        $configOptions['propel']['paths']['phpDir'] = $option;
+                        break;
                     case 'objects-class':
                         $configOptions['propel']['generator']['objectModel']['builders']['object'] = $option;
                         break;
@@ -117,18 +123,18 @@ class ModelBuildCommand extends AbstractCommand
         }
 
         $generatorConfig = $this->getGeneratorConfig($configOptions, $input);
-        $this->createDirectory($input->getOption('output-dir'));
+        $this->createDirectory($generatorConfig->getSection('paths')['phpDir']);
 
         $manager = new ModelManager();
         $manager->setFilesystem($this->getFilesystem());
         $manager->setGeneratorConfig($generatorConfig);
-        $manager->setSchemas($this->getSchemas($input->getOption('input-dir'), $input->getOption('recursive')));
+        $manager->setSchemas($this->getSchemas($generatorConfig->getSection('paths')['schemaDir'], $input->getOption('recursive')));
         $manager->setLoggerClosure(function ($message) use ($input, $output) {
             if ($input->getOption('verbose')) {
                 $output->writeln($message);
             }
         });
-        $manager->setWorkingDirectory($input->getOption('output-dir'));
+        $manager->setWorkingDirectory($generatorConfig->getSection('paths')['phpDir']);
 
         $manager->build();
     }
