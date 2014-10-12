@@ -297,7 +297,7 @@ abstract class AbstractPlatform
     /**
      * Returns the SQL snippet to declare a GUID/UUID field.
      *
-     * By default this maps directly to a VARCHAR and only maps to more
+     * By default this maps directly to a CHAR(36) and only maps to more
      * special datatypes when the underlying databases support this datatype.
      *
      * @param array $field
@@ -306,6 +306,9 @@ abstract class AbstractPlatform
      */
     public function getGuidTypeDeclarationSQL(array $field)
     {
+        $field['length'] = 36;
+        $field['fixed']  = true;
+
         return $this->getVarcharTypeDeclarationSQL($field);
     }
 
@@ -1822,7 +1825,7 @@ abstract class AbstractPlatform
     public function quoteIdentifier($str)
     {
         if (strpos($str, ".") !== false) {
-            $parts = array_map(array($this, "quoteIdentifier"), explode(".", $str));
+            $parts = array_map(array($this, "quoteSingleIdentifier"), explode(".", $str));
 
             return implode(".", $parts);
         }
@@ -2241,7 +2244,7 @@ abstract class AbstractPlatform
         if (isset($field['default'])) {
             $default = " DEFAULT '".$field['default']."'";
             if (isset($field['type'])) {
-                if (in_array((string) $field['type'], array("Integer", "BigInteger", "SmallInteger"))) {
+                if (in_array((string) $field['type'], array("Integer", "BigInt", "SmallInt"))) {
                     $default = " DEFAULT ".$field['default'];
                 } elseif (in_array((string) $field['type'], array('DateTime', 'DateTimeTz')) && $field['default'] == $this->getCurrentTimestampSQL()) {
                     $default = " DEFAULT ".$this->getCurrentTimestampSQL();

@@ -466,6 +466,21 @@ abstract class AbstractPlatformTestCase extends \Doctrine\Tests\DbalTestCase
         }
     }
 
+    public function testGetDefaultValueDeclarationSQLForIntegerTypes()
+    {
+        foreach(array('bigint', 'integer', 'smallint') as $type) {
+            $field = array(
+                'type'    => Type::getType($type),
+                'default' => 1
+            );
+
+            $this->assertEquals(
+                ' DEFAULT 1',
+                $this->_platform->getDefaultValueDeclarationSQL($field)
+            );
+        }
+    }
+
     /**
      * @group DBAL-45
      */
@@ -930,5 +945,15 @@ abstract class AbstractPlatformTestCase extends \Doctrine\Tests\DbalTestCase
             $this->getQuotedStringLiteralQuoteCharacter(),
             $this->_platform->quoteStringLiteral($c)
         );
+    }
+
+    /**
+     * @group DBAL-423
+     *
+     * @expectedException \Doctrine\DBAL\DBALException
+     */
+    public function testReturnsGuidTypeDeclarationSQL()
+    {
+        $this->_platform->getGuidTypeDeclarationSQL(array());
     }
 }

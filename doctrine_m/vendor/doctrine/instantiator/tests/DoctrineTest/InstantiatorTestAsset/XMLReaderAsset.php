@@ -17,9 +17,25 @@
  * <http://www.doctrine-project.org>.
  */
 
-namespace Doctrine\Common\Cache;
+namespace DoctrineTest\InstantiatorTestAsset;
 
-class Version
+use BadMethodCallException;
+use XMLReader;
+
+/**
+ * Test asset that extends an internal PHP class
+ *
+ * @author Dave Marshall <dave@atst.io>
+ */
+class XMLReaderAsset extends XMLReader
 {
-    const VERSION = '1.4.0-DEV';
+    /**
+     * Constructor - should not be called
+     *
+     * @throws BadMethodCallException
+     */
+    public function __construct()
+    {
+        throw new BadMethodCallException('Not supposed to be called!');
+    }
 }
