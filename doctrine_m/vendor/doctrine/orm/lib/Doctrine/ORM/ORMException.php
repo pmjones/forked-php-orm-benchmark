@@ -19,6 +19,7 @@
 
 namespace Doctrine\ORM;
 
+use Doctrine\Common\Cache\Cache as CacheDriver;
 use Exception;
 
 /**
@@ -70,7 +71,7 @@ class ORMException extends Exception
             "Entity of type " . get_class($entity) . " has identity through a foreign entity " . get_class($relatedEntity) . ", " .
             "however this entity has no identity itself. You have to call EntityManager#persist() on the related entity " .
             "and make sure that an identifier was generated before trying to persist '" . get_class($entity) . "'. In case " .
-            "of Post Insert ID Generation (such as MySQL Auto-Increment or PostgreSQL SERIAL) this means you have to call " .
+            "of Post Insert ID Generation (such as MySQL Auto-Increment) this means you have to call " .
             "EntityManager#flush() between both persist operations."
         );
     }
@@ -230,6 +231,16 @@ class ORMException extends Exception
     public static function metadataCacheNotConfigured()
     {
         return new self('Class Metadata Cache is not configured.');
+    }
+
+    /**
+     * @param \Doctrine\Common\Cache\Cache $cache
+     *
+     * @return ORMException
+     */
+    public static function metadataCacheUsesNonPersistentCache(CacheDriver $cache)
+    {
+        return new self('Metadata Cache uses a non-persistent cache driver, ' . get_class($cache) . '.');
     }
 
     /**

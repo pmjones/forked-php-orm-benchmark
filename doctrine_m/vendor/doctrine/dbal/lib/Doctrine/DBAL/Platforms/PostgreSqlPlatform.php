@@ -235,7 +235,10 @@ class PostgreSqlPlatform extends AbstractPlatform
      */
     public function getListNamespacesSQL()
     {
-        return "SELECT nspname FROM pg_namespace WHERE nspname NOT LIKE 'pg_%' AND nspname != 'information_schema'";
+        return "SELECT schema_name AS nspname
+                FROM   information_schema.schemata
+                WHERE  schema_name NOT LIKE 'pg_%'
+                AND    schema_name != 'information_schema'";
     }
 
     /**
@@ -243,12 +246,11 @@ class PostgreSqlPlatform extends AbstractPlatform
      */
     public function getListSequencesSQL($database)
     {
-        return "SELECT
-                    c.relname, n.nspname AS schemaname
-                FROM
-                   pg_class c, pg_namespace n
-                WHERE relkind = 'S' AND n.oid = c.relnamespace AND
-                    (n.nspname NOT LIKE 'pg_%' AND n.nspname != 'information_schema')";
+        return "SELECT sequence_name AS relname,
+                       sequence_schema AS schemaname
+                FROM   information_schema.sequences
+                WHERE  sequence_schema NOT LIKE 'pg_%'
+                AND    sequence_schema != 'information_schema'";
     }
 
     /**
@@ -256,8 +258,13 @@ class PostgreSqlPlatform extends AbstractPlatform
      */
     public function getListTablesSQL()
     {
-        return "SELECT quote_ident(tablename) AS table_name, schemaname AS schema_name
-                FROM pg_tables WHERE schemaname NOT LIKE 'pg_%' AND schemaname != 'information_schema' AND tablename != 'geometry_columns' AND tablename != 'spatial_ref_sys'";
+        return "SELECT quote_ident(table_name) AS table_name,
+                       table_schema AS schema_name
+                FROM   information_schema.tables
+                WHERE  table_schema NOT LIKE 'pg_%'
+                AND    table_schema != 'information_schema'
+                AND    table_name != 'geometry_columns'
+                AND    table_name != 'spatial_ref_sys'";
     }
 
     /**
@@ -265,7 +272,11 @@ class PostgreSqlPlatform extends AbstractPlatform
      */
     public function getListViewsSQL($database)
     {
-        return 'SELECT quote_ident(viewname) as viewname, schemaname, definition FROM pg_views';
+        return 'SELECT quote_ident(table_name) AS viewname,
+                       table_schema AS schemaname,
+                       view_definition AS definition
+                FROM   information_schema.views
+                WHERE  view_definition IS NOT NULL';
     }
 
     /**
@@ -453,9 +464,16 @@ class PostgreSqlPlatform extends AbstractPlatform
             }
 
             $query = 'ADD ' . $this->getColumnDeclarationSQL($column->getQuotedName($this), $column->toArray());
-            $sql[] = 'ALTER TABLE ' . $diff->getName()->getQuotedName($this) . ' ' . $query;
-            if ($comment = $this->getColumnComment($column)) {
-                $commentsSQL[] = $this->getCommentOnColumnSQL($diff->name, $column->getName(), $comment);
+            $sql[] = 'ALTER TABLE ' . $diff->getName($this)->getQuotedName($this) . ' ' . $query;
+
+            $comment = $this->getColumnComment($column);
+
+            if (null !== $comment && '' !== $comment) {
+                $commentsSQL[] = $this->getCommentOnColumnSQL(
+                    $diff->getName($this)->getQuotedName($this),
+                    $column->getQuotedName($this),
+                    $comment
+                );
             }
         }
 
@@ -465,7 +483,7 @@ class PostgreSqlPlatform extends AbstractPlatform
             }
 
             $query = 'DROP ' . $column->getQuotedName($this);
-            $sql[] = 'ALTER TABLE ' . $diff->getName()->getQuotedName($this) . ' ' . $query;
+            $sql[] = 'ALTER TABLE ' . $diff->getName($this)->getQuotedName($this) . ' ' . $query;
         }
 
         foreach ($diff->changedColumns as $columnDiff) {
@@ -486,7 +504,7 @@ class PostgreSqlPlatform extends AbstractPlatform
 
                 // here was a server version check before, but DBAL API does not support this anymore.
                 $query = 'ALTER ' . $oldColumnName . ' TYPE ' . $type->getSqlDeclaration($column->toArray(), $this);
-                $sql[] = 'ALTER TABLE ' . $diff->getName()->getQuotedName($this) . ' ' . $query;
+                $sql[] = 'ALTER TABLE ' . $diff->getName($this)->getQuotedName($this) . ' ' . $query;
             }
 
             if ($columnDiff->hasChanged('default') || $columnDiff->hasChanged('type')) {
@@ -494,12 +512,12 @@ class PostgreSqlPlatform extends AbstractPlatform
                     ? ' DROP DEFAULT'
                     : ' SET' . $this->getDefaultValueDeclarationSQL($column->toArray());
                 $query = 'ALTER ' . $oldColumnName . $defaultClause;
-                $sql[] = 'ALTER TABLE ' . $diff->getName()->getQuotedName($this) . ' ' . $query;
+                $sql[] = 'ALTER TABLE ' . $diff->getName($this)->getQuotedName($this) . ' ' . $query;
             }
 
             if ($columnDiff->hasChanged('notnull')) {
                 $query = 'ALTER ' . $oldColumnName . ' ' . ($column->getNotNull() ? 'SET' : 'DROP') . ' NOT NULL';
-                $sql[] = 'ALTER TABLE ' . $diff->getName()->getQuotedName($this) . ' ' . $query;
+                $sql[] = 'ALTER TABLE ' . $diff->getName($this)->getQuotedName($this) . ' ' . $query;
             }
 
             if ($columnDiff->hasChanged('autoincrement')) {
@@ -508,27 +526,27 @@ class PostgreSqlPlatform extends AbstractPlatform
                     $seqName = $this->getIdentitySequenceName($diff->name, $oldColumnName);
 
                     $sql[] = "CREATE SEQUENCE " . $seqName;
-                    $sql[] = "SELECT setval('" . $seqName . "', (SELECT MAX(" . $oldColumnName . ") FROM " . $diff->getName()->getQuotedName($this) . "))";
+                    $sql[] = "SELECT setval('" . $seqName . "', (SELECT MAX(" . $oldColumnName . ") FROM " . $diff->getName($this)->getQuotedName($this) . "))";
                     $query = "ALTER " . $oldColumnName . " SET DEFAULT nextval('" . $seqName . "')";
-                    $sql[] = "ALTER TABLE " . $diff->getName()->getQuotedName($this) . " " . $query;
+                    $sql[] = "ALTER TABLE " . $diff->getName($this)->getQuotedName($this) . " " . $query;
                 } else {
                     // Drop autoincrement, but do NOT drop the sequence. It might be re-used by other tables or have
                     $query = "ALTER " . $oldColumnName . " " . "DROP DEFAULT";
-                    $sql[] = "ALTER TABLE " . $diff->getName()->getQuotedName($this) . " " . $query;
+                    $sql[] = "ALTER TABLE " . $diff->getName($this)->getQuotedName($this) . " " . $query;
                 }
             }
 
             if ($columnDiff->hasChanged('comment')) {
                 $commentsSQL[] = $this->getCommentOnColumnSQL(
-                    $diff->name,
-                    $column->getName(),
+                    $diff->getName($this)->getQuotedName($this),
+                    $column->getQuotedName($this),
                     $this->getColumnComment($column)
                 );
             }
 
             if ($columnDiff->hasChanged('length')) {
                 $query = 'ALTER ' . $oldColumnName . ' TYPE ' . $column->getType()->getSqlDeclaration($column->toArray(), $this);
-                $sql[] = 'ALTER TABLE ' . $diff->getName()->getQuotedName($this) . ' ' . $query;
+                $sql[] = 'ALTER TABLE ' . $diff->getName($this)->getQuotedName($this) . ' ' . $query;
             }
         }
 
@@ -539,18 +557,24 @@ class PostgreSqlPlatform extends AbstractPlatform
 
             $oldColumnName = new Identifier($oldColumnName);
 
-            $sql[] = 'ALTER TABLE ' . $diff->getName()->getQuotedName($this) .
+            $sql[] = 'ALTER TABLE ' . $diff->getName($this)->getQuotedName($this) .
                 ' RENAME COLUMN ' . $oldColumnName->getQuotedName($this) . ' TO ' . $column->getQuotedName($this);
         }
 
         $tableSql = array();
 
         if ( ! $this->onSchemaAlterTable($diff, $tableSql)) {
+            $sql = array_merge($sql, $commentsSQL);
+
             if ($diff->newName !== false) {
-                $sql[] = 'ALTER TABLE ' . $diff->getName()->getQuotedName($this) . ' RENAME TO ' . $diff->getNewName()->getQuotedName($this);
+                $sql[] = 'ALTER TABLE ' . $diff->getName($this)->getQuotedName($this) . ' RENAME TO ' . $diff->getNewName()->getQuotedName($this);
             }
 
-            $sql = array_merge($this->getPreAlterTableIndexForeignKeySQL($diff), $sql, $this->getPostAlterTableIndexForeignKeySQL($diff), $commentsSQL);
+            $sql = array_merge(
+                $this->getPreAlterTableIndexForeignKeySQL($diff),
+                $sql,
+                $this->getPostAlterTableIndexForeignKeySQL($diff)
+            );
         }
 
         return array_merge($sql, $tableSql, $columnSql);
@@ -615,9 +639,12 @@ class PostgreSqlPlatform extends AbstractPlatform
      */
     public function getCommentOnColumnSQL($tableName, $columnName, $comment)
     {
+        $tableName = new Identifier($tableName);
+        $columnName = new Identifier($columnName);
         $comment = $comment === null ? 'NULL' : $this->quoteStringLiteral($comment);
 
-        return "COMMENT ON COLUMN $tableName.$columnName IS $comment";
+        return "COMMENT ON COLUMN " . $tableName->getQuotedName($this) . "." . $columnName->getQuotedName($this) .
+            " IS $comment";
     }
 
     /**
@@ -732,7 +759,7 @@ class PostgreSqlPlatform extends AbstractPlatform
     private function convertSingleBooleanValue($value, $callback)
     {
         if (null === $value) {
-            return $callback(false);
+            return $callback(null);
         }
 
         if (is_bool($value) || is_numeric($value)) {
@@ -796,6 +823,10 @@ class PostgreSqlPlatform extends AbstractPlatform
         return $this->doConvertBooleans(
             $item,
             function ($boolean) {
+                if (null === $boolean) {
+                    return 'NULL';
+                }
+
                 return true === $boolean ? 'true' : 'false';
             }
         );
@@ -813,11 +844,11 @@ class PostgreSqlPlatform extends AbstractPlatform
         return $this->doConvertBooleans(
             $item,
             function ($boolean) {
-                return (int) $boolean;
+                return null === $boolean ? null : (int) $boolean;
             }
         );
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -825,8 +856,8 @@ class PostgreSqlPlatform extends AbstractPlatform
     {
         if (in_array(strtolower($item), $this->booleanLiterals['false'], true)) {
             return false;
-        } 
-          
+        }
+
         return parent::convertFromBoolean($item);
     }
 

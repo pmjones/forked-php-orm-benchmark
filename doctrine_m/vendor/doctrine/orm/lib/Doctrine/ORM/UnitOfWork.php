@@ -45,6 +45,7 @@ use Doctrine\ORM\Persisters\SingleTablePersister;
 use Doctrine\ORM\Persisters\JoinedSubclassPersister;
 use Doctrine\ORM\Persisters\OneToManyPersister;
 use Doctrine\ORM\Persisters\ManyToManyPersister;
+use Doctrine\ORM\Utility\IdentifierFlattener;
 
 /**
  * The UnitOfWork is responsible for tracking changes to objects during an
@@ -56,6 +57,7 @@ use Doctrine\ORM\Persisters\ManyToManyPersister;
  * @author      Guilherme Blanco <guilhermeblanco@hotmail.com>
  * @author      Jonathan Wage <jonwage@gmail.com>
  * @author      Roman Borschel <roman@code-factory.org>
+ * @author      Rob Caiger <rob@clocal.co.uk>
  * @internal    This class contains highly performance-sensitive code.
  */
 class UnitOfWork implements PropertyChangedListener
@@ -242,6 +244,13 @@ class UnitOfWork implements PropertyChangedListener
     private $listenersInvoker;
 
     /**
+     * The IdentifierFlattener used for manipulating identifiers
+     *
+     * @var \Doctrine\ORM\Utility\IdentifierFlattener
+     */
+    private $identifierFlattener;
+
+    /**
      * Orphaned entities that are scheduled for removal.
      *
      * @var array
@@ -274,10 +283,11 @@ class UnitOfWork implements PropertyChangedListener
      */
     public function __construct(EntityManager $em)
     {
-        $this->em               = $em;
-        $this->evm              = $em->getEventManager();
-        $this->listenersInvoker = new ListenersInvoker($em);
-        $this->hasCache         = $em->getConfiguration()->isSecondLevelCacheEnabled();
+        $this->em                  = $em;
+        $this->evm                 = $em->getEventManager();
+        $this->listenersInvoker    = new ListenersInvoker($em);
+        $this->hasCache            = $em->getConfiguration()->isSecondLevelCacheEnabled();
+        $this->identifierFlattener = new IdentifierFlattener($this, $em->getMetadataFactory());
     }
 
     /**
@@ -1427,7 +1437,7 @@ class UnitOfWork implements PropertyChangedListener
         }
 
         if ($class->containsForeignIdentifier) {
-            $id = $this->flattenIdentifier($class, $id);
+            $id = $this->identifierFlattener->flattenIdentifier($class, $id);
         }
 
         switch (true) {
@@ -1753,31 +1763,6 @@ class UnitOfWork implements PropertyChangedListener
     }
 
     /**
-     * convert foreign identifiers into scalar foreign key values to avoid object to string conversion failures.
-     *
-     * @param ClassMetadata $class
-     * @param array $id
-     * @return array
-     */
-    private function flattenIdentifier($class, $id)
-    {
-        $flatId = array();
-
-        foreach ($id as $idField => $idValue) {
-            if (isset($class->associationMappings[$idField])) {
-                $targetClassMetadata = $this->em->getClassMetadata($class->associationMappings[$idField]['targetEntity']);
-                $associatedId        = $this->getEntityIdentifier($idValue);
-
-                $flatId[$idField] = $associatedId[$targetClassMetadata->identifier[0]];
-            } else {
-                $flatId[$idField] = $idValue;
-            }
-        }
-
-        return $flatId;
-    }
-
-    /**
      * Executes a merge operation on an entity.
      *
      * @param object      $entity
@@ -1797,10 +1782,14 @@ class UnitOfWork implements PropertyChangedListener
         $oid = spl_object_hash($entity);
 
         if (isset($visited[$oid])) {
-            return $visited[$oid]; // Prevent infinite recursion
-        }
+            $managedCopy = $visited[$oid];
 
-        $visited[$oid] = $entity; // mark visited
+            if ($prevManagedCopy !== null) {
+                $this->updateAssociationWithMergedEntity($entity, $assoc, $prevManagedCopy, $managedCopy);
+            }
+
+            return $managedCopy;
+        }
 
         $class = $this->em->getClassMetadata(get_class($entity));
 
@@ -1826,7 +1815,7 @@ class UnitOfWork implements PropertyChangedListener
                 $this->persistNew($class, $managedCopy);
             } else {
                 $flatId = ($class->containsForeignIdentifier)
-                    ? $this->flattenIdentifier($class, $id)
+                    ? $this->identifierFlattener->flattenIdentifier($class, $id)
                     : $id;
 
                 $managedCopy = $this->tryGetById($flatId, $class->rootEntityName);
@@ -1869,6 +1858,8 @@ class UnitOfWork implements PropertyChangedListener
                     throw OptimisticLockException::lockFailedVersionMismatch($entity, $entityVersion, $managedCopyVersion);
                 }
             }
+
+            $visited[$oid] = $managedCopy; // mark visited
 
             // Merge state of $entity into existing (managed) entity
             foreach ($class->reflClass->getProperties() as $prop) {
@@ -1913,9 +1904,9 @@ class UnitOfWork implements PropertyChangedListener
                         $managedCol = $prop->getValue($managedCopy);
                         if (!$managedCol) {
                             $managedCol = new PersistentCollection($this->em,
-                                    $this->em->getClassMetadata($assoc2['targetEntity']),
-                                    new ArrayCollection
-                                    );
+                                $this->em->getClassMetadata($assoc2['targetEntity']),
+                                new ArrayCollection
+                            );
                             $managedCol->setOwner($managedCopy, $assoc2);
                             $prop->setValue($managedCopy, $managedCol);
                             $this->originalEntityData[$oid][$name] = $managedCol;
@@ -1948,26 +1939,46 @@ class UnitOfWork implements PropertyChangedListener
         }
 
         if ($prevManagedCopy !== null) {
-            $assocField = $assoc['fieldName'];
-            $prevClass = $this->em->getClassMetadata(get_class($prevManagedCopy));
-
-            if ($assoc['type'] & ClassMetadata::TO_ONE) {
-                $prevClass->reflFields[$assocField]->setValue($prevManagedCopy, $managedCopy);
-            } else {
-                $prevClass->reflFields[$assocField]->getValue($prevManagedCopy)->add($managedCopy);
-
-                if ($assoc['type'] == ClassMetadata::ONE_TO_MANY) {
-                    $class->reflFields[$assoc['mappedBy']]->setValue($managedCopy, $prevManagedCopy);
-                }
-            }
+            $this->updateAssociationWithMergedEntity($entity, $assoc, $prevManagedCopy, $managedCopy);
         }
 
         // Mark the managed copy visited as well
-        $visited[spl_object_hash($managedCopy)] = true;
+        $visited[spl_object_hash($managedCopy)] = $managedCopy;
 
         $this->cascadeMerge($entity, $managedCopy, $visited);
 
         return $managedCopy;
+    }
+
+    /**
+     * Sets/adds associated managed copies into the previous entity's association field
+     *
+     * @param object $entity
+     * @param array  $association
+     * @param object $previousManagedCopy
+     * @param object $managedCopy
+     *
+     * @return void
+     */
+    private function updateAssociationWithMergedEntity($entity, array $association, $previousManagedCopy, $managedCopy)
+    {
+        $assocField = $association['fieldName'];
+        $prevClass  = $this->em->getClassMetadata(get_class($previousManagedCopy));
+
+        if ($association['type'] & ClassMetadata::TO_ONE) {
+            $prevClass->reflFields[$assocField]->setValue($previousManagedCopy, $managedCopy);
+
+            return;
+        }
+
+        $value   = $prevClass->reflFields[$assocField]->getValue($previousManagedCopy);
+        $value[] = $managedCopy;
+
+        if ($association['type'] == ClassMetadata::ONE_TO_MANY) {
+            $class = $this->em->getClassMetadata(get_class($entity));
+
+            $class->reflFields[$association['mappedBy']]->setValue($managedCopy, $previousManagedCopy);
+        }
     }
 
     /**
@@ -3361,10 +3372,10 @@ class UnitOfWork implements PropertyChangedListener
 
         $id1 = isset($this->entityIdentifiers[$oid1])
             ? $this->entityIdentifiers[$oid1]
-            : $this->flattenIdentifier($class, $class->getIdentifierValues($entity1));
+            : $this->identifierFlattener->flattenIdentifier($class, $class->getIdentifierValues($entity1));
         $id2 = isset($this->entityIdentifiers[$oid2])
             ? $this->entityIdentifiers[$oid2]
-            : $this->flattenIdentifier($class, $class->getIdentifierValues($entity2));
+            : $this->identifierFlattener->flattenIdentifier($class, $class->getIdentifierValues($entity2));
 
         return $id1 === $id2 || implode(' ', $id1) === implode(' ', $id2);
     }

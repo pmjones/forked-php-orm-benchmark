@@ -126,6 +126,12 @@ Here is a complete list of helper methods available in ``QueryBuilder``:
         // Example - $qb->select(array('u', 'p'))
         // Example - $qb->select($qb->expr()->select('u', 'p'))
         public function select($select = null);
+        
+        // addSelect does not override previous calls to select
+        //
+        // Example - $qb->select('u');
+        //              ->addSelect('p.area_code');
+        public function addSelect($select = null);
 
         // Example - $qb->delete('User', 'u')
         public function delete($delete = null, $alias = null);
@@ -139,15 +145,23 @@ Here is a complete list of helper methods available in ``QueryBuilder``:
         public function set($key, $value);
 
         // Example - $qb->from('Phonenumber', 'p')
-        public function from($from, $alias = null);
+        // Example - $qb->from('Phonenumber', 'p', 'p.id')
+        public function from($from, $alias, $indexBy = null);
+
+        // Example - $qb->join('u.Group', 'g', Expr\Join::WITH, $qb->expr()->eq('u.status_id', '?1'))
+        // Example - $qb->join('u.Group', 'g', 'WITH', 'u.status = ?1')
+        // Example - $qb->join('u.Group', 'g', 'WITH', 'u.status = ?1', 'g.id')
+        public function join($join, $alias, $conditionType = null, $condition = null, $indexBy = null);
 
         // Example - $qb->innerJoin('u.Group', 'g', Expr\Join::WITH, $qb->expr()->eq('u.status_id', '?1'))
         // Example - $qb->innerJoin('u.Group', 'g', 'WITH', 'u.status = ?1')
-        public function innerJoin($join, $alias = null, $conditionType = null, $condition = null);
+        // Example - $qb->innerJoin('u.Group', 'g', 'WITH', 'u.status = ?1', 'g.id')
+        public function innerJoin($join, $alias, $conditionType = null, $condition = null, $indexBy = null);
 
         // Example - $qb->leftJoin('u.Phonenumbers', 'p', Expr\Join::WITH, $qb->expr()->eq('p.area_code', 55))
         // Example - $qb->leftJoin('u.Phonenumbers', 'p', 'WITH', 'p.area_code = 55')
-        public function leftJoin($join, $alias = null, $conditionType = null, $condition = null);
+        // Example - $qb->leftJoin('u.Phonenumbers', 'p', 'WITH', 'p.area_code = 55', 'p.id')
+        public function leftJoin($join, $alias, $conditionType = null, $condition = null, $indexBy = null);
 
         // NOTE: ->where() overrides all previously set conditions
         //
@@ -208,7 +222,7 @@ allowed. Binding parameters can simply be achieved as follows:
     // $qb instanceof QueryBuilder
 
     $qb->select('u')
-       ->from('User u')
+       ->from('User', 'u')
        ->where('u.id = ?1')
        ->orderBy('u.name', 'ASC')
        ->setParameter(1, 100); // Sets ?1 to 100, and thus we will fetch a user with u.id = 100
@@ -222,7 +236,7 @@ alternative syntax is available:
     // $qb instanceof QueryBuilder
 
     $qb->select('u')
-       ->from('User u')
+       ->from('User', 'u')
        ->where('u.id = :identifier')
        ->orderBy('u.name', 'ASC')
        ->setParameter('identifier', 100); // Sets :identifier to 100, and thus we will fetch a user with u.id = 100

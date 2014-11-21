@@ -58,7 +58,6 @@ class SchemaValidator
      * 1. Check if a relation with "mappedBy" is actually connected to that specified field.
      * 2. Check if "mappedBy" and "inversedBy" are consistent to each other.
      * 3. Check if "referencedColumnName" attributes are really pointing to primary key columns.
-     * 4. Check if there are public properties that might cause problems with lazy loading.
      *
      * @return array
      */
@@ -228,9 +227,20 @@ class SchemaValidator
 
             if (isset($assoc['orderBy']) && $assoc['orderBy'] !== null) {
                 foreach ($assoc['orderBy'] as $orderField => $orientation) {
-                    if (!$targetMetadata->hasField($orderField)) {
+                    if (!$targetMetadata->hasField($orderField) && !$targetMetadata->hasAssociation($orderField)) {
                         $ce[] = "The association " . $class->name."#".$fieldName." is ordered by a foreign field " .
-                                $orderField . " that is not a field on the target entity " . $targetMetadata->name;
+                                $orderField . " that is not a field on the target entity " . $targetMetadata->name . ".";
+                        continue;
+                    }
+                    if ($targetMetadata->isCollectionValuedAssociation($orderField)) {
+                        $ce[] = "The association " . $class->name."#".$fieldName." is ordered by a field " .
+                                $orderField . " on " . $targetMetadata->name . " that is a collection-valued association.";
+                        continue;
+                    }
+                    if ($targetMetadata->isAssociationInverseSide($orderField)) {
+                        $ce[] = "The association " . $class->name."#".$fieldName." is ordered by a field " .
+                                $orderField . " on " . $targetMetadata->name . " that is the inverse side of an association.";
+                        continue;
                     }
                 }
             }

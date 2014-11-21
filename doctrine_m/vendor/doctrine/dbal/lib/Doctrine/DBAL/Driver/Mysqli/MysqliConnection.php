@@ -50,6 +50,12 @@ class MysqliConnection implements Connection, PingableConnection, ServerInfoAwar
     public function __construct(array $params, $username, $password, array $driverOptions = array())
     {
         $port = isset($params['port']) ? $params['port'] : ini_get('mysqli.default_port');
+
+        // Fallback to default MySQL port if not given.
+        if ( ! $port) {
+            $port = 3306;
+        }
+
         $socket = isset($params['unix_socket']) ? $params['unix_socket'] : ini_get('mysqli.default_socket');
         $dbname = isset($params['dbname']) ? $params['dbname'] : null;
 
@@ -145,7 +151,10 @@ class MysqliConnection implements Connection, PingableConnection, ServerInfoAwar
      */
     public function exec($statement)
     {
-        $this->_conn->query($statement);
+        if (false === $this->_conn->query($statement)) {
+            throw new MysqliException($this->_conn->error, $this->_conn->sqlstate, $this->_conn->errno);
+        }
+
         return $this->_conn->affected_rows;
     }
 

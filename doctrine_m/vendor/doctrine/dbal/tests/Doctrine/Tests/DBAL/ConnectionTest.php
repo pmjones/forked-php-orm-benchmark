@@ -403,6 +403,15 @@ SQLSTATE[HY000]: General error: 1 near \"MUUHAAAAHAAAA\"");
         $this->assertSame($result, $conn->fetchColumn($statement, $params, $column, $types));
     }
 
+    public function testConnectionIsClosed()
+    {
+        $this->_conn->close();
+
+        $this->setExpectedException('Doctrine\\DBAL\\Exception\\DriverException');
+
+        $this->_conn->quoteIdentifier('Bug');
+    }
+
     public function testFetchAll()
     {
         $statement = 'SELECT * FROM foo WHERE bar = ?';
@@ -456,5 +465,21 @@ SQLSTATE[HY000]: General error: 1 near \"MUUHAAAAHAAAA\"");
         $conn = new Connection($params, $driverMock);
 
         $this->assertTrue($conn->isConnected(), "Connection is not connected after passing external PDO");
+    }
+
+    public function testCallingDeleteWithNoDeletionCriteriaResultsInInvalidArgumentException()
+    {
+        /* @var $driver \Doctrine\DBAL\Driver */
+        $driver  = $this->getMock('Doctrine\DBAL\Driver');
+        $pdoMock = $this->getMock('Doctrine\DBAL\Driver\Connection');
+
+        // should never execute queries with invalid arguments
+        $pdoMock->expects($this->never())->method('exec');
+        $pdoMock->expects($this->never())->method('prepare');
+
+        $conn = new Connection(array('pdo' => $pdoMock), $driver);
+
+        $this->setExpectedException('Doctrine\DBAL\Exception\InvalidArgumentException');
+        $conn->delete('kittens', array());
     }
 }
