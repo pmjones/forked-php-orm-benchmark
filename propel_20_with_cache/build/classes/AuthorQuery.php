@@ -2,7 +2,6 @@
 
 use Base\AuthorQuery as BaseAuthorQuery;
 
-
 /**
  * Skeleton subclass for performing query and update operations on the 'author' table.
  *
@@ -16,4 +15,4 @@ use Base\AuthorQuery as BaseAuthorQuery;
 class AuthorQuery extends BaseAuthorQuery
 {
 
-} // AuthorQuery
+}

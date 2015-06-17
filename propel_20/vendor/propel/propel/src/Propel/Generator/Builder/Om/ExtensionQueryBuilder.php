@@ -42,7 +42,6 @@ class ExtensionQueryBuilder extends AbstractOMBuilder
         $baseClassName = $this->getClassNameFromBuilder($this->getQueryBuilder());
 
         $script .= "
-
 /**
  * Skeleton subclass for performing query and update operations on the '$tableName' table.
  *
@@ -87,7 +86,7 @@ class ".$this->getUnqualifiedClassName()." extends $baseClassName
     protected function addClassClose(&$script)
     {
         $script .= "
-} // " . $this->getUnqualifiedClassName() . "
+}
 ";
         $this->applyBehaviorModifier('extensionQueryFilter', $script, "");
     }

@@ -18,7 +18,8 @@ use Propel\Tests\Bookstore\Author;
 use Propel\Tests\Bookstore\Map\AuthorTableMap;
 use Propel\Tests\Bookstore\Book;
 use Propel\Tests\Bookstore\Map\BookTableMap;
-use Propel\Tests\Bookstore\ContestView;
+use Propel\Tests\Bookstore\Country;
+use Propel\Runtime\Propel;
 /**
  * Test class for ObjectCollection.
  *
@@ -49,8 +50,8 @@ class ObjectCollectionTest extends BookstoreTestBase
     public function testSaveOnReadOnlyEntityThrowsException()
     {
         $col = new ObjectCollection();
-        $col->setModel('Propel\Tests\Bookstore\ContestView');
-        $cv = new ContestView();
+        $col->setModel('Propel\Tests\Bookstore\Country');
+        $cv = new Country();
         $col []= $cv;
         $col->save();
     }
@@ -61,8 +62,8 @@ class ObjectCollectionTest extends BookstoreTestBase
     public function testDeleteOnReadOnlyEntityThrowsException()
     {
         $col = new ObjectCollection();
-        $col->setModel('Propel\Tests\Bookstore\ContestView');
-        $cv = new ContestView();
+        $col->setModel('Propel\Tests\Bookstore\Country');
+        $cv = new Country();
         $cv->setNew(false);
         $col []= $cv;
         $col->delete();
@@ -156,24 +157,16 @@ class ObjectCollectionTest extends BookstoreTestBase
         $this->assertEquals($count, $this->con->getQueryCount());
     }
 
-    public function testContainsWithNoPersistentElements()
+    /**
+     * @expectedException \Propel\Runtime\Exception\RuntimeException
+     * @expectedExceptionMessage Propel\Runtime\Collection\ObjectCollection::populateRelation needs instance pooling to be enabled prior to populating the collection
+     */
+    public function testPopulateRelationWhenInstancePoolingIsDisabled()
     {
-        $col = new ObjectCollection();
-        $this->assertFalse($col->contains('foo_1'), 'contains() returns false on an empty collection');
-        $data = array('bar1', 'bar2', 'bar3');
-        $col = new ObjectCollection($data);
-        $this->assertTrue($col->contains('bar1'), 'contains() returns true when the key exists');
-        $this->assertFalse($col->contains('bar4'), 'contains() returns false when the key does not exist');
-    }
+        $coll = new ObjectCollection();
 
-    public function testSearchWithNoPersistentElements()
-    {
-        $col = new ObjectCollection();
-        $this->assertFalse($col->search('bar1'), 'search() returns false on an empty collection');
-        $data = array('bar1', 'bar2', 'bar3');
-        $col = new ObjectCollection($data);
-        $this->assertEquals(1, $col->search('bar2'), 'search() returns the key when the element exists');
-        $this->assertFalse($col->search('bar4'), 'search() returns false when the element does not exist');
+        Propel::disableInstancePooling();
+        $coll->populateRelation('Book');
     }
 
     public function testContainsWithClassicBehavior()
@@ -271,5 +264,13 @@ class ObjectCollectionTest extends BookstoreTestBase
         $col = new ObjectCollection(array($b1));
         $this->assertTrue(0 === $col->search($b1));
         $this->assertFalse(0 === $col->search($b2));
+    }
+
+    /**
+     * @afterClass
+     */
+    public static function enableInstancePooling()
+    {
+        Propel::enableInstancePooling(); //Enable it for the other tests
     }
 }

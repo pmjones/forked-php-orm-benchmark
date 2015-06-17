@@ -53,12 +53,12 @@ class SqliteSchemaParser extends AbstractSchemaParser
         'date'       => PropelTypes::DATE,
         'time'       => PropelTypes::TIME,
         'year'       => PropelTypes::INTEGER,
-        'datetime'   => PropelTypes::TIMESTAMP,
+        'datetime'   => PropelTypes::DATE,
         'timestamp'  => PropelTypes::TIMESTAMP,
         'tinyblob'   => PropelTypes::BINARY,
         'blob'       => PropelTypes::BLOB,
-        'mediumblob' => PropelTypes::BLOB,
-        'longblob'   => PropelTypes::BLOB,
+        'mediumblob' => PropelTypes::VARBINARY,
+        'longblob'   => PropelTypes::LONGVARBINARY,
         'longtext'   => PropelTypes::CLOB,
         'tinytext'   => PropelTypes::VARCHAR,
         'mediumtext' => PropelTypes::LONGVARCHAR,
@@ -77,9 +77,6 @@ class SqliteSchemaParser extends AbstractSchemaParser
         return self::$sqliteTypeMap;
     }
 
-    /**
-     *
-     */
     public function parse(Database $database, array $additionalTables = array())
     {
         if ($this->getGeneratorConfig()) {
@@ -190,6 +187,7 @@ class SqliteSchemaParser extends AbstractSchemaParser
 
             if (preg_match('/^([^\(]+)\(\s*(\d+)\s*,\s*(\d+)\s*\)$/', $fulltype, $matches)) {
                 $type = $matches[1];
+                $size = $matches[2];
                 $scale = $matches[3];
             } elseif (preg_match('/^([^\(]+)\(\s*(\d+)\s*\)$/', $fulltype, $matches)) {
                 $type = $matches[1];
@@ -210,7 +208,6 @@ class SqliteSchemaParser extends AbstractSchemaParser
             $column = new Column($name);
             $column->setTable($table);
             $column->setDomainForType($propelType);
-            $column->getDomain()->setOriginSqlType(strtolower($type));
             // We may want to provide an option to include this:
             // $column->getDomain()->replaceSqlType($type);
             $column->getDomain()->replaceSize($size);
@@ -283,15 +280,19 @@ class SqliteSchemaParser extends AbstractSchemaParser
                     continue;
                 }
 
+                // we need the reference earlier to build the FK name in Table class to prevent adding FK twice
+                $fk->addReference($row['from'], $row['to']);
+                $fk->setForeignTableCommonName($foreignTable->getCommonName());
                 $table->addForeignKey($fk);
+
                 $fk->setForeignTableCommonName($foreignTable->getCommonName());
                 if ($table->guessSchemaName() != $foreignTable->guessSchemaName()) {
                     $fk->setForeignSchemaName($foreignTable->guessSchemaName());
                 }
                 $lastId = $row['id'];
+            } else {
+                $fk->addReference($row['from'], $row['to']);
             }
-
-            $fk->addReference($row['from'], $row['to']);
         }
     }
 

@@ -15,10 +15,18 @@ use Propel\Runtime\ActiveRecord\ActiveRecordInterface;
 use Propel\Runtime\Collection\Collection;
 use Propel\Runtime\Connection\ConnectionInterface;
 use Propel\Runtime\Exception\BadMethodCallException;
+use Propel\Runtime\Exception\LogicException;
 use Propel\Runtime\Exception\PropelException;
 use Propel\Runtime\Map\TableMap;
 use Propel\Runtime\Parser\AbstractParser;
 
+/**
+ * Base class that represents a row from the 'book' table.
+ *
+ * Book Table
+ *
+* @package    propel.generator..Base
+*/
 abstract class Book implements ActiveRecordInterface
 {
     /**
@@ -84,7 +92,7 @@ abstract class Book implements ActiveRecordInterface
     protected $author_id;
 
     /**
-     * @var        Author
+     * @var        ChildAuthor
      */
     protected $aAuthor;
 
@@ -110,7 +118,7 @@ abstract class Book implements ActiveRecordInterface
      */
     public function isModified()
     {
-        return !empty($this->modifiedColumns);
+        return !!$this->modifiedColumns;
     }
 
     /**
@@ -121,7 +129,7 @@ abstract class Book implements ActiveRecordInterface
      */
     public function isColumnModified($col)
     {
-        return in_array($col, $this->modifiedColumns);
+        return $this->modifiedColumns && isset($this->modifiedColumns[$col]);
     }
 
     /**
@@ -130,7 +138,7 @@ abstract class Book implements ActiveRecordInterface
      */
     public function getModifiedColumns()
     {
-        return array_unique($this->modifiedColumns);
+        return $this->modifiedColumns ? array_keys($this->modifiedColumns) : [];
     }
 
     /**
@@ -153,7 +161,7 @@ abstract class Book implements ActiveRecordInterface
      */
     public function setNew($b)
     {
-        $this->new = (Boolean) $b;
+        $this->new = (boolean) $b;
     }
 
     /**
@@ -172,7 +180,7 @@ abstract class Book implements ActiveRecordInterface
      */
     public function setDeleted($b)
     {
-        $this->deleted = (Boolean) $b;
+        $this->deleted = (boolean) $b;
     }
 
     /**
@@ -183,8 +191,8 @@ abstract class Book implements ActiveRecordInterface
     public function resetModified($col = null)
     {
         if (null !== $col) {
-            while (false !== ($offset = array_search($col, $this->modifiedColumns))) {
-                array_splice($this->modifiedColumns, $offset, 1);
+            if (isset($this->modifiedColumns[$col])) {
+                unset($this->modifiedColumns[$col]);
             }
         } else {
             $this->modifiedColumns = array();
@@ -201,8 +209,7 @@ abstract class Book implements ActiveRecordInterface
      */
     public function equals($obj)
     {
-        $thisclazz = get_class($this);
-        if (!is_object($obj) || !($obj instanceof $thisclazz)) {
+        if (!$obj instanceof static) {
             return false;
         }
 
@@ -210,27 +217,11 @@ abstract class Book implements ActiveRecordInterface
             return true;
         }
 
-        if (null === $this->getPrimaryKey()
-            || null === $obj->getPrimaryKey())  {
+        if (null === $this->getPrimaryKey() || null === $obj->getPrimaryKey()) {
             return false;
         }
 
         return $this->getPrimaryKey() === $obj->getPrimaryKey();
-    }
-
-    /**
-     * If the primary key is not null, return the hashcode of the
-     * primary key. Otherwise, return the hash code of the object.
-     *
-     * @return int Hashcode
-     */
-    public function hashCode()
-    {
-        if (null !== $this->getPrimaryKey()) {
-            return crc32(serialize($this->getPrimaryKey()));
-        }
-
-        return crc32(serialize(clone $this));
     }
 
     /**
@@ -277,7 +268,7 @@ abstract class Book implements ActiveRecordInterface
      * @param string $name  The virtual column name
      * @param mixed  $value The value to give to the virtual column
      *
-     * @return Book The current object, for fluid interface
+     * @return $this|Book The current object, for fluid interface
      */
     public function setVirtualColumn($name, $value)
     {
@@ -296,30 +287,6 @@ abstract class Book implements ActiveRecordInterface
     protected function log($msg, $priority = Propel::LOG_INFO)
     {
         return Propel::log(get_class($this) . ': ' . $msg, $priority);
-    }
-
-    /**
-     * Populate the current object from a string, using a given parser format
-     * <code>
-     * $book = new Book();
-     * $book->importFrom('JSON', '{"Id":9012,"Title":"Don Juan","ISBN":"0140422161","Price":12.99,"PublisherId":1234,"AuthorId":5678}');
-     * </code>
-     *
-     * @param mixed $parser A AbstractParser instance,
-     *                       or a format name ('XML', 'YAML', 'JSON', 'CSV')
-     * @param string $data The source data to import from
-     *
-     * @return Book The current object, for fluid interface
-     */
-    public function importFrom($parser, $data)
-    {
-        if (!$parser instanceof AbstractParser) {
-            $parser = AbstractParser::getParser($parser);
-        }
-
-        $this->fromArray($parser->toArray($data), TableMap::TYPE_PHPNAME);
-
-        return $this;
     }
 
     /**
@@ -357,63 +324,58 @@ abstract class Book implements ActiveRecordInterface
     /**
      * Get the [id] column value.
      *
-     * @return   int
+     * @return int
      */
     public function getId()
     {
-
         return $this->id;
     }
 
     /**
      * Get the [title] column value.
      * Book Title
-     * @return   string
+     * @return string
      */
     public function getTitle()
     {
-
         return $this->title;
     }
 
     /**
      * Get the [isbn] column value.
      * ISBN Number
-     * @return   string
+     * @return string
      */
     public function getISBN()
     {
-
         return $this->isbn;
     }
 
     /**
      * Get the [price] column value.
      * Price of the book.
-     * @return   double
+     * @return double
      */
     public function getPrice()
     {
-
         return $this->price;
     }
 
     /**
      * Get the [author_id] column value.
      * Foreign Key Author
-     * @return   int
+     * @return int
      */
     public function getAuthorId()
     {
-
         return $this->author_id;
     }
 
     /**
      * Set the value of [id] column.
      *
-     * @param      int $v new value
-     * @return   \Book The current object (for fluent API support)
+     * @param int $v new value
+     * @return $this|\Book The current object (for fluent API support)
      */
     public function setId($v)
     {
@@ -423,9 +385,8 @@ abstract class Book implements ActiveRecordInterface
 
         if ($this->id !== $v) {
             $this->id = $v;
-            $this->modifiedColumns[] = BookTableMap::ID;
+            $this->modifiedColumns[BookTableMap::COL_ID] = true;
         }
-
 
         return $this;
     } // setId()
@@ -433,8 +394,8 @@ abstract class Book implements ActiveRecordInterface
     /**
      * Set the value of [title] column.
      * Book Title
-     * @param      string $v new value
-     * @return   \Book The current object (for fluent API support)
+     * @param string $v new value
+     * @return $this|\Book The current object (for fluent API support)
      */
     public function setTitle($v)
     {
@@ -444,9 +405,8 @@ abstract class Book implements ActiveRecordInterface
 
         if ($this->title !== $v) {
             $this->title = $v;
-            $this->modifiedColumns[] = BookTableMap::TITLE;
+            $this->modifiedColumns[BookTableMap::COL_TITLE] = true;
         }
-
 
         return $this;
     } // setTitle()
@@ -454,8 +414,8 @@ abstract class Book implements ActiveRecordInterface
     /**
      * Set the value of [isbn] column.
      * ISBN Number
-     * @param      string $v new value
-     * @return   \Book The current object (for fluent API support)
+     * @param string $v new value
+     * @return $this|\Book The current object (for fluent API support)
      */
     public function setISBN($v)
     {
@@ -465,9 +425,8 @@ abstract class Book implements ActiveRecordInterface
 
         if ($this->isbn !== $v) {
             $this->isbn = $v;
-            $this->modifiedColumns[] = BookTableMap::ISBN;
+            $this->modifiedColumns[BookTableMap::COL_ISBN] = true;
         }
-
 
         return $this;
     } // setISBN()
@@ -475,8 +434,8 @@ abstract class Book implements ActiveRecordInterface
     /**
      * Set the value of [price] column.
      * Price of the book.
-     * @param      double $v new value
-     * @return   \Book The current object (for fluent API support)
+     * @param double $v new value
+     * @return $this|\Book The current object (for fluent API support)
      */
     public function setPrice($v)
     {
@@ -486,9 +445,8 @@ abstract class Book implements ActiveRecordInterface
 
         if ($this->price !== $v) {
             $this->price = $v;
-            $this->modifiedColumns[] = BookTableMap::PRICE;
+            $this->modifiedColumns[BookTableMap::COL_PRICE] = true;
         }
-
 
         return $this;
     } // setPrice()
@@ -496,8 +454,8 @@ abstract class Book implements ActiveRecordInterface
     /**
      * Set the value of [author_id] column.
      * Foreign Key Author
-     * @param      int $v new value
-     * @return   \Book The current object (for fluent API support)
+     * @param int $v new value
+     * @return $this|\Book The current object (for fluent API support)
      */
     public function setAuthorId($v)
     {
@@ -507,13 +465,12 @@ abstract class Book implements ActiveRecordInterface
 
         if ($this->author_id !== $v) {
             $this->author_id = $v;
-            $this->modifiedColumns[] = BookTableMap::AUTHOR_ID;
+            $this->modifiedColumns[BookTableMap::COL_AUTHOR_ID] = true;
         }
 
         if ($this->aAuthor !== null && $this->aAuthor->getId() !== $v) {
             $this->aAuthor = null;
         }
-
 
         return $this;
     } // setAuthorId()
@@ -544,7 +501,7 @@ abstract class Book implements ActiveRecordInterface
      * @param int     $startcol  0-based offset column which indicates which restultset column to start with.
      * @param boolean $rehydrate Whether this object is being re-hydrated from the database.
      * @param string  $indexType The index type of $row. Mostly DataFetcher->getIndexType().
-                                  One of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_STUDLYPHPNAME
+                                  One of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_CAMELNAME
      *                            TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME, TableMap::TYPE_NUM.
      *
      * @return int             next starting column
@@ -553,7 +510,6 @@ abstract class Book implements ActiveRecordInterface
     public function hydrate($row, $startcol = 0, $rehydrate = false, $indexType = TableMap::TYPE_NUM)
     {
         try {
-
 
             $col = $row[TableMap::TYPE_NUM == $indexType ? 0 + $startcol : BookTableMap::translateFieldName('Id', TableMap::TYPE_PHPNAME, $indexType)];
             $this->id = (null !== $col) ? (int) $col : null;
@@ -580,7 +536,7 @@ abstract class Book implements ActiveRecordInterface
             return $startcol + 5; // 5 = BookTableMap::NUM_HYDRATE_COLUMNS.
 
         } catch (Exception $e) {
-            throw new PropelException("Error populating \Book object", 0, $e);
+            throw new PropelException(sprintf('Error populating %s object', '\\Book'), 0, $e);
         }
     }
 
@@ -664,23 +620,16 @@ abstract class Book implements ActiveRecordInterface
             $con = Propel::getServiceContainer()->getWriteConnection(BookTableMap::DATABASE_NAME);
         }
 
-        $con->beginTransaction();
-        try {
+        $con->transaction(function () use ($con) {
             $deleteQuery = ChildBookQuery::create()
                 ->filterByPrimaryKey($this->getPrimaryKey());
             $ret = $this->preDelete($con);
             if ($ret) {
                 $deleteQuery->delete($con);
                 $this->postDelete($con);
-                $con->commit();
                 $this->setDeleted(true);
-            } else {
-                $con->commit();
             }
-        } catch (Exception $e) {
-            $con->rollBack();
-            throw $e;
-        }
+        });
     }
 
     /**
@@ -706,9 +655,8 @@ abstract class Book implements ActiveRecordInterface
             $con = Propel::getServiceContainer()->getWriteConnection(BookTableMap::DATABASE_NAME);
         }
 
-        $con->beginTransaction();
-        $isInsert = $this->isNew();
-        try {
+        return $con->transaction(function () use ($con) {
+            $isInsert = $this->isNew();
             $ret = $this->preSave($con);
             if ($isInsert) {
                 $ret = $ret && $this->preInsert($con);
@@ -727,13 +675,9 @@ abstract class Book implements ActiveRecordInterface
             } else {
                 $affectedRows = 0;
             }
-            $con->commit();
 
             return $affectedRows;
-        } catch (Exception $e) {
-            $con->rollBack();
-            throw $e;
-        }
+        });
     }
 
     /**
@@ -769,10 +713,10 @@ abstract class Book implements ActiveRecordInterface
                 // persist changes
                 if ($this->isNew()) {
                     $this->doInsert($con);
+                    $affectedRows += 1;
                 } else {
-                    $this->doUpdate($con);
+                    $affectedRows += $this->doUpdate($con);
                 }
-                $affectedRows += 1;
                 $this->resetModified();
             }
 
@@ -796,26 +740,26 @@ abstract class Book implements ActiveRecordInterface
         $modifiedColumns = array();
         $index = 0;
 
-        $this->modifiedColumns[] = BookTableMap::ID;
+        $this->modifiedColumns[BookTableMap::COL_ID] = true;
         if (null !== $this->id) {
-            throw new PropelException('Cannot insert a value for auto-increment primary key (' . BookTableMap::ID . ')');
+            throw new PropelException('Cannot insert a value for auto-increment primary key (' . BookTableMap::COL_ID . ')');
         }
 
          // check the columns in natural order for more readable SQL queries
-        if ($this->isColumnModified(BookTableMap::ID)) {
-            $modifiedColumns[':p' . $index++]  = 'ID';
+        if ($this->isColumnModified(BookTableMap::COL_ID)) {
+            $modifiedColumns[':p' . $index++]  = 'id';
         }
-        if ($this->isColumnModified(BookTableMap::TITLE)) {
-            $modifiedColumns[':p' . $index++]  = 'TITLE';
+        if ($this->isColumnModified(BookTableMap::COL_TITLE)) {
+            $modifiedColumns[':p' . $index++]  = 'title';
         }
-        if ($this->isColumnModified(BookTableMap::ISBN)) {
-            $modifiedColumns[':p' . $index++]  = 'ISBN';
+        if ($this->isColumnModified(BookTableMap::COL_ISBN)) {
+            $modifiedColumns[':p' . $index++]  = 'isbn';
         }
-        if ($this->isColumnModified(BookTableMap::PRICE)) {
-            $modifiedColumns[':p' . $index++]  = 'PRICE';
+        if ($this->isColumnModified(BookTableMap::COL_PRICE)) {
+            $modifiedColumns[':p' . $index++]  = 'price';
         }
-        if ($this->isColumnModified(BookTableMap::AUTHOR_ID)) {
-            $modifiedColumns[':p' . $index++]  = 'AUTHOR_ID';
+        if ($this->isColumnModified(BookTableMap::COL_AUTHOR_ID)) {
+            $modifiedColumns[':p' . $index++]  = 'author_id';
         }
 
         $sql = sprintf(
@@ -828,19 +772,19 @@ abstract class Book implements ActiveRecordInterface
             $stmt = $con->prepare($sql);
             foreach ($modifiedColumns as $identifier => $columnName) {
                 switch ($columnName) {
-                    case 'ID':
+                    case 'id':
                         $stmt->bindValue($identifier, $this->id, PDO::PARAM_INT);
                         break;
-                    case 'TITLE':
+                    case 'title':
                         $stmt->bindValue($identifier, $this->title, PDO::PARAM_STR);
                         break;
-                    case 'ISBN':
+                    case 'isbn':
                         $stmt->bindValue($identifier, $this->isbn, PDO::PARAM_STR);
                         break;
-                    case 'PRICE':
+                    case 'price':
                         $stmt->bindValue($identifier, $this->price, PDO::PARAM_STR);
                         break;
-                    case 'AUTHOR_ID':
+                    case 'author_id':
                         $stmt->bindValue($identifier, $this->author_id, PDO::PARAM_INT);
                         break;
                 }
@@ -882,7 +826,7 @@ abstract class Book implements ActiveRecordInterface
      *
      * @param      string $name name
      * @param      string $type The type of fieldname the $name is of:
-     *                     one of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_STUDLYPHPNAME
+     *                     one of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_CAMELNAME
      *                     TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME, TableMap::TYPE_NUM.
      *                     Defaults to TableMap::TYPE_PHPNAME.
      * @return mixed Value of field.
@@ -932,7 +876,7 @@ abstract class Book implements ActiveRecordInterface
      * You can specify the key type of the array by passing one of the class
      * type constants.
      *
-     * @param     string  $keyType (optional) One of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_STUDLYPHPNAME,
+     * @param     string  $keyType (optional) One of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_CAMELNAME,
      *                    TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME, TableMap::TYPE_NUM.
      *                    Defaults to TableMap::TYPE_PHPNAME.
      * @param     boolean $includeLazyLoadColumns (optional) Whether to include lazy loaded columns. Defaults to TRUE.
@@ -943,10 +887,11 @@ abstract class Book implements ActiveRecordInterface
      */
     public function toArray($keyType = TableMap::TYPE_PHPNAME, $includeLazyLoadColumns = true, $alreadyDumpedObjects = array(), $includeForeignObjects = false)
     {
-        if (isset($alreadyDumpedObjects['Book'][$this->getPrimaryKey()])) {
+
+        if (isset($alreadyDumpedObjects['Book'][$this->hashCode()])) {
             return '*RECURSION*';
         }
-        $alreadyDumpedObjects['Book'][$this->getPrimaryKey()] = true;
+        $alreadyDumpedObjects['Book'][$this->hashCode()] = true;
         $keys = BookTableMap::getFieldNames($keyType);
         $result = array(
             $keys[0] => $this->getId(),
@@ -962,7 +907,19 @@ abstract class Book implements ActiveRecordInterface
 
         if ($includeForeignObjects) {
             if (null !== $this->aAuthor) {
-                $result['Author'] = $this->aAuthor->toArray($keyType, $includeLazyLoadColumns,  $alreadyDumpedObjects, true);
+
+                switch ($keyType) {
+                    case TableMap::TYPE_CAMELNAME:
+                        $key = 'author';
+                        break;
+                    case TableMap::TYPE_FIELDNAME:
+                        $key = 'author';
+                        break;
+                    default:
+                        $key = 'Author';
+                }
+
+                $result[$key] = $this->aAuthor->toArray($keyType, $includeLazyLoadColumns,  $alreadyDumpedObjects, true);
             }
         }
 
@@ -972,13 +929,13 @@ abstract class Book implements ActiveRecordInterface
     /**
      * Sets a field from the object by name passed in as a string.
      *
-     * @param      string $name
-     * @param      mixed  $value field value
-     * @param      string $type The type of fieldname the $name is of:
-     *                     one of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_STUDLYPHPNAME
-     *                     TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME, TableMap::TYPE_NUM.
-     *                     Defaults to TableMap::TYPE_PHPNAME.
-     * @return void
+     * @param  string $name
+     * @param  mixed  $value field value
+     * @param  string $type The type of fieldname the $name is of:
+     *                one of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_CAMELNAME
+     *                TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME, TableMap::TYPE_NUM.
+     *                Defaults to TableMap::TYPE_PHPNAME.
+     * @return $this|\Book
      */
     public function setByName($name, $value, $type = TableMap::TYPE_PHPNAME)
     {
@@ -991,9 +948,9 @@ abstract class Book implements ActiveRecordInterface
      * Sets a field from the object by Position as specified in the xml schema.
      * Zero-based.
      *
-     * @param      int $pos position in xml schema
-     * @param      mixed $value field value
-     * @return void
+     * @param  int $pos position in xml schema
+     * @param  mixed $value field value
+     * @return $this|\Book
      */
     public function setByPosition($pos, $value)
     {
@@ -1014,6 +971,8 @@ abstract class Book implements ActiveRecordInterface
                 $this->setAuthorId($value);
                 break;
         } // switch()
+
+        return $this;
     }
 
     /**
@@ -1025,7 +984,7 @@ abstract class Book implements ActiveRecordInterface
      * array. If so the setByName() method is called for that column.
      *
      * You can specify the key type of the array by additionally passing one
-     * of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_STUDLYPHPNAME,
+     * of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_CAMELNAME,
      * TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME, TableMap::TYPE_NUM.
      * The default key type is the column's TableMap::TYPE_PHPNAME.
      *
@@ -1037,11 +996,51 @@ abstract class Book implements ActiveRecordInterface
     {
         $keys = BookTableMap::getFieldNames($keyType);
 
-        if (array_key_exists($keys[0], $arr)) $this->setId($arr[$keys[0]]);
-        if (array_key_exists($keys[1], $arr)) $this->setTitle($arr[$keys[1]]);
-        if (array_key_exists($keys[2], $arr)) $this->setISBN($arr[$keys[2]]);
-        if (array_key_exists($keys[3], $arr)) $this->setPrice($arr[$keys[3]]);
-        if (array_key_exists($keys[4], $arr)) $this->setAuthorId($arr[$keys[4]]);
+        if (array_key_exists($keys[0], $arr)) {
+            $this->setId($arr[$keys[0]]);
+        }
+        if (array_key_exists($keys[1], $arr)) {
+            $this->setTitle($arr[$keys[1]]);
+        }
+        if (array_key_exists($keys[2], $arr)) {
+            $this->setISBN($arr[$keys[2]]);
+        }
+        if (array_key_exists($keys[3], $arr)) {
+            $this->setPrice($arr[$keys[3]]);
+        }
+        if (array_key_exists($keys[4], $arr)) {
+            $this->setAuthorId($arr[$keys[4]]);
+        }
+    }
+
+     /**
+     * Populate the current object from a string, using a given parser format
+     * <code>
+     * $book = new Book();
+     * $book->importFrom('JSON', '{"Id":9012,"Title":"Don Juan","ISBN":"0140422161","Price":12.99,"PublisherId":1234,"AuthorId":5678}');
+     * </code>
+     *
+     * You can specify the key type of the array by additionally passing one
+     * of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_CAMELNAME,
+     * TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME, TableMap::TYPE_NUM.
+     * The default key type is the column's TableMap::TYPE_PHPNAME.
+     *
+     * @param mixed $parser A AbstractParser instance,
+     *                       or a format name ('XML', 'YAML', 'JSON', 'CSV')
+     * @param string $data The source data to import from
+     * @param string $keyType The type of keys the array uses.
+     *
+     * @return $this|\Book The current object, for fluid interface
+     */
+    public function importFrom($parser, $data, $keyType = TableMap::TYPE_PHPNAME)
+    {
+        if (!$parser instanceof AbstractParser) {
+            $parser = AbstractParser::getParser($parser);
+        }
+
+        $this->fromArray($parser->toArray($data), $keyType);
+
+        return $this;
     }
 
     /**
@@ -1053,11 +1052,21 @@ abstract class Book implements ActiveRecordInterface
     {
         $criteria = new Criteria(BookTableMap::DATABASE_NAME);
 
-        if ($this->isColumnModified(BookTableMap::ID)) $criteria->add(BookTableMap::ID, $this->id);
-        if ($this->isColumnModified(BookTableMap::TITLE)) $criteria->add(BookTableMap::TITLE, $this->title);
-        if ($this->isColumnModified(BookTableMap::ISBN)) $criteria->add(BookTableMap::ISBN, $this->isbn);
-        if ($this->isColumnModified(BookTableMap::PRICE)) $criteria->add(BookTableMap::PRICE, $this->price);
-        if ($this->isColumnModified(BookTableMap::AUTHOR_ID)) $criteria->add(BookTableMap::AUTHOR_ID, $this->author_id);
+        if ($this->isColumnModified(BookTableMap::COL_ID)) {
+            $criteria->add(BookTableMap::COL_ID, $this->id);
+        }
+        if ($this->isColumnModified(BookTableMap::COL_TITLE)) {
+            $criteria->add(BookTableMap::COL_TITLE, $this->title);
+        }
+        if ($this->isColumnModified(BookTableMap::COL_ISBN)) {
+            $criteria->add(BookTableMap::COL_ISBN, $this->isbn);
+        }
+        if ($this->isColumnModified(BookTableMap::COL_PRICE)) {
+            $criteria->add(BookTableMap::COL_PRICE, $this->price);
+        }
+        if ($this->isColumnModified(BookTableMap::COL_AUTHOR_ID)) {
+            $criteria->add(BookTableMap::COL_AUTHOR_ID, $this->author_id);
+        }
 
         return $criteria;
     }
@@ -1068,19 +1077,43 @@ abstract class Book implements ActiveRecordInterface
      * Unlike buildCriteria() this method includes the primary key values regardless
      * of whether or not they have been modified.
      *
+     * @throws LogicException if no primary key is defined
+     *
      * @return Criteria The Criteria object containing value(s) for primary key(s).
      */
     public function buildPkeyCriteria()
     {
-        $criteria = new Criteria(BookTableMap::DATABASE_NAME);
-        $criteria->add(BookTableMap::ID, $this->id);
+        $criteria = ChildBookQuery::create();
+        $criteria->add(BookTableMap::COL_ID, $this->id);
 
         return $criteria;
     }
 
     /**
+     * If the primary key is not null, return the hashcode of the
+     * primary key. Otherwise, return the hash code of the object.
+     *
+     * @return int Hashcode
+     */
+    public function hashCode()
+    {
+        $validPk = null !== $this->getId();
+
+        $validPrimaryKeyFKs = 0;
+        $primaryKeyFKs = [];
+
+        if ($validPk) {
+            return crc32(json_encode($this->getPrimaryKey(), JSON_UNESCAPED_UNICODE));
+        } elseif ($validPrimaryKeyFKs) {
+            return crc32(json_encode($primaryKeyFKs, JSON_UNESCAPED_UNICODE));
+        }
+
+        return spl_object_hash($this);
+    }
+
+    /**
      * Returns the primary key for this object (row).
-     * @return   int
+     * @return int
      */
     public function getPrimaryKey()
     {
@@ -1104,7 +1137,6 @@ abstract class Book implements ActiveRecordInterface
      */
     public function isPrimaryKeyNull()
     {
-
         return null === $this->getId();
     }
 
@@ -1139,8 +1171,8 @@ abstract class Book implements ActiveRecordInterface
      * If desired, this method can also make copies of all associated (fkey referrers)
      * objects.
      *
-     * @param      boolean $deepCopy Whether to also copy all rows that refer (by fkey) to the current row.
-     * @return                 \Book Clone of current object.
+     * @param  boolean $deepCopy Whether to also copy all rows that refer (by fkey) to the current row.
+     * @return \Book Clone of current object.
      * @throws PropelException
      */
     public function copy($deepCopy = false)
@@ -1156,8 +1188,8 @@ abstract class Book implements ActiveRecordInterface
     /**
      * Declares an association between this object and a ChildAuthor object.
      *
-     * @param                  ChildAuthor $v
-     * @return                 \Book The current object (for fluent API support)
+     * @param  ChildAuthor $v
+     * @return $this|\Book The current object (for fluent API support)
      * @throws PropelException
      */
     public function setAuthor(ChildAuthor $v = null)
@@ -1184,8 +1216,8 @@ abstract class Book implements ActiveRecordInterface
     /**
      * Get the associated ChildAuthor object
      *
-     * @param      ConnectionInterface $con Optional Connection object.
-     * @return                 ChildAuthor The associated ChildAuthor object.
+     * @param  ConnectionInterface $con Optional Connection object.
+     * @return ChildAuthor The associated ChildAuthor object.
      * @throws PropelException
      */
     public function getAuthor(ConnectionInterface $con = null)
@@ -1205,10 +1237,15 @@ abstract class Book implements ActiveRecordInterface
     }
 
     /**
-     * Clears the current object and sets all attributes to their default values
+     * Clears the current object, sets all attributes to their default values and removes
+     * outgoing references as well as back-references (from other objects to this one. Results probably in a database
+     * change of those foreign objects when you call `save` there).
      */
     public function clear()
     {
+        if (null !== $this->aAuthor) {
+            $this->aAuthor->removeBook($this);
+        }
         $this->id = null;
         $this->title = null;
         $this->isbn = null;
@@ -1222,11 +1259,10 @@ abstract class Book implements ActiveRecordInterface
     }
 
     /**
-     * Resets all references to other model objects or collections of model objects.
+     * Resets all references and back-references to other model objects or collections of model objects.
      *
-     * This method is a user-space workaround for PHP's inability to garbage collect
-     * objects with circular references (even in PHP 5.3). This is currently necessary
-     * when using Propel in certain daemon or large-volume/high-memory operations.
+     * This method is used to reset all php object references (not the actual reference in the database).
+     * Necessary for object serialisation.
      *
      * @param      boolean $deep Whether to also clear the references on all referrer objects.
      */

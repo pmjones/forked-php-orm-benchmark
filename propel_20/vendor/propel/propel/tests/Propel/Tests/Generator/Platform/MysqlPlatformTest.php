@@ -256,7 +256,7 @@ CREATE TABLE `foo`
     public function testGetAddTableDDLIndex()
     {
         $schema = <<<EOF
-<database name="test">
+<database name="test" identifierQuoting="true">
     <table name="foo">
         <column name="id" primaryKey="true" type="INTEGER" autoIncrement="true" />
         <column name="bar" type="INTEGER" />
@@ -282,7 +282,7 @@ CREATE TABLE `foo`
     public function testGetAddTableDDLForeignKey()
     {
         $schema = <<<EOF
-<database name="test">
+<database name="test" identifierQuoting="true">
     <table name="foo">
         <column name="id" primaryKey="true" type="INTEGER" autoIncrement="true" />
         <column name="bar_id" type="INTEGER" />
@@ -314,7 +314,7 @@ CREATE TABLE `foo`
     public function testGetAddTableDDLForeignKeySkipSql()
     {
         $schema = <<<EOF
-<database name="test">
+<database name="test" identifierQuoting="true">
     <table name="foo">
         <column name="id" primaryKey="true" type="INTEGER" autoIncrement="true" />
         <column name="bar_id" type="INTEGER" />
@@ -343,7 +343,7 @@ CREATE TABLE `foo`
     public function testGetAddTableDDLEngine()
     {
         $schema = <<<EOF
-<database name="test">
+<database name="test" identifierQuoting="true">
     <table name="foo">
         <column name="id" primaryKey="true" type="INTEGER" autoIncrement="true" />
     </table>
@@ -368,7 +368,7 @@ CREATE TABLE `foo`
     public function testGetAddTableDDLVendor()
     {
         $schema = <<<EOF
-<database name="test">
+<database name="test" identifierQuoting="true">
     <table name="foo">
         <column name="id" primaryKey="true" type="INTEGER" autoIncrement="true" />
         <vendor type="mysql">
@@ -410,6 +410,7 @@ CREATE TABLE `Woopah`.`foo`
     public function testGetDropTableDDL()
     {
         $table = new Table('foo');
+        $table->setIdentifierQuoting(true);
         $expected = "
 DROP TABLE IF EXISTS `foo`;
 ";
@@ -507,6 +508,7 @@ DROP TABLE IF EXISTS `Woopah`.`foo`;
     public function testGetPrimaryKeyDDLSimpleKey()
     {
         $table = new Table('foo');
+        $table->setIdentifierQuoting(true);
         $column = new Column('bar');
         $column->setPrimaryKey(true);
         $table->addColumn($column);
@@ -517,6 +519,7 @@ DROP TABLE IF EXISTS `Woopah`.`foo`;
     public function testGetPrimaryKeyDDLCompositeKey()
     {
         $table = new Table('foo');
+        $table->setIdentifierQuoting(true);
         $column1 = new Column('bar1');
         $column1->setPrimaryKey(true);
         $table->addColumn($column1);
@@ -596,6 +599,7 @@ DROP INDEX `babar` ON `foo`;
     public function testGetIndexDDLKeySize()
     {
         $table = new Table('foo');
+        $table->setIdentifierQuoting(true);
         $column1 = new Column('bar1');
         $column1->getDomain()->copy($this->getPlatform()->getDomainForType('VARCHAR'));
         $column1->setSize(5);
@@ -610,6 +614,7 @@ DROP INDEX `babar` ON `foo`;
     public function testGetIndexDDLFulltext()
     {
         $table = new Table('foo');
+        $table->setIdentifierQuoting(true);
         $column1 = new Column('bar1');
         $column1->getDomain()->copy($this->getPlatform()->getDomainForType('LONGVARCHAR'));
         $table->addColumn($column1);
@@ -728,7 +733,7 @@ ALTER TABLE `foo` DROP FOREIGN KEY `foo_bar_fk`;
     public function testAddExtraIndicesForeignKeys()
     {
         $schema = '
-<database name="test1">
+<database name="test1" identifierQuoting="true">
   <table name="foo">
     <behavior name="AutoAddPK"/>
     <column name="name" type="VARCHAR"/>
@@ -771,7 +776,7 @@ CREATE TABLE `bar`
     public function testGetAddTableDDLComplexPK()
     {
         $schema   = <<<EOF
-<database name="test">
+<database name="test" identifierQuoting="true">
     <table name="foo">
         <column name="id" primaryKey="true" type="INTEGER"/>
         <column name="second_id" primaryKey="true" type="INTEGER" autoIncrement="true" />
@@ -793,5 +798,60 @@ CREATE TABLE `foo`
 ";
         $this->assertEquals($expected, $this->getPlatform()->getAddTableDDL($table));
     }
+
+    public function testVendorOptionsQuoting()
+    {
+
+        $schema   = <<<EOF
+<database name="test" identifierQuoting="true">
+    <table name="foo">
+        <column name="id" primaryKey="true" type="INTEGER"/>
+        <vendor type="mysql">
+            <parameter name="AutoIncrement" value="100" />
+            <parameter name="AvgRowLength" value="50" />
+            <parameter name="Charset" value="utf8" />
+            <parameter name="Checksum" value="1" />
+            <parameter name="Collate" value="utf8_unicode_ci" />
+            <parameter name="Connection" value="mysql://foo@bar.host:9306/federated/test_table" />
+            <parameter name="DataDirectory" value="/tmp/mysql-foo-table/" />
+            <parameter name="DelayKeyWrite" value="1" />
+            <parameter name="IndexDirectory" value="/tmp/mysql-foo-table-idx/" />
+            <parameter name="InsertMethod" value="LAST" />
+            <parameter name="KeyBlockSize" value="5" />
+            <parameter name="MaxRows" value="5000" />
+            <parameter name="MinRows" value="0" />
+            <parameter name="Pack_Keys" value="DEFAULT" />
+            <parameter name="PackKeys" value="1" />
+            <parameter name="RowFormat" value="COMPRESSED" />
+            <parameter name="Union" value="other_table" />
+        </vendor>
+    </table>
+</database>
+EOF;
+        $table    = $this->getTableFromSchema($schema);
+        $expected = "
+CREATE TABLE `foo`
+(
+    `id` INTEGER NOT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=100 AVG_ROW_LENGTH=50 CHARACTER SET='utf8' CHECKSUM=1 COLLATE='utf8_unicode_ci' CONNECTION='mysql://foo@bar.host:9306/federated/test_table' DATA DIRECTORY='/tmp/mysql-foo-table/' DELAY_KEY_WRITE=1 INDEX DIRECTORY='/tmp/mysql-foo-table-idx/' INSERT_METHOD=LAST KEY_BLOCK_SIZE=5 MAX_ROWS=5000 MIN_ROWS=0 PACK_KEYS=DEFAULT PACK_KEYS=1 ROW_FORMAT=COMPRESSED UNION='other_table';
+";
+        $this->assertEquals($expected, $this->getPlatform()->getAddTableDDL($table));
+    }
+
+
+    public function testNormalizeTable()
+    {
+        $column = new Column('price', 'DECIMAL');
+        $column->getDomain()->copy($this->getPlatform()->getDomainForType('DECIMAL'));
+        $column->setSize(10);
+        $column->setScale(3);
+        $table = new Table('prices');
+        $table->addColumns([$column]);
+        $this->getPlatform()->normalizeTable($table);
+        $this->assertEquals("`price` DECIMAL(10,3)", $this->getPlatform()->getColumnDDL($column));
+    }
+
+
 
 }

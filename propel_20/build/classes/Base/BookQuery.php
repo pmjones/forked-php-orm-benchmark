@@ -11,7 +11,6 @@ use Propel\Runtime\Propel;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Propel\Runtime\ActiveQuery\ModelCriteria;
 use Propel\Runtime\ActiveQuery\ModelJoin;
-use Propel\Runtime\Collection\Collection;
 use Propel\Runtime\Collection\ObjectCollection;
 use Propel\Runtime\Connection\ConnectionInterface;
 use Propel\Runtime\Exception\PropelException;
@@ -41,6 +40,8 @@ use Propel\Runtime\Exception\PropelException;
  * @method     ChildBookQuery rightJoinAuthor($relationAlias = null) Adds a RIGHT JOIN clause to the query using the Author relation
  * @method     ChildBookQuery innerJoinAuthor($relationAlias = null) Adds a INNER JOIN clause to the query using the Author relation
  *
+ * @method     \AuthorQuery endUse() Finalizes a secondary criteria and merges it with its primary Criteria
+ *
  * @method     ChildBook findOne(ConnectionInterface $con = null) Return the first ChildBook matching the query
  * @method     ChildBook findOneOrCreate(ConnectionInterface $con = null) Return the first ChildBook matching the query, or a new ChildBook object populated from the query conditions when no match is found
  *
@@ -48,17 +49,29 @@ use Propel\Runtime\Exception\PropelException;
  * @method     ChildBook findOneByTitle(string $title) Return the first ChildBook filtered by the title column
  * @method     ChildBook findOneByISBN(string $isbn) Return the first ChildBook filtered by the isbn column
  * @method     ChildBook findOneByPrice(double $price) Return the first ChildBook filtered by the price column
- * @method     ChildBook findOneByAuthorId(int $author_id) Return the first ChildBook filtered by the author_id column
+ * @method     ChildBook findOneByAuthorId(int $author_id) Return the first ChildBook filtered by the author_id column *
+
+ * @method     ChildBook requirePk($key, ConnectionInterface $con = null) Return the ChildBook by primary key and throws \Propel\Runtime\Exception\EntityNotFoundException when not found
+ * @method     ChildBook requireOne(ConnectionInterface $con = null) Return the first ChildBook matching the query and throws \Propel\Runtime\Exception\EntityNotFoundException when not found
  *
- * @method     array findById(int $id) Return ChildBook objects filtered by the id column
- * @method     array findByTitle(string $title) Return ChildBook objects filtered by the title column
- * @method     array findByISBN(string $isbn) Return ChildBook objects filtered by the isbn column
- * @method     array findByPrice(double $price) Return ChildBook objects filtered by the price column
- * @method     array findByAuthorId(int $author_id) Return ChildBook objects filtered by the author_id column
+ * @method     ChildBook requireOneById(int $id) Return the first ChildBook filtered by the id column and throws \Propel\Runtime\Exception\EntityNotFoundException when not found
+ * @method     ChildBook requireOneByTitle(string $title) Return the first ChildBook filtered by the title column and throws \Propel\Runtime\Exception\EntityNotFoundException when not found
+ * @method     ChildBook requireOneByISBN(string $isbn) Return the first ChildBook filtered by the isbn column and throws \Propel\Runtime\Exception\EntityNotFoundException when not found
+ * @method     ChildBook requireOneByPrice(double $price) Return the first ChildBook filtered by the price column and throws \Propel\Runtime\Exception\EntityNotFoundException when not found
+ * @method     ChildBook requireOneByAuthorId(int $author_id) Return the first ChildBook filtered by the author_id column and throws \Propel\Runtime\Exception\EntityNotFoundException when not found
+ *
+ * @method     ChildBook[]|ObjectCollection find(ConnectionInterface $con = null) Return ChildBook objects based on current ModelCriteria
+ * @method     ChildBook[]|ObjectCollection findById(int $id) Return ChildBook objects filtered by the id column
+ * @method     ChildBook[]|ObjectCollection findByTitle(string $title) Return ChildBook objects filtered by the title column
+ * @method     ChildBook[]|ObjectCollection findByISBN(string $isbn) Return ChildBook objects filtered by the isbn column
+ * @method     ChildBook[]|ObjectCollection findByPrice(double $price) Return ChildBook objects filtered by the price column
+ * @method     ChildBook[]|ObjectCollection findByAuthorId(int $author_id) Return ChildBook objects filtered by the author_id column
+ * @method     ChildBook[]|\Propel\Runtime\Util\PropelModelPager paginate($page = 1, $maxPerPage = 10, ConnectionInterface $con = null) Issue a SELECT query based on the current ModelCriteria and uses a page and a maximum number of results per page to compute an offset and a limit
  *
  */
 abstract class BookQuery extends ModelCriteria
 {
+    protected $entityNotFoundExceptionClass = '\\Propel\\Runtime\\Exception\\EntityNotFoundException';
 
     /**
      * Initializes internal state of \Base\BookQuery object.
@@ -80,12 +93,12 @@ abstract class BookQuery extends ModelCriteria
      *
      * @return ChildBookQuery
      */
-    public static function create($modelAlias = null, $criteria = null)
+    public static function create($modelAlias = null, Criteria $criteria = null)
     {
-        if ($criteria instanceof \BookQuery) {
+        if ($criteria instanceof ChildBookQuery) {
             return $criteria;
         }
-        $query = new \BookQuery();
+        $query = new ChildBookQuery();
         if (null !== $modelAlias) {
             $query->setModelAlias($modelAlias);
         }
@@ -110,7 +123,7 @@ abstract class BookQuery extends ModelCriteria
      *
      * @return ChildBook|array|mixed the result, formatted by the current formatter
      */
-    public function findPk($key, $con = null)
+    public function findPk($key, ConnectionInterface $con = null)
     {
         if ($key === null) {
             return null;
@@ -139,11 +152,13 @@ abstract class BookQuery extends ModelCriteria
      * @param     mixed $key Primary key to use for the query
      * @param     ConnectionInterface $con A connection object
      *
-     * @return   ChildBook A model object, or null if the key is not found
+     * @throws \Propel\Runtime\Exception\PropelException
+     *
+     * @return ChildBook A model object, or null if the key is not found
      */
-    protected function findPkSimple($key, $con)
+    protected function findPkSimple($key, ConnectionInterface $con)
     {
-        $sql = 'SELECT ID, TITLE, ISBN, PRICE, AUTHOR_ID FROM book WHERE ID = :p0';
+        $sql = 'SELECT id, title, isbn, price, author_id FROM book WHERE id = :p0';
         try {
             $stmt = $con->prepare($sql);
             $stmt->bindValue(':p0', $key, PDO::PARAM_INT);
@@ -154,6 +169,7 @@ abstract class BookQuery extends ModelCriteria
         }
         $obj = null;
         if ($row = $stmt->fetch(\PDO::FETCH_NUM)) {
+            /** @var ChildBook $obj */
             $obj = new ChildBook();
             $obj->hydrate($row);
             BookTableMap::addInstanceToPool($obj, (string) $key);
@@ -171,7 +187,7 @@ abstract class BookQuery extends ModelCriteria
      *
      * @return ChildBook|array|mixed the result, formatted by the current formatter
      */
-    protected function findPkComplex($key, $con)
+    protected function findPkComplex($key, ConnectionInterface $con)
     {
         // As the query uses a PK condition, no limit(1) is necessary.
         $criteria = $this->isKeepQuery() ? clone $this : $this;
@@ -192,7 +208,7 @@ abstract class BookQuery extends ModelCriteria
      *
      * @return ObjectCollection|array|mixed the list of results, formatted by the current formatter
      */
-    public function findPks($keys, $con = null)
+    public function findPks($keys, ConnectionInterface $con = null)
     {
         if (null === $con) {
             $con = Propel::getServiceContainer()->getReadConnection($this->getDbName());
@@ -211,12 +227,12 @@ abstract class BookQuery extends ModelCriteria
      *
      * @param     mixed $key Primary key to use for the query
      *
-     * @return ChildBookQuery The current query, for fluid interface
+     * @return $this|ChildBookQuery The current query, for fluid interface
      */
     public function filterByPrimaryKey($key)
     {
 
-        return $this->addUsingAlias(BookTableMap::ID, $key, Criteria::EQUAL);
+        return $this->addUsingAlias(BookTableMap::COL_ID, $key, Criteria::EQUAL);
     }
 
     /**
@@ -224,12 +240,12 @@ abstract class BookQuery extends ModelCriteria
      *
      * @param     array $keys The list of primary key to use for the query
      *
-     * @return ChildBookQuery The current query, for fluid interface
+     * @return $this|ChildBookQuery The current query, for fluid interface
      */
     public function filterByPrimaryKeys($keys)
     {
 
-        return $this->addUsingAlias(BookTableMap::ID, $keys, Criteria::IN);
+        return $this->addUsingAlias(BookTableMap::COL_ID, $keys, Criteria::IN);
     }
 
     /**
@@ -248,18 +264,18 @@ abstract class BookQuery extends ModelCriteria
      *              Use associative array('min' => $minValue, 'max' => $maxValue) for intervals.
      * @param     string $comparison Operator to use for the column comparison, defaults to Criteria::EQUAL
      *
-     * @return ChildBookQuery The current query, for fluid interface
+     * @return $this|ChildBookQuery The current query, for fluid interface
      */
     public function filterById($id = null, $comparison = null)
     {
         if (is_array($id)) {
             $useMinMax = false;
             if (isset($id['min'])) {
-                $this->addUsingAlias(BookTableMap::ID, $id['min'], Criteria::GREATER_EQUAL);
+                $this->addUsingAlias(BookTableMap::COL_ID, $id['min'], Criteria::GREATER_EQUAL);
                 $useMinMax = true;
             }
             if (isset($id['max'])) {
-                $this->addUsingAlias(BookTableMap::ID, $id['max'], Criteria::LESS_EQUAL);
+                $this->addUsingAlias(BookTableMap::COL_ID, $id['max'], Criteria::LESS_EQUAL);
                 $useMinMax = true;
             }
             if ($useMinMax) {
@@ -270,7 +286,7 @@ abstract class BookQuery extends ModelCriteria
             }
         }
 
-        return $this->addUsingAlias(BookTableMap::ID, $id, $comparison);
+        return $this->addUsingAlias(BookTableMap::COL_ID, $id, $comparison);
     }
 
     /**
@@ -286,7 +302,7 @@ abstract class BookQuery extends ModelCriteria
      *              Accepts wildcards (* and % trigger a LIKE)
      * @param     string $comparison Operator to use for the column comparison, defaults to Criteria::EQUAL
      *
-     * @return ChildBookQuery The current query, for fluid interface
+     * @return $this|ChildBookQuery The current query, for fluid interface
      */
     public function filterByTitle($title = null, $comparison = null)
     {
@@ -299,7 +315,7 @@ abstract class BookQuery extends ModelCriteria
             }
         }
 
-        return $this->addUsingAlias(BookTableMap::TITLE, $title, $comparison);
+        return $this->addUsingAlias(BookTableMap::COL_TITLE, $title, $comparison);
     }
 
     /**
@@ -315,7 +331,7 @@ abstract class BookQuery extends ModelCriteria
      *              Accepts wildcards (* and % trigger a LIKE)
      * @param     string $comparison Operator to use for the column comparison, defaults to Criteria::EQUAL
      *
-     * @return ChildBookQuery The current query, for fluid interface
+     * @return $this|ChildBookQuery The current query, for fluid interface
      */
     public function filterByISBN($iSBN = null, $comparison = null)
     {
@@ -328,7 +344,7 @@ abstract class BookQuery extends ModelCriteria
             }
         }
 
-        return $this->addUsingAlias(BookTableMap::ISBN, $iSBN, $comparison);
+        return $this->addUsingAlias(BookTableMap::COL_ISBN, $iSBN, $comparison);
     }
 
     /**
@@ -347,18 +363,18 @@ abstract class BookQuery extends ModelCriteria
      *              Use associative array('min' => $minValue, 'max' => $maxValue) for intervals.
      * @param     string $comparison Operator to use for the column comparison, defaults to Criteria::EQUAL
      *
-     * @return ChildBookQuery The current query, for fluid interface
+     * @return $this|ChildBookQuery The current query, for fluid interface
      */
     public function filterByPrice($price = null, $comparison = null)
     {
         if (is_array($price)) {
             $useMinMax = false;
             if (isset($price['min'])) {
-                $this->addUsingAlias(BookTableMap::PRICE, $price['min'], Criteria::GREATER_EQUAL);
+                $this->addUsingAlias(BookTableMap::COL_PRICE, $price['min'], Criteria::GREATER_EQUAL);
                 $useMinMax = true;
             }
             if (isset($price['max'])) {
-                $this->addUsingAlias(BookTableMap::PRICE, $price['max'], Criteria::LESS_EQUAL);
+                $this->addUsingAlias(BookTableMap::COL_PRICE, $price['max'], Criteria::LESS_EQUAL);
                 $useMinMax = true;
             }
             if ($useMinMax) {
@@ -369,7 +385,7 @@ abstract class BookQuery extends ModelCriteria
             }
         }
 
-        return $this->addUsingAlias(BookTableMap::PRICE, $price, $comparison);
+        return $this->addUsingAlias(BookTableMap::COL_PRICE, $price, $comparison);
     }
 
     /**
@@ -390,18 +406,18 @@ abstract class BookQuery extends ModelCriteria
      *              Use associative array('min' => $minValue, 'max' => $maxValue) for intervals.
      * @param     string $comparison Operator to use for the column comparison, defaults to Criteria::EQUAL
      *
-     * @return ChildBookQuery The current query, for fluid interface
+     * @return $this|ChildBookQuery The current query, for fluid interface
      */
     public function filterByAuthorId($authorId = null, $comparison = null)
     {
         if (is_array($authorId)) {
             $useMinMax = false;
             if (isset($authorId['min'])) {
-                $this->addUsingAlias(BookTableMap::AUTHOR_ID, $authorId['min'], Criteria::GREATER_EQUAL);
+                $this->addUsingAlias(BookTableMap::COL_AUTHOR_ID, $authorId['min'], Criteria::GREATER_EQUAL);
                 $useMinMax = true;
             }
             if (isset($authorId['max'])) {
-                $this->addUsingAlias(BookTableMap::AUTHOR_ID, $authorId['max'], Criteria::LESS_EQUAL);
+                $this->addUsingAlias(BookTableMap::COL_AUTHOR_ID, $authorId['max'], Criteria::LESS_EQUAL);
                 $useMinMax = true;
             }
             if ($useMinMax) {
@@ -412,7 +428,7 @@ abstract class BookQuery extends ModelCriteria
             }
         }
 
-        return $this->addUsingAlias(BookTableMap::AUTHOR_ID, $authorId, $comparison);
+        return $this->addUsingAlias(BookTableMap::COL_AUTHOR_ID, $authorId, $comparison);
     }
 
     /**
@@ -421,20 +437,22 @@ abstract class BookQuery extends ModelCriteria
      * @param \Author|ObjectCollection $author The related object(s) to use as filter
      * @param string $comparison Operator to use for the column comparison, defaults to Criteria::EQUAL
      *
+     * @throws \Propel\Runtime\Exception\PropelException
+     *
      * @return ChildBookQuery The current query, for fluid interface
      */
     public function filterByAuthor($author, $comparison = null)
     {
         if ($author instanceof \Author) {
             return $this
-                ->addUsingAlias(BookTableMap::AUTHOR_ID, $author->getId(), $comparison);
+                ->addUsingAlias(BookTableMap::COL_AUTHOR_ID, $author->getId(), $comparison);
         } elseif ($author instanceof ObjectCollection) {
             if (null === $comparison) {
                 $comparison = Criteria::IN;
             }
 
             return $this
-                ->addUsingAlias(BookTableMap::AUTHOR_ID, $author->toKeyValue('PrimaryKey', 'Id'), $comparison);
+                ->addUsingAlias(BookTableMap::COL_AUTHOR_ID, $author->toKeyValue('PrimaryKey', 'Id'), $comparison);
         } else {
             throw new PropelException('filterByAuthor() only accepts arguments of type \Author or Collection');
         }
@@ -446,7 +464,7 @@ abstract class BookQuery extends ModelCriteria
      * @param     string $relationAlias optional alias for the relation
      * @param     string $joinType Accepted values are null, 'left join', 'right join', 'inner join'
      *
-     * @return ChildBookQuery The current query, for fluid interface
+     * @return $this|ChildBookQuery The current query, for fluid interface
      */
     public function joinAuthor($relationAlias = null, $joinType = Criteria::LEFT_JOIN)
     {
@@ -481,7 +499,7 @@ abstract class BookQuery extends ModelCriteria
      *                                   to be used as main alias in the secondary query
      * @param     string $joinType Accepted values are null, 'left join', 'right join', 'inner join'
      *
-     * @return   \AuthorQuery A secondary query class using the current class as primary query
+     * @return \AuthorQuery A secondary query class using the current class as primary query
      */
     public function useAuthorQuery($relationAlias = null, $joinType = Criteria::LEFT_JOIN)
     {
@@ -495,12 +513,12 @@ abstract class BookQuery extends ModelCriteria
      *
      * @param   ChildBook $book Object to remove from the list of results
      *
-     * @return ChildBookQuery The current query, for fluid interface
+     * @return $this|ChildBookQuery The current query, for fluid interface
      */
     public function prune($book = null)
     {
         if ($book) {
-            $this->addUsingAlias(BookTableMap::ID, $book->getId(), Criteria::NOT_EQUAL);
+            $this->addUsingAlias(BookTableMap::COL_ID, $book->getId(), Criteria::NOT_EQUAL);
         }
 
         return $this;
@@ -517,11 +535,11 @@ abstract class BookQuery extends ModelCriteria
         if (null === $con) {
             $con = Propel::getServiceContainer()->getWriteConnection(BookTableMap::DATABASE_NAME);
         }
-        $affectedRows = 0; // initialize var to track total num of affected rows
-        try {
-            // use transaction because $criteria could contain info
-            // for more than one table or we could emulating ON DELETE CASCADE, etc.
-            $con->beginTransaction();
+
+        // use transaction because $criteria could contain info
+        // for more than one table or we could emulating ON DELETE CASCADE, etc.
+        return $con->transaction(function () use ($con) {
+            $affectedRows = 0; // initialize var to track total num of affected rows
             $affectedRows += parent::doDeleteAll($con);
             // Because this db requires some delete cascade/set null emulation, we have to
             // clear the cached instance *after* the emulation has happened (since
@@ -529,28 +547,21 @@ abstract class BookQuery extends ModelCriteria
             BookTableMap::clearInstancePool();
             BookTableMap::clearRelatedInstancePool();
 
-            $con->commit();
-        } catch (PropelException $e) {
-            $con->rollBack();
-            throw $e;
-        }
-
-        return $affectedRows;
+            return $affectedRows;
+        });
     }
 
     /**
-     * Performs a DELETE on the database, given a ChildBook or Criteria object OR a primary key value.
+     * Performs a DELETE on the database based on the current ModelCriteria
      *
-     * @param mixed               $values Criteria or ChildBook object or primary key or array of primary keys
-     *              which is used to create the DELETE statement
      * @param ConnectionInterface $con the connection to use
-     * @return int The number of affected rows (if supported by underlying database driver).  This includes CASCADE-related rows
-     *                if supported by native driver or if emulated using Propel.
+     * @return int             The number of affected rows (if supported by underlying database driver).  This includes CASCADE-related rows
+     *                         if supported by native driver or if emulated using Propel.
      * @throws PropelException Any exceptions caught during processing will be
-     *         rethrown wrapped into a PropelException.
+     *                         rethrown wrapped into a PropelException.
      */
-     public function delete(ConnectionInterface $con = null)
-     {
+    public function delete(ConnectionInterface $con = null)
+    {
         if (null === $con) {
             $con = Propel::getServiceContainer()->getWriteConnection(BookTableMap::DATABASE_NAME);
         }
@@ -560,25 +571,18 @@ abstract class BookQuery extends ModelCriteria
         // Set the correct dbName
         $criteria->setDbName(BookTableMap::DATABASE_NAME);
 
-        $affectedRows = 0; // initialize var to track total num of affected rows
+        // use transaction because $criteria could contain info
+        // for more than one table or we could emulating ON DELETE CASCADE, etc.
+        return $con->transaction(function () use ($con, $criteria) {
+            $affectedRows = 0; // initialize var to track total num of affected rows
 
-        try {
-            // use transaction because $criteria could contain info
-            // for more than one table or we could emulating ON DELETE CASCADE, etc.
-            $con->beginTransaction();
-
-
-        BookTableMap::removeInstanceFromPool($criteria);
+            BookTableMap::removeInstanceFromPool($criteria);
 
             $affectedRows += ModelCriteria::delete($con);
             BookTableMap::clearRelatedInstancePool();
-            $con->commit();
 
             return $affectedRows;
-        } catch (PropelException $e) {
-            $con->rollBack();
-            throw $e;
-        }
+        });
     }
 
 } // BookQuery

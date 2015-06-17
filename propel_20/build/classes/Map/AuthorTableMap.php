@@ -8,6 +8,7 @@ use Propel\Runtime\Propel;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Propel\Runtime\ActiveQuery\InstancePoolTrait;
 use Propel\Runtime\Connection\ConnectionInterface;
+use Propel\Runtime\DataFetcher\DataFetcherInterface;
 use Propel\Runtime\Exception\PropelException;
 use Propel\Runtime\Map\RelationMap;
 use Propel\Runtime\Map\TableMap;
@@ -29,6 +30,7 @@ class AuthorTableMap extends TableMap
 {
     use InstancePoolTrait;
     use TableMapTrait;
+
     /**
      * The (dot-path) name of this class
      */
@@ -70,24 +72,24 @@ class AuthorTableMap extends TableMap
     const NUM_HYDRATE_COLUMNS = 4;
 
     /**
-     * the column name for the ID field
+     * the column name for the id field
      */
-    const ID = 'author.ID';
+    const COL_ID = 'author.id';
 
     /**
-     * the column name for the FIRST_NAME field
+     * the column name for the first_name field
      */
-    const FIRST_NAME = 'author.FIRST_NAME';
+    const COL_FIRST_NAME = 'author.first_name';
 
     /**
-     * the column name for the LAST_NAME field
+     * the column name for the last_name field
      */
-    const LAST_NAME = 'author.LAST_NAME';
+    const COL_LAST_NAME = 'author.last_name';
 
     /**
-     * the column name for the EMAIL field
+     * the column name for the email field
      */
-    const EMAIL = 'author.EMAIL';
+    const COL_EMAIL = 'author.email';
 
     /**
      * The default string format for model objects of the related table
@@ -102,9 +104,8 @@ class AuthorTableMap extends TableMap
      */
     protected static $fieldNames = array (
         self::TYPE_PHPNAME       => array('Id', 'FirstName', 'LastName', 'Email', ),
-        self::TYPE_STUDLYPHPNAME => array('id', 'firstName', 'lastName', 'email', ),
-        self::TYPE_COLNAME       => array(AuthorTableMap::ID, AuthorTableMap::FIRST_NAME, AuthorTableMap::LAST_NAME, AuthorTableMap::EMAIL, ),
-        self::TYPE_RAW_COLNAME   => array('ID', 'FIRST_NAME', 'LAST_NAME', 'EMAIL', ),
+        self::TYPE_CAMELNAME     => array('id', 'firstName', 'lastName', 'email', ),
+        self::TYPE_COLNAME       => array(AuthorTableMap::COL_ID, AuthorTableMap::COL_FIRST_NAME, AuthorTableMap::COL_LAST_NAME, AuthorTableMap::COL_EMAIL, ),
         self::TYPE_FIELDNAME     => array('id', 'first_name', 'last_name', 'email', ),
         self::TYPE_NUM           => array(0, 1, 2, 3, )
     );
@@ -117,9 +118,8 @@ class AuthorTableMap extends TableMap
      */
     protected static $fieldKeys = array (
         self::TYPE_PHPNAME       => array('Id' => 0, 'FirstName' => 1, 'LastName' => 2, 'Email' => 3, ),
-        self::TYPE_STUDLYPHPNAME => array('id' => 0, 'firstName' => 1, 'lastName' => 2, 'email' => 3, ),
-        self::TYPE_COLNAME       => array(AuthorTableMap::ID => 0, AuthorTableMap::FIRST_NAME => 1, AuthorTableMap::LAST_NAME => 2, AuthorTableMap::EMAIL => 3, ),
-        self::TYPE_RAW_COLNAME   => array('ID' => 0, 'FIRST_NAME' => 1, 'LAST_NAME' => 2, 'EMAIL' => 3, ),
+        self::TYPE_CAMELNAME     => array('id' => 0, 'firstName' => 1, 'lastName' => 2, 'email' => 3, ),
+        self::TYPE_COLNAME       => array(AuthorTableMap::COL_ID => 0, AuthorTableMap::COL_FIRST_NAME => 1, AuthorTableMap::COL_LAST_NAME => 2, AuthorTableMap::COL_EMAIL => 3, ),
         self::TYPE_FIELDNAME     => array('id' => 0, 'first_name' => 1, 'last_name' => 2, 'email' => 3, ),
         self::TYPE_NUM           => array(0, 1, 2, 3, )
     );
@@ -136,14 +136,15 @@ class AuthorTableMap extends TableMap
         // attributes
         $this->setName('author');
         $this->setPhpName('Author');
+        $this->setIdentifierQuoting(false);
         $this->setClassName('\\Author');
         $this->setPackage('');
         $this->setUseIdGenerator(true);
         // columns
-        $this->addPrimaryKey('ID', 'Id', 'INTEGER', true, null, null);
-        $this->addColumn('FIRST_NAME', 'FirstName', 'VARCHAR', true, 128, null);
-        $this->addColumn('LAST_NAME', 'LastName', 'VARCHAR', true, 128, null);
-        $this->addColumn('EMAIL', 'Email', 'VARCHAR', false, 128, null);
+        $this->addPrimaryKey('id', 'Id', 'INTEGER', true, null, null);
+        $this->addColumn('first_name', 'FirstName', 'VARCHAR', true, 128, null);
+        $this->addColumn('last_name', 'LastName', 'VARCHAR', true, 128, null);
+        $this->addColumn('email', 'Email', 'VARCHAR', false, 128, null);
     } // initialize()
 
     /**
@@ -151,17 +152,23 @@ class AuthorTableMap extends TableMap
      */
     public function buildRelations()
     {
-        $this->addRelation('Book', '\\Book', RelationMap::ONE_TO_MANY, array('id' => 'author_id', ), 'SET NULL', 'CASCADE', 'Books');
+        $this->addRelation('Book', '\\Book', RelationMap::ONE_TO_MANY, array (
+  0 =>
+  array (
+    0 => ':author_id',
+    1 => ':id',
+  ),
+), 'SET NULL', 'CASCADE', 'Books', false);
     } // buildRelations()
     /**
      * Method to invalidate the instance pool of all tables related to author     * by a foreign key with ON DELETE CASCADE
      */
     public static function clearRelatedInstancePool()
     {
-        // Invalidate objects in ".$this->getClassNameFromBuilder($joinedTableTableMapBuilder)." instance pool,
+        // Invalidate objects in related instance pools,
         // since one or more of them may be deleted by ON DELETE CASCADE/SETNULL rule.
-                BookTableMap::clearInstancePool();
-            }
+        BookTableMap::clearInstancePool();
+    }
 
     /**
      * Retrieves a string version of the primary key from the DB resultset row that can be used to uniquely identify a row in this table.
@@ -171,8 +178,10 @@ class AuthorTableMap extends TableMap
      *
      * @param array  $row       resultset row.
      * @param int    $offset    The 0-based offset for reading from the resultset row.
-     * @param string $indexType One of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_STUDLYPHPNAME
+     * @param string $indexType One of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_CAMELNAME
      *                           TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME, TableMap::TYPE_NUM
+     *
+     * @return string The primary key hash of the row
      */
     public static function getPrimaryKeyHashFromRow($row, $offset = 0, $indexType = TableMap::TYPE_NUM)
     {
@@ -191,19 +200,18 @@ class AuthorTableMap extends TableMap
      *
      * @param array  $row       resultset row.
      * @param int    $offset    The 0-based offset for reading from the resultset row.
-     * @param string $indexType One of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_STUDLYPHPNAME
+     * @param string $indexType One of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_CAMELNAME
      *                           TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME, TableMap::TYPE_NUM
      *
      * @return mixed The primary key of the row
      */
     public static function getPrimaryKeyFromRow($row, $offset = 0, $indexType = TableMap::TYPE_NUM)
     {
-
-            return (int) $row[
-                            $indexType == TableMap::TYPE_NUM
-                            ? 0 + $offset
-                            : self::translateFieldName('Id', TableMap::TYPE_PHPNAME, $indexType)
-                        ];
+        return (int) $row[
+            $indexType == TableMap::TYPE_NUM
+                ? 0 + $offset
+                : self::translateFieldName('Id', TableMap::TYPE_PHPNAME, $indexType)
+        ];
     }
 
     /**
@@ -228,12 +236,12 @@ class AuthorTableMap extends TableMap
      * @param array  $row       row returned by DataFetcher->fetch().
      * @param int    $offset    The 0-based offset for reading from the resultset row.
      * @param string $indexType The index type of $row. Mostly DataFetcher->getIndexType().
-                                 One of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_STUDLYPHPNAME
+                                 One of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_CAMELNAME
      *                           TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME, TableMap::TYPE_NUM.
      *
      * @throws PropelException Any exceptions caught during processing will be
-     *         rethrown wrapped into a PropelException.
-     * @return array (Author object, last column rank)
+     *                         rethrown wrapped into a PropelException.
+     * @return array           (Author object, last column rank)
      */
     public static function populateObject($row, $offset = 0, $indexType = TableMap::TYPE_NUM)
     {
@@ -245,6 +253,7 @@ class AuthorTableMap extends TableMap
             $col = $offset + AuthorTableMap::NUM_HYDRATE_COLUMNS;
         } else {
             $cls = AuthorTableMap::OM_CLASS;
+            /** @var Author $obj */
             $obj = new $cls();
             $col = $obj->hydrate($row, $offset, false, $indexType);
             AuthorTableMap::addInstanceToPool($obj, $key);
@@ -260,7 +269,7 @@ class AuthorTableMap extends TableMap
      * @param DataFetcherInterface $dataFetcher
      * @return array
      * @throws PropelException Any exceptions caught during processing will be
-     *         rethrown wrapped into a PropelException.
+     *                         rethrown wrapped into a PropelException.
      */
     public static function populateObjects(DataFetcherInterface $dataFetcher)
     {
@@ -277,6 +286,7 @@ class AuthorTableMap extends TableMap
                 // $obj->hydrate($row, 0, true); // rehydrate
                 $results[] = $obj;
             } else {
+                /** @var Author $obj */
                 $obj = new $cls();
                 $obj->hydrate($row);
                 $results[] = $obj;
@@ -296,20 +306,20 @@ class AuthorTableMap extends TableMap
      * @param Criteria $criteria object containing the columns to add.
      * @param string   $alias    optional table alias
      * @throws PropelException Any exceptions caught during processing will be
-     *         rethrown wrapped into a PropelException.
+     *                         rethrown wrapped into a PropelException.
      */
     public static function addSelectColumns(Criteria $criteria, $alias = null)
     {
         if (null === $alias) {
-            $criteria->addSelectColumn(AuthorTableMap::ID);
-            $criteria->addSelectColumn(AuthorTableMap::FIRST_NAME);
-            $criteria->addSelectColumn(AuthorTableMap::LAST_NAME);
-            $criteria->addSelectColumn(AuthorTableMap::EMAIL);
+            $criteria->addSelectColumn(AuthorTableMap::COL_ID);
+            $criteria->addSelectColumn(AuthorTableMap::COL_FIRST_NAME);
+            $criteria->addSelectColumn(AuthorTableMap::COL_LAST_NAME);
+            $criteria->addSelectColumn(AuthorTableMap::COL_EMAIL);
         } else {
-            $criteria->addSelectColumn($alias . '.ID');
-            $criteria->addSelectColumn($alias . '.FIRST_NAME');
-            $criteria->addSelectColumn($alias . '.LAST_NAME');
-            $criteria->addSelectColumn($alias . '.EMAIL');
+            $criteria->addSelectColumn($alias . '.id');
+            $criteria->addSelectColumn($alias . '.first_name');
+            $criteria->addSelectColumn($alias . '.last_name');
+            $criteria->addSelectColumn($alias . '.email');
         }
     }
 
@@ -318,7 +328,7 @@ class AuthorTableMap extends TableMap
      * This method is not needed for general use but a specific application could have a need.
      * @return TableMap
      * @throws PropelException Any exceptions caught during processing will be
-     *         rethrown wrapped into a PropelException.
+     *                         rethrown wrapped into a PropelException.
      */
     public static function getTableMap()
     {
@@ -330,10 +340,10 @@ class AuthorTableMap extends TableMap
      */
     public static function buildTableMap()
     {
-      $dbMap = Propel::getServiceContainer()->getDatabaseMap(AuthorTableMap::DATABASE_NAME);
-      if (!$dbMap->hasTable(AuthorTableMap::TABLE_NAME)) {
-        $dbMap->addTableObject(new AuthorTableMap());
-      }
+        $dbMap = Propel::getServiceContainer()->getDatabaseMap(AuthorTableMap::DATABASE_NAME);
+        if (!$dbMap->hasTable(AuthorTableMap::TABLE_NAME)) {
+            $dbMap->addTableObject(new AuthorTableMap());
+        }
     }
 
     /**
@@ -341,11 +351,11 @@ class AuthorTableMap extends TableMap
      *
      * @param mixed               $values Criteria or Author object or primary key or array of primary keys
      *              which is used to create the DELETE statement
-     * @param ConnectionInterface $con the connection to use
-     * @return int The number of affected rows (if supported by underlying database driver).  This includes CASCADE-related rows
-     *                if supported by native driver or if emulated using Propel.
+     * @param  ConnectionInterface $con the connection to use
+     * @return int             The number of affected rows (if supported by underlying database driver).  This includes CASCADE-related rows
+     *                         if supported by native driver or if emulated using Propel.
      * @throws PropelException Any exceptions caught during processing will be
-     *         rethrown wrapped into a PropelException.
+     *                         rethrown wrapped into a PropelException.
      */
      public static function doDelete($values, ConnectionInterface $con = null)
      {
@@ -361,14 +371,16 @@ class AuthorTableMap extends TableMap
             $criteria = $values->buildPkeyCriteria();
         } else { // it's a primary key, or an array of pks
             $criteria = new Criteria(AuthorTableMap::DATABASE_NAME);
-            $criteria->add(AuthorTableMap::ID, (array) $values, Criteria::IN);
+            $criteria->add(AuthorTableMap::COL_ID, (array) $values, Criteria::IN);
         }
 
         $query = AuthorQuery::create()->mergeWith($criteria);
 
-        if ($values instanceof Criteria) { AuthorTableMap::clearInstancePool();
+        if ($values instanceof Criteria) {
+            AuthorTableMap::clearInstancePool();
         } elseif (!is_object($values)) { // it's a primary key, or an array of pks
-            foreach ((array) $values as $singleval) { AuthorTableMap::removeInstanceFromPool($singleval);
+            foreach ((array) $values as $singleval) {
+                AuthorTableMap::removeInstanceFromPool($singleval);
             }
         }
 
@@ -393,7 +405,7 @@ class AuthorTableMap extends TableMap
      * @param ConnectionInterface $con the ConnectionInterface connection to use
      * @return mixed           The new primary key.
      * @throws PropelException Any exceptions caught during processing will be
-     *         rethrown wrapped into a PropelException.
+     *                         rethrown wrapped into a PropelException.
      */
     public static function doInsert($criteria, ConnectionInterface $con = null)
     {
@@ -407,26 +419,19 @@ class AuthorTableMap extends TableMap
             $criteria = $criteria->buildCriteria(); // build Criteria from Author object
         }
 
-        if ($criteria->containsKey(AuthorTableMap::ID) && $criteria->keyContainsValue(AuthorTableMap::ID) ) {
-            throw new PropelException('Cannot insert a value for auto-increment primary key ('.AuthorTableMap::ID.')');
+        if ($criteria->containsKey(AuthorTableMap::COL_ID) && $criteria->keyContainsValue(AuthorTableMap::COL_ID) ) {
+            throw new PropelException('Cannot insert a value for auto-increment primary key ('.AuthorTableMap::COL_ID.')');
         }
 
 
         // Set the correct dbName
         $query = AuthorQuery::create()->mergeWith($criteria);
 
-        try {
-            // use transaction because $criteria could contain info
-            // for more than one table (I guess, conceivably)
-            $con->beginTransaction();
-            $pk = $query->doInsert($con);
-            $con->commit();
-        } catch (PropelException $e) {
-            $con->rollBack();
-            throw $e;
-        }
-
-        return $pk;
+        // use transaction because $criteria could contain info
+        // for more than one table (I guess, conceivably)
+        return $con->transaction(function () use ($con, $query) {
+            return $query->doInsert($con);
+        });
     }
 
 } // AuthorTableMap

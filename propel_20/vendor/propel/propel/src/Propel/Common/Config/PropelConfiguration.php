@@ -11,6 +11,7 @@
 namespace Propel\Common\Config;
 
 use Symfony\Component\Config\Definition\ConfigurationInterface;
+use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 
 /**
@@ -31,8 +32,21 @@ class PropelConfiguration implements ConfigurationInterface
         $treeBuilder = new TreeBuilder();
         $rootNode = $treeBuilder->root('propel');
 
-        $rootNode->
-            children()
+        $this->addGeneralSection($rootNode);
+        $this->addPathsSection($rootNode);
+        $this->addDatabaseSection($rootNode);
+        $this->addMigrationsSection($rootNode);
+        $this->addReverseSection($rootNode);
+        $this->addRuntimeSection($rootNode);
+        $this->addGeneratorSection($rootNode);
+
+        return $treeBuilder;
+    }
+
+    protected function addGeneralSection(ArrayNodeDefinition $node)
+    {
+        $node
+            ->children()
                 ->arrayNode('general')
                     ->addDefaultsIfNotSet()
                     ->children()
@@ -40,30 +54,59 @@ class PropelConfiguration implements ConfigurationInterface
                         ->scalarNode('version')->defaultValue('2.0.0-dev')->end()
                     ->end()
                 ->end()
+            ->end()
+        ;
+    }
+
+    protected function addPathsSection(ArrayNodeDefinition $node)
+    {
+        $node
+            ->children()
                 ->arrayNode('paths')
                     ->addDefaultsIfNotSet()
                     ->children()
                         ->scalarNode('projectDir')->defaultValue(getcwd())->end()
                         ->scalarNode('schemaDir')->defaultValue(getcwd())->end()
                         ->scalarNode('outputDir')->defaultValue(getcwd())->end()
-                        ->scalarNode('phpDir')->defaultValue(getcwd() . '/generated-classes')->end()
-                        ->scalarNode('phpConfDir')->defaultValue(getcwd() . '/generated-conf')->end()
-                        ->scalarNode('sqlDir')->defaultValue(getcwd() . '/generated-sql')->end()
+                        ->scalarNode('phpDir')->defaultValue(getcwd().'/generated-classes')->end()
+                        ->scalarNode('phpConfDir')->defaultValue(getcwd().'/generated-conf')->end()
+                        ->scalarNode('sqlDir')->defaultValue(getcwd().'/generated-sql')->end()
+                        ->scalarNode('migrationDir')->defaultValue(getcwd().'/generated-migrations')->end()
                         ->scalarNode('composerDir')->defaultNull()->end()
                     ->end()
                 ->end()
+            ->end()
+        ;
+    }
+
+    protected function addDatabaseSection(ArrayNodeDefinition $node)
+    {
+        $node
+            ->children()
                 ->arrayNode('database')
                     ->isRequired()
                     ->addDefaultsIfNotSet()
                     ->children()
                         ->arrayNode('connections')
                             ->isRequired()
+                            ->validate()
+                            ->always()
+                                ->then(function ($connections) {
+                                    foreach ($connections as $name => $connection) {
+                                        if (strpos($name, '.') !== false) {
+                                            throw new \InvalidArgumentException('Dots are not allowed in connection names');
+                                        }
+                                    }
+
+                                    return $connections;
+                                })
+                            ->end()
                             ->requiresAtLeastOneElement()
                             ->normalizeKeys(false)
                             ->prototype('array')
                             ->fixXmlConfig('slave')
                                 ->children()
-                                    ->scalarNode('classname')->isRequired()->defaultValue('\Propel\Runtime\Connection\ConnectionWrapper')->end()
+                                    ->scalarNode('classname')->defaultValue('\Propel\Runtime\Connection\ConnectionWrapper')->end()
                                     ->enumNode('adapter')
                                         ->isRequired()
                                         ->cannotBeEmpty()
@@ -128,6 +171,14 @@ class PropelConfiguration implements ConfigurationInterface
                         ->end() //adapters
                     ->end()
                 ->end() //database
+            ->end()
+        ;
+    }
+
+    protected function addMigrationsSection(ArrayNodeDefinition $node)
+    {
+        $node
+            ->children()
                 ->arrayNode('migrations')
                     ->addDefaultsIfNotSet()
                     ->children()
@@ -137,17 +188,33 @@ class PropelConfiguration implements ConfigurationInterface
                         ->scalarNode('parserClass')->defaultNull()->end()
                     ->end()
                 ->end() //migrations
+            ->end()
+        ;
+    }
+
+    protected function addReverseSection(ArrayNodeDefinition $node)
+    {
+        $node
+            ->children()
                 ->arrayNode('reverse')
                     ->children()
                         ->scalarNode('connection')->end()
                         ->scalarNode('parserClass')->end()
                     ->end()
                 ->end() //reverse
+            ->end()
+        ;
+    }
+
+    protected function addRuntimeSection(ArrayNodeDefinition $node)
+    {
+        $node
+            ->children()
                 ->arrayNode('runtime')
                     ->addDefaultsIfNotSet()
                     ->fixXmlConfig('connection')
                     ->children()
-                        ->scalarNode('defaultConnection')->isRequired()->end()
+                        ->scalarNode('defaultConnection')->end()
                         ->arrayNode('connections')
                             ->prototype('scalar')->end()
                         ->end()
@@ -203,15 +270,23 @@ class PropelConfiguration implements ConfigurationInterface
                         ->end()
                     ->end()
                 ->end() //runtime
+            ->end()
+        ;
+    }
+
+    protected function addGeneratorSection(ArrayNodeDefinition $node)
+    {
+        $node
+            ->children()
                 ->arrayNode('generator')
                     ->addDefaultsIfNotSet()
                     ->fixXmlConfig('connection')
                     ->children()
-                        ->scalarNode('defaultConnection')->isRequired()->end()
+                        ->scalarNode('defaultConnection')->end()
                         ->scalarNode('tablePrefix')->end()
-                        ->scalarNode('platformClass')->defaultValue('\\Propel\\Generator\\Platform\\MysqlPlatform')->end()
+                        ->scalarNode('platformClass')->defaultNull()->end()
                         ->scalarNode('targetPackage')->end()
-                        ->booleanNode('packageObjectModel')->defaultFalse()->end()
+                        ->booleanNode('packageObjectModel')->defaultTrue()->end()
                         ->booleanNode('namespaceAutoPackage')->defaultTrue()->end()
                         ->arrayNode('connections')
                             ->prototype('scalar')->end()
@@ -249,9 +324,9 @@ class PropelConfiguration implements ConfigurationInterface
                                 ->booleanNode('addTimeStamp')->defaultFalse()->end()
                                 ->booleanNode('addHooks')->defaultTrue()->end()
                                 ->scalarNode('classPrefix')->defaultNull()->end()
-                                ->booleanNode('disableIdentifierQuoting')->defaultFalse()->end()
                                 ->booleanNode('useLeftJoinsInDoJoinMethods')->defaultTrue()->end()
                                 ->scalarNode('pluralizerClass')->defaultValue('\Propel\Common\Pluralizer\StandardEnglishPluralizer')->end()
+                                ->scalarNode('entityNotFoundExceptionClass')->defaultValue('\Propel\Runtime\Exception\EntityNotFoundException')->end()
                                 ->arrayNode('builders')
                                     ->addDefaultsIfNotSet()
                                     ->children()
@@ -273,7 +348,5 @@ class PropelConfiguration implements ConfigurationInterface
                 ->end() //generator
             ->end()
         ;
-
-        return $treeBuilder;
     }
 }

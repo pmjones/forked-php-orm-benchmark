@@ -159,6 +159,21 @@ class QueryBuilder extends AbstractOMBuilder
             $script .= "
  * @method     $modelClass findOneBy" . $column->getPhpName() . "(" . $column->getPhpType() . " \$" . $column->getName() . ") Return the first $modelClass filtered by the " . $column->getName() . " column";
         }
+
+        $script .= " * \n";
+
+        // override the signature of ModelCriteria::require*() to specify the class of the returned object, for IDE completion
+        $script .= "
+ * @method     $modelClass requirePk(\$key, ConnectionInterface \$con = null) Return the $modelClass by primary key and throws {$this->getEntityNotFoundExceptionClass()} when not found
+ * @method     $modelClass requireOne(ConnectionInterface \$con = null) Return the first $modelClass matching the query and throws {$this->getEntityNotFoundExceptionClass()} when not found
+ *";
+
+        // magic requireOneBy() methods, for IDE completion
+        foreach ($this->getTable()->getColumns() as $column) {
+            $script .= "
+ * @method     $modelClass requireOneBy" . $column->getPhpName() . "(" . $column->getPhpType() . " \$" . $column->getName() . ") Return the first $modelClass filtered by the " . $column->getName() . " column and throws {$this->getEntityNotFoundExceptionClass()} when not found";
+        }
+
         $script .= "
  *
  * @method     {$modelClass}[]|ObjectCollection find(ConnectionInterface \$con = null) Return $modelClass objects based on current ModelCriteria";
@@ -202,6 +217,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
 
         // apply behaviors
         $this->applyBehaviorModifier('queryAttributes', $script, "    ");
+        $this->addEntityNotFoundExceptionClass($script);
         $this->addConstructor($script);
         $this->addFactory($script);
         $this->addFindPk($script);
@@ -246,6 +262,20 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
         $this->applyBehaviorModifier('staticAttributes', $script, "    ");
         $this->applyBehaviorModifier('staticMethods', $script, "    ");
         $this->applyBehaviorModifier('queryMethods', $script, "    ");
+    }
+
+    /**
+     * Adds the entityNotFoundExceptionClass property which is necessary for the `requireOne` method
+     * of the `ModelCriteria`
+     */
+    protected function addEntityNotFoundExceptionClass(&$script)
+    {
+        $script .= "protected \$entityNotFoundExceptionClass = '" . addslashes($this->getEntityNotFoundExceptionClass()) . "';\n";
+    }
+
+    private function getEntityNotFoundExceptionClass()
+    {
+        return $this->getBuildProperty('generator.objectModel.entityNotFoundExceptionClass');
     }
 
     /**
@@ -549,17 +579,17 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
         $selectColumns = array();
         foreach ($table->getColumns() as $column) {
             if (!$column->isLazyLoad()) {
-                $selectColumns []= $platform->quoteIdentifier(strtoupper($column->getName()));
+                $selectColumns []= $this->quoteIdentifier($column->getName());
             }
         }
         $conditions = array();
         foreach ($table->getPrimaryKey() as $index => $column) {
-            $conditions []= sprintf('%s = :p%d', $platform->quoteIdentifier(strtoupper($column->getName())), $index);
+            $conditions []= sprintf('%s = :p%d', $this->quoteIdentifier($column->getName()), $index);
         }
         $query = sprintf(
             'SELECT %s FROM %s WHERE %s',
             implode(', ', $selectColumns),
-            $platform->quoteIdentifier($table->getName()),
+            $this->quoteIdentifier($table->getName()),
             implode(' AND ', $conditions)
         );
         $pks = array();
@@ -579,6 +609,8 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
      *
      * @param     mixed \$key Primary key to use for the query
      * @param     ConnectionInterface \$con A connection object
+     *
+     * @throws \\Propel\\Runtime\\Exception\\PropelException
      *
      * @return $ARClassName A model object, or null if the key is not found
      */
@@ -852,7 +884,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
     {
         $colPhpName = $col->getPhpName();
         $colName = $col->getName();
-        $variableName = $col->getStudlyPhpName();
+        $variableName = $col->getCamelCaseName();
         $qualifiedName = $this->getColumnConstant($col);
         $script .= "
     /**
@@ -1047,7 +1079,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
         $colPhpName = $col->getPhpName();
         $singularPhpName = $col->getPhpSingularName();
         $colName = $col->getName();
-        $variableName = $col->getStudlyPhpName();
+        $variableName = $col->getCamelCaseName();
         $qualifiedName = $this->getColumnConstant($col);
         $script .= "
     /**
@@ -1101,7 +1133,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
         $this->declareClassFromBuilder($fkStubObjectBuilder);
         $fkPhpName = $this->getClassNameFromBuilder($fkStubObjectBuilder, true);
         $relationName = $this->getFKPhpNameAffix($fk);
-        $objectName = '$' . $fkTable->getStudlyPhpName();
+        $objectName = '$' . $fkTable->getCamelCaseName();
         $script .= "
     /**
      * Filter the query by a related $fkPhpName object
@@ -1116,18 +1148,27 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
         $script .= "
      * @param string \$comparison Operator to use for the column comparison, defaults to Criteria::EQUAL
      *
+     * @throws \\Propel\\Runtime\\Exception\\PropelException
+     *
      * @return $queryClass The current query, for fluid interface
      */
     public function filterBy$relationName($objectName, \$comparison = null)
     {
         if ($objectName instanceof $fkPhpName) {
             return \$this";
-        foreach ($fk->getLocalForeignMapping() as $localColumn => $foreignColumn) {
-            $localColumnObject = $table->getColumn($localColumn);
-            $foreignColumnObject = $fkTable->getColumn($foreignColumn);
-            $script .= "
-                ->addUsingAlias(" . $this->getColumnConstant($localColumnObject) . ", " . $objectName . "->get" . $foreignColumnObject->getPhpName() . "(), \$comparison)";
+
+        foreach ($fk->getMapping() as $mapping) {
+            list($localColumn, $rightValueOrColumn) = $mapping;
+            if ($rightValueOrColumn instanceof Column) {
+                $script .= "
+                ->addUsingAlias(" . $this->getColumnConstant($localColumn) . ", " . $objectName . "->get" . $rightValueOrColumn->getPhpName() . "(), \$comparison)";
+            } else {
+                $value = var_export($rightValueOrColumn, true);
+                $script .= "
+                ->addUsingAlias(" . $this->getColumnConstant($localColumn) . ", $value, \$comparison)";
+            }
         }
+
         $script .= ";";
         if (!$fk->isComposite()) {
             $localColumnConstant = $this->getColumnConstant($fk->getLocalColumn());
@@ -1169,19 +1210,18 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
             '\Propel\Runtime\Collection\ObjectCollection',
             '\Propel\Runtime\Exception\PropelException'
         );
-        $table = $this->getTable();
         $queryClass = $this->getQueryClassName();
         $fkTable = $this->getTable()->getDatabase()->getTable($fk->getTableName());
         $fkStubObjectBuilder = $this->getNewStubObjectBuilder($fkTable);
         $this->declareClassFromBuilder($fkStubObjectBuilder);
         $fkPhpName = $this->getClassNameFromBuilder($fkStubObjectBuilder, true);
         $relationName = $this->getRefFKPhpNameAffix($fk);
-        $objectName = '$' . $fkTable->getStudlyPhpName();
+        $objectName = '$' . $fkTable->getCamelCaseName();
         $script .= "
     /**
      * Filter the query by a related $fkPhpName object
      *
-     * @param $fkPhpName|ObjectCollection $objectName  the related object to use as filter
+     * @param $fkPhpName|ObjectCollection $objectName the related object to use as filter
      * @param string \$comparison Operator to use for the column comparison, defaults to Criteria::EQUAL
      *
      * @return $queryClass The current query, for fluid interface
@@ -1190,11 +1230,21 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
     {
         if ($objectName instanceof $fkPhpName) {
             return \$this";
-        foreach ($fk->getForeignLocalMapping() as $localColumn => $foreignColumn) {
-            $localColumnObject = $table->getColumn($localColumn);
-            $foreignColumnObject = $fkTable->getColumn($foreignColumn);
-            $script .= "
-                ->addUsingAlias(" . $this->getColumnConstant($localColumnObject) . ", " . $objectName . "->get" . $foreignColumnObject->getPhpName() . "(), \$comparison)";
+        foreach ($fk->getInverseMapping() as $mapping) {
+            /** @var Column $foreignColumn */
+            list($localValueOrColumn, $foreignColumn) = $mapping;
+            $rightValue = "{$objectName}->get" . $foreignColumn->getPhpName() . "()";
+
+            if ($localValueOrColumn instanceof Column) {
+                $script .= "
+                ->addUsingAlias(" . $this->getColumnConstant($localValueOrColumn) . ", $rightValue, \$comparison)";
+            } else {
+                $leftValue = var_export($localValueOrColumn, true);
+                $bindingType = $foreignColumn->getPDOType();
+                $script .= "
+                ->where(\"$leftValue = ?\", $rightValue, $bindingType)";
+            }
+
         }
         $script .= ";";
         if (!$fk->isComposite()) {
@@ -1359,7 +1409,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
             $fkPhpName =  $foreignTable->getPhpName();
             $crossTableName = $crossRefTable->getName();
             $relName = $this->getFKPhpNameAffix($crossFK, $plural = false);
-            $objectName = '$' . $foreignTable->getStudlyPhpName();
+            $objectName = '$' . $foreignTable->getCamelCaseName();
             $script .= "
     /**
      * Filter the query by a related $fkPhpName object
@@ -1389,7 +1439,7 @@ abstract class ".$this->getUnqualifiedClassName()." extends " . $parentClass . "
     {
         $table = $this->getTable();
         $class = $this->getObjectClassName();
-        $objectName = '$' . $table->getStudlyPhpName();
+        $objectName = '$' . $table->getCamelCaseName();
 
         $script .= "
     /**

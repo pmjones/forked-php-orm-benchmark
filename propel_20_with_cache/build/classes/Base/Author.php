@@ -17,10 +17,18 @@ use Propel\Runtime\Collection\Collection;
 use Propel\Runtime\Collection\ObjectCollection;
 use Propel\Runtime\Connection\ConnectionInterface;
 use Propel\Runtime\Exception\BadMethodCallException;
+use Propel\Runtime\Exception\LogicException;
 use Propel\Runtime\Exception\PropelException;
 use Propel\Runtime\Map\TableMap;
 use Propel\Runtime\Parser\AbstractParser;
 
+/**
+ * Base class that represents a row from the 'author' table.
+ *
+ * Author Table
+ *
+* @package    propel.generator..Base
+*/
 abstract class Author implements ActiveRecordInterface
 {
     /**
@@ -95,7 +103,7 @@ abstract class Author implements ActiveRecordInterface
 
     /**
      * An array of objects scheduled for deletion.
-     * @var ObjectCollection
+     * @var ObjectCollection|ChildBook[]
      */
     protected $booksScheduledForDeletion = null;
 
@@ -113,7 +121,7 @@ abstract class Author implements ActiveRecordInterface
      */
     public function isModified()
     {
-        return !empty($this->modifiedColumns);
+        return !!$this->modifiedColumns;
     }
 
     /**
@@ -124,7 +132,7 @@ abstract class Author implements ActiveRecordInterface
      */
     public function isColumnModified($col)
     {
-        return in_array($col, $this->modifiedColumns);
+        return $this->modifiedColumns && isset($this->modifiedColumns[$col]);
     }
 
     /**
@@ -133,7 +141,7 @@ abstract class Author implements ActiveRecordInterface
      */
     public function getModifiedColumns()
     {
-        return array_unique($this->modifiedColumns);
+        return $this->modifiedColumns ? array_keys($this->modifiedColumns) : [];
     }
 
     /**
@@ -156,7 +164,7 @@ abstract class Author implements ActiveRecordInterface
      */
     public function setNew($b)
     {
-        $this->new = (Boolean) $b;
+        $this->new = (boolean) $b;
     }
 
     /**
@@ -175,7 +183,7 @@ abstract class Author implements ActiveRecordInterface
      */
     public function setDeleted($b)
     {
-        $this->deleted = (Boolean) $b;
+        $this->deleted = (boolean) $b;
     }
 
     /**
@@ -186,8 +194,8 @@ abstract class Author implements ActiveRecordInterface
     public function resetModified($col = null)
     {
         if (null !== $col) {
-            while (false !== ($offset = array_search($col, $this->modifiedColumns))) {
-                array_splice($this->modifiedColumns, $offset, 1);
+            if (isset($this->modifiedColumns[$col])) {
+                unset($this->modifiedColumns[$col]);
             }
         } else {
             $this->modifiedColumns = array();
@@ -204,8 +212,7 @@ abstract class Author implements ActiveRecordInterface
      */
     public function equals($obj)
     {
-        $thisclazz = get_class($this);
-        if (!is_object($obj) || !($obj instanceof $thisclazz)) {
+        if (!$obj instanceof static) {
             return false;
         }
 
@@ -213,27 +220,11 @@ abstract class Author implements ActiveRecordInterface
             return true;
         }
 
-        if (null === $this->getPrimaryKey()
-            || null === $obj->getPrimaryKey())  {
+        if (null === $this->getPrimaryKey() || null === $obj->getPrimaryKey()) {
             return false;
         }
 
         return $this->getPrimaryKey() === $obj->getPrimaryKey();
-    }
-
-    /**
-     * If the primary key is not null, return the hashcode of the
-     * primary key. Otherwise, return the hash code of the object.
-     *
-     * @return int Hashcode
-     */
-    public function hashCode()
-    {
-        if (null !== $this->getPrimaryKey()) {
-            return crc32(serialize($this->getPrimaryKey()));
-        }
-
-        return crc32(serialize(clone $this));
     }
 
     /**
@@ -280,7 +271,7 @@ abstract class Author implements ActiveRecordInterface
      * @param string $name  The virtual column name
      * @param mixed  $value The value to give to the virtual column
      *
-     * @return Author The current object, for fluid interface
+     * @return $this|Author The current object, for fluid interface
      */
     public function setVirtualColumn($name, $value)
     {
@@ -299,30 +290,6 @@ abstract class Author implements ActiveRecordInterface
     protected function log($msg, $priority = Propel::LOG_INFO)
     {
         return Propel::log(get_class($this) . ': ' . $msg, $priority);
-    }
-
-    /**
-     * Populate the current object from a string, using a given parser format
-     * <code>
-     * $book = new Book();
-     * $book->importFrom('JSON', '{"Id":9012,"Title":"Don Juan","ISBN":"0140422161","Price":12.99,"PublisherId":1234,"AuthorId":5678}');
-     * </code>
-     *
-     * @param mixed $parser A AbstractParser instance,
-     *                       or a format name ('XML', 'YAML', 'JSON', 'CSV')
-     * @param string $data The source data to import from
-     *
-     * @return Author The current object, for fluid interface
-     */
-    public function importFrom($parser, $data)
-    {
-        if (!$parser instanceof AbstractParser) {
-            $parser = AbstractParser::getParser($parser);
-        }
-
-        $this->fromArray($parser->toArray($data), TableMap::TYPE_PHPNAME);
-
-        return $this;
     }
 
     /**
@@ -360,52 +327,48 @@ abstract class Author implements ActiveRecordInterface
     /**
      * Get the [id] column value.
      *
-     * @return   int
+     * @return int
      */
     public function getId()
     {
-
         return $this->id;
     }
 
     /**
      * Get the [first_name] column value.
      * First Name
-     * @return   string
+     * @return string
      */
     public function getFirstName()
     {
-
         return $this->first_name;
     }
 
     /**
      * Get the [last_name] column value.
      * Last Name
-     * @return   string
+     * @return string
      */
     public function getLastName()
     {
-
         return $this->last_name;
     }
 
     /**
      * Get the [email] column value.
      * E-Mail Address
-     * @return   string
+     * @return string
      */
     public function getEmail()
     {
-
         return $this->email;
     }
 
     /**
      * Set the value of [id] column.
      *
-     * @param      int $v new value
-     * @return   \Author The current object (for fluent API support)
+     * @param int $v new value
+     * @return $this|\Author The current object (for fluent API support)
      */
     public function setId($v)
     {
@@ -415,9 +378,8 @@ abstract class Author implements ActiveRecordInterface
 
         if ($this->id !== $v) {
             $this->id = $v;
-            $this->modifiedColumns[] = AuthorTableMap::ID;
+            $this->modifiedColumns[AuthorTableMap::COL_ID] = true;
         }
-
 
         return $this;
     } // setId()
@@ -425,8 +387,8 @@ abstract class Author implements ActiveRecordInterface
     /**
      * Set the value of [first_name] column.
      * First Name
-     * @param      string $v new value
-     * @return   \Author The current object (for fluent API support)
+     * @param string $v new value
+     * @return $this|\Author The current object (for fluent API support)
      */
     public function setFirstName($v)
     {
@@ -436,9 +398,8 @@ abstract class Author implements ActiveRecordInterface
 
         if ($this->first_name !== $v) {
             $this->first_name = $v;
-            $this->modifiedColumns[] = AuthorTableMap::FIRST_NAME;
+            $this->modifiedColumns[AuthorTableMap::COL_FIRST_NAME] = true;
         }
-
 
         return $this;
     } // setFirstName()
@@ -446,8 +407,8 @@ abstract class Author implements ActiveRecordInterface
     /**
      * Set the value of [last_name] column.
      * Last Name
-     * @param      string $v new value
-     * @return   \Author The current object (for fluent API support)
+     * @param string $v new value
+     * @return $this|\Author The current object (for fluent API support)
      */
     public function setLastName($v)
     {
@@ -457,9 +418,8 @@ abstract class Author implements ActiveRecordInterface
 
         if ($this->last_name !== $v) {
             $this->last_name = $v;
-            $this->modifiedColumns[] = AuthorTableMap::LAST_NAME;
+            $this->modifiedColumns[AuthorTableMap::COL_LAST_NAME] = true;
         }
-
 
         return $this;
     } // setLastName()
@@ -467,8 +427,8 @@ abstract class Author implements ActiveRecordInterface
     /**
      * Set the value of [email] column.
      * E-Mail Address
-     * @param      string $v new value
-     * @return   \Author The current object (for fluent API support)
+     * @param string $v new value
+     * @return $this|\Author The current object (for fluent API support)
      */
     public function setEmail($v)
     {
@@ -478,9 +438,8 @@ abstract class Author implements ActiveRecordInterface
 
         if ($this->email !== $v) {
             $this->email = $v;
-            $this->modifiedColumns[] = AuthorTableMap::EMAIL;
+            $this->modifiedColumns[AuthorTableMap::COL_EMAIL] = true;
         }
-
 
         return $this;
     } // setEmail()
@@ -511,7 +470,7 @@ abstract class Author implements ActiveRecordInterface
      * @param int     $startcol  0-based offset column which indicates which restultset column to start with.
      * @param boolean $rehydrate Whether this object is being re-hydrated from the database.
      * @param string  $indexType The index type of $row. Mostly DataFetcher->getIndexType().
-                                  One of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_STUDLYPHPNAME
+                                  One of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_CAMELNAME
      *                            TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME, TableMap::TYPE_NUM.
      *
      * @return int             next starting column
@@ -520,7 +479,6 @@ abstract class Author implements ActiveRecordInterface
     public function hydrate($row, $startcol = 0, $rehydrate = false, $indexType = TableMap::TYPE_NUM)
     {
         try {
-
 
             $col = $row[TableMap::TYPE_NUM == $indexType ? 0 + $startcol : AuthorTableMap::translateFieldName('Id', TableMap::TYPE_PHPNAME, $indexType)];
             $this->id = (null !== $col) ? (int) $col : null;
@@ -544,7 +502,7 @@ abstract class Author implements ActiveRecordInterface
             return $startcol + 4; // 4 = AuthorTableMap::NUM_HYDRATE_COLUMNS.
 
         } catch (Exception $e) {
-            throw new PropelException("Error populating \Author object", 0, $e);
+            throw new PropelException(sprintf('Error populating %s object', '\\Author'), 0, $e);
         }
     }
 
@@ -626,23 +584,16 @@ abstract class Author implements ActiveRecordInterface
             $con = Propel::getServiceContainer()->getWriteConnection(AuthorTableMap::DATABASE_NAME);
         }
 
-        $con->beginTransaction();
-        try {
+        $con->transaction(function () use ($con) {
             $deleteQuery = ChildAuthorQuery::create()
                 ->filterByPrimaryKey($this->getPrimaryKey());
             $ret = $this->preDelete($con);
             if ($ret) {
                 $deleteQuery->delete($con);
                 $this->postDelete($con);
-                $con->commit();
                 $this->setDeleted(true);
-            } else {
-                $con->commit();
             }
-        } catch (Exception $e) {
-            $con->rollBack();
-            throw $e;
-        }
+        });
     }
 
     /**
@@ -668,9 +619,8 @@ abstract class Author implements ActiveRecordInterface
             $con = Propel::getServiceContainer()->getWriteConnection(AuthorTableMap::DATABASE_NAME);
         }
 
-        $con->beginTransaction();
-        $isInsert = $this->isNew();
-        try {
+        return $con->transaction(function () use ($con) {
+            $isInsert = $this->isNew();
             $ret = $this->preSave($con);
             if ($isInsert) {
                 $ret = $ret && $this->preInsert($con);
@@ -689,13 +639,9 @@ abstract class Author implements ActiveRecordInterface
             } else {
                 $affectedRows = 0;
             }
-            $con->commit();
 
             return $affectedRows;
-        } catch (Exception $e) {
-            $con->rollBack();
-            throw $e;
-        }
+        });
     }
 
     /**
@@ -719,10 +665,10 @@ abstract class Author implements ActiveRecordInterface
                 // persist changes
                 if ($this->isNew()) {
                     $this->doInsert($con);
+                    $affectedRows += 1;
                 } else {
-                    $this->doUpdate($con);
+                    $affectedRows += $this->doUpdate($con);
                 }
-                $affectedRows += 1;
                 $this->resetModified();
             }
 
@@ -736,8 +682,8 @@ abstract class Author implements ActiveRecordInterface
                 }
             }
 
-                if ($this->collBooks !== null) {
-            foreach ($this->collBooks as $referrerFK) {
+            if ($this->collBooks !== null) {
+                foreach ($this->collBooks as $referrerFK) {
                     if (!$referrerFK->isDeleted() && ($referrerFK->isNew() || $referrerFK->isModified())) {
                         $affectedRows += $referrerFK->save($con);
                     }
@@ -764,23 +710,23 @@ abstract class Author implements ActiveRecordInterface
         $modifiedColumns = array();
         $index = 0;
 
-        $this->modifiedColumns[] = AuthorTableMap::ID;
+        $this->modifiedColumns[AuthorTableMap::COL_ID] = true;
         if (null !== $this->id) {
-            throw new PropelException('Cannot insert a value for auto-increment primary key (' . AuthorTableMap::ID . ')');
+            throw new PropelException('Cannot insert a value for auto-increment primary key (' . AuthorTableMap::COL_ID . ')');
         }
 
          // check the columns in natural order for more readable SQL queries
-        if ($this->isColumnModified(AuthorTableMap::ID)) {
-            $modifiedColumns[':p' . $index++]  = 'ID';
+        if ($this->isColumnModified(AuthorTableMap::COL_ID)) {
+            $modifiedColumns[':p' . $index++]  = 'id';
         }
-        if ($this->isColumnModified(AuthorTableMap::FIRST_NAME)) {
-            $modifiedColumns[':p' . $index++]  = 'FIRST_NAME';
+        if ($this->isColumnModified(AuthorTableMap::COL_FIRST_NAME)) {
+            $modifiedColumns[':p' . $index++]  = 'first_name';
         }
-        if ($this->isColumnModified(AuthorTableMap::LAST_NAME)) {
-            $modifiedColumns[':p' . $index++]  = 'LAST_NAME';
+        if ($this->isColumnModified(AuthorTableMap::COL_LAST_NAME)) {
+            $modifiedColumns[':p' . $index++]  = 'last_name';
         }
-        if ($this->isColumnModified(AuthorTableMap::EMAIL)) {
-            $modifiedColumns[':p' . $index++]  = 'EMAIL';
+        if ($this->isColumnModified(AuthorTableMap::COL_EMAIL)) {
+            $modifiedColumns[':p' . $index++]  = 'email';
         }
 
         $sql = sprintf(
@@ -793,16 +739,16 @@ abstract class Author implements ActiveRecordInterface
             $stmt = $con->prepare($sql);
             foreach ($modifiedColumns as $identifier => $columnName) {
                 switch ($columnName) {
-                    case 'ID':
+                    case 'id':
                         $stmt->bindValue($identifier, $this->id, PDO::PARAM_INT);
                         break;
-                    case 'FIRST_NAME':
+                    case 'first_name':
                         $stmt->bindValue($identifier, $this->first_name, PDO::PARAM_STR);
                         break;
-                    case 'LAST_NAME':
+                    case 'last_name':
                         $stmt->bindValue($identifier, $this->last_name, PDO::PARAM_STR);
                         break;
-                    case 'EMAIL':
+                    case 'email':
                         $stmt->bindValue($identifier, $this->email, PDO::PARAM_STR);
                         break;
                 }
@@ -844,7 +790,7 @@ abstract class Author implements ActiveRecordInterface
      *
      * @param      string $name name
      * @param      string $type The type of fieldname the $name is of:
-     *                     one of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_STUDLYPHPNAME
+     *                     one of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_CAMELNAME
      *                     TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME, TableMap::TYPE_NUM.
      *                     Defaults to TableMap::TYPE_PHPNAME.
      * @return mixed Value of field.
@@ -891,7 +837,7 @@ abstract class Author implements ActiveRecordInterface
      * You can specify the key type of the array by passing one of the class
      * type constants.
      *
-     * @param     string  $keyType (optional) One of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_STUDLYPHPNAME,
+     * @param     string  $keyType (optional) One of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_CAMELNAME,
      *                    TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME, TableMap::TYPE_NUM.
      *                    Defaults to TableMap::TYPE_PHPNAME.
      * @param     boolean $includeLazyLoadColumns (optional) Whether to include lazy loaded columns. Defaults to TRUE.
@@ -902,10 +848,11 @@ abstract class Author implements ActiveRecordInterface
      */
     public function toArray($keyType = TableMap::TYPE_PHPNAME, $includeLazyLoadColumns = true, $alreadyDumpedObjects = array(), $includeForeignObjects = false)
     {
-        if (isset($alreadyDumpedObjects['Author'][$this->getPrimaryKey()])) {
+
+        if (isset($alreadyDumpedObjects['Author'][$this->hashCode()])) {
             return '*RECURSION*';
         }
-        $alreadyDumpedObjects['Author'][$this->getPrimaryKey()] = true;
+        $alreadyDumpedObjects['Author'][$this->hashCode()] = true;
         $keys = AuthorTableMap::getFieldNames($keyType);
         $result = array(
             $keys[0] => $this->getId(),
@@ -920,7 +867,19 @@ abstract class Author implements ActiveRecordInterface
 
         if ($includeForeignObjects) {
             if (null !== $this->collBooks) {
-                $result['Books'] = $this->collBooks->toArray(null, true, $keyType, $includeLazyLoadColumns, $alreadyDumpedObjects);
+
+                switch ($keyType) {
+                    case TableMap::TYPE_CAMELNAME:
+                        $key = 'books';
+                        break;
+                    case TableMap::TYPE_FIELDNAME:
+                        $key = 'books';
+                        break;
+                    default:
+                        $key = 'Books';
+                }
+
+                $result[$key] = $this->collBooks->toArray(null, false, $keyType, $includeLazyLoadColumns, $alreadyDumpedObjects);
             }
         }
 
@@ -930,13 +889,13 @@ abstract class Author implements ActiveRecordInterface
     /**
      * Sets a field from the object by name passed in as a string.
      *
-     * @param      string $name
-     * @param      mixed  $value field value
-     * @param      string $type The type of fieldname the $name is of:
-     *                     one of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_STUDLYPHPNAME
-     *                     TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME, TableMap::TYPE_NUM.
-     *                     Defaults to TableMap::TYPE_PHPNAME.
-     * @return void
+     * @param  string $name
+     * @param  mixed  $value field value
+     * @param  string $type The type of fieldname the $name is of:
+     *                one of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_CAMELNAME
+     *                TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME, TableMap::TYPE_NUM.
+     *                Defaults to TableMap::TYPE_PHPNAME.
+     * @return $this|\Author
      */
     public function setByName($name, $value, $type = TableMap::TYPE_PHPNAME)
     {
@@ -949,9 +908,9 @@ abstract class Author implements ActiveRecordInterface
      * Sets a field from the object by Position as specified in the xml schema.
      * Zero-based.
      *
-     * @param      int $pos position in xml schema
-     * @param      mixed $value field value
-     * @return void
+     * @param  int $pos position in xml schema
+     * @param  mixed $value field value
+     * @return $this|\Author
      */
     public function setByPosition($pos, $value)
     {
@@ -969,6 +928,8 @@ abstract class Author implements ActiveRecordInterface
                 $this->setEmail($value);
                 break;
         } // switch()
+
+        return $this;
     }
 
     /**
@@ -980,7 +941,7 @@ abstract class Author implements ActiveRecordInterface
      * array. If so the setByName() method is called for that column.
      *
      * You can specify the key type of the array by additionally passing one
-     * of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_STUDLYPHPNAME,
+     * of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_CAMELNAME,
      * TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME, TableMap::TYPE_NUM.
      * The default key type is the column's TableMap::TYPE_PHPNAME.
      *
@@ -992,10 +953,48 @@ abstract class Author implements ActiveRecordInterface
     {
         $keys = AuthorTableMap::getFieldNames($keyType);
 
-        if (array_key_exists($keys[0], $arr)) $this->setId($arr[$keys[0]]);
-        if (array_key_exists($keys[1], $arr)) $this->setFirstName($arr[$keys[1]]);
-        if (array_key_exists($keys[2], $arr)) $this->setLastName($arr[$keys[2]]);
-        if (array_key_exists($keys[3], $arr)) $this->setEmail($arr[$keys[3]]);
+        if (array_key_exists($keys[0], $arr)) {
+            $this->setId($arr[$keys[0]]);
+        }
+        if (array_key_exists($keys[1], $arr)) {
+            $this->setFirstName($arr[$keys[1]]);
+        }
+        if (array_key_exists($keys[2], $arr)) {
+            $this->setLastName($arr[$keys[2]]);
+        }
+        if (array_key_exists($keys[3], $arr)) {
+            $this->setEmail($arr[$keys[3]]);
+        }
+    }
+
+     /**
+     * Populate the current object from a string, using a given parser format
+     * <code>
+     * $book = new Book();
+     * $book->importFrom('JSON', '{"Id":9012,"Title":"Don Juan","ISBN":"0140422161","Price":12.99,"PublisherId":1234,"AuthorId":5678}');
+     * </code>
+     *
+     * You can specify the key type of the array by additionally passing one
+     * of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_CAMELNAME,
+     * TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME, TableMap::TYPE_NUM.
+     * The default key type is the column's TableMap::TYPE_PHPNAME.
+     *
+     * @param mixed $parser A AbstractParser instance,
+     *                       or a format name ('XML', 'YAML', 'JSON', 'CSV')
+     * @param string $data The source data to import from
+     * @param string $keyType The type of keys the array uses.
+     *
+     * @return $this|\Author The current object, for fluid interface
+     */
+    public function importFrom($parser, $data, $keyType = TableMap::TYPE_PHPNAME)
+    {
+        if (!$parser instanceof AbstractParser) {
+            $parser = AbstractParser::getParser($parser);
+        }
+
+        $this->fromArray($parser->toArray($data), $keyType);
+
+        return $this;
     }
 
     /**
@@ -1007,10 +1006,18 @@ abstract class Author implements ActiveRecordInterface
     {
         $criteria = new Criteria(AuthorTableMap::DATABASE_NAME);
 
-        if ($this->isColumnModified(AuthorTableMap::ID)) $criteria->add(AuthorTableMap::ID, $this->id);
-        if ($this->isColumnModified(AuthorTableMap::FIRST_NAME)) $criteria->add(AuthorTableMap::FIRST_NAME, $this->first_name);
-        if ($this->isColumnModified(AuthorTableMap::LAST_NAME)) $criteria->add(AuthorTableMap::LAST_NAME, $this->last_name);
-        if ($this->isColumnModified(AuthorTableMap::EMAIL)) $criteria->add(AuthorTableMap::EMAIL, $this->email);
+        if ($this->isColumnModified(AuthorTableMap::COL_ID)) {
+            $criteria->add(AuthorTableMap::COL_ID, $this->id);
+        }
+        if ($this->isColumnModified(AuthorTableMap::COL_FIRST_NAME)) {
+            $criteria->add(AuthorTableMap::COL_FIRST_NAME, $this->first_name);
+        }
+        if ($this->isColumnModified(AuthorTableMap::COL_LAST_NAME)) {
+            $criteria->add(AuthorTableMap::COL_LAST_NAME, $this->last_name);
+        }
+        if ($this->isColumnModified(AuthorTableMap::COL_EMAIL)) {
+            $criteria->add(AuthorTableMap::COL_EMAIL, $this->email);
+        }
 
         return $criteria;
     }
@@ -1021,19 +1028,43 @@ abstract class Author implements ActiveRecordInterface
      * Unlike buildCriteria() this method includes the primary key values regardless
      * of whether or not they have been modified.
      *
+     * @throws LogicException if no primary key is defined
+     *
      * @return Criteria The Criteria object containing value(s) for primary key(s).
      */
     public function buildPkeyCriteria()
     {
-        $criteria = new Criteria(AuthorTableMap::DATABASE_NAME);
-        $criteria->add(AuthorTableMap::ID, $this->id);
+        $criteria = ChildAuthorQuery::create();
+        $criteria->add(AuthorTableMap::COL_ID, $this->id);
 
         return $criteria;
     }
 
     /**
+     * If the primary key is not null, return the hashcode of the
+     * primary key. Otherwise, return the hash code of the object.
+     *
+     * @return int Hashcode
+     */
+    public function hashCode()
+    {
+        $validPk = null !== $this->getId();
+
+        $validPrimaryKeyFKs = 0;
+        $primaryKeyFKs = [];
+
+        if ($validPk) {
+            return crc32(json_encode($this->getPrimaryKey(), JSON_UNESCAPED_UNICODE));
+        } elseif ($validPrimaryKeyFKs) {
+            return crc32(json_encode($primaryKeyFKs, JSON_UNESCAPED_UNICODE));
+        }
+
+        return spl_object_hash($this);
+    }
+
+    /**
      * Returns the primary key for this object (row).
-     * @return   int
+     * @return int
      */
     public function getPrimaryKey()
     {
@@ -1057,7 +1088,6 @@ abstract class Author implements ActiveRecordInterface
      */
     public function isPrimaryKeyNull()
     {
-
         return null === $this->getId();
     }
 
@@ -1105,8 +1135,8 @@ abstract class Author implements ActiveRecordInterface
      * If desired, this method can also make copies of all associated (fkey referrers)
      * objects.
      *
-     * @param      boolean $deepCopy Whether to also copy all rows that refer (by fkey) to the current row.
-     * @return                 \Author Clone of current object.
+     * @param  boolean $deepCopy Whether to also copy all rows that refer (by fkey) to the current row.
+     * @return \Author Clone of current object.
      * @throws PropelException
      */
     public function copy($deepCopy = false)
@@ -1189,10 +1219,10 @@ abstract class Author implements ActiveRecordInterface
      *
      * @param      Criteria $criteria optional Criteria object to narrow the query
      * @param      ConnectionInterface $con optional connection object
-     * @return Collection|ChildBook[] List of ChildBook objects
+     * @return ObjectCollection|ChildBook[] List of ChildBook objects
      * @throws PropelException
      */
-    public function getBooks($criteria = null, ConnectionInterface $con = null)
+    public function getBooks(Criteria $criteria = null, ConnectionInterface $con = null)
     {
         $partial = $this->collBooksPartial && !$this->isNew();
         if (null === $this->collBooks || null !== $criteria  || $partial) {
@@ -1217,8 +1247,6 @@ abstract class Author implements ActiveRecordInterface
                         $this->collBooksPartial = true;
                     }
 
-                    $collBooks->getInternalIterator()->rewind();
-
                     return $collBooks;
                 }
 
@@ -1239,17 +1267,18 @@ abstract class Author implements ActiveRecordInterface
     }
 
     /**
-     * Sets a collection of Book objects related by a one-to-many relationship
+     * Sets a collection of ChildBook objects related by a one-to-many relationship
      * to the current object.
      * It will also schedule objects for deletion based on a diff between old objects (aka persisted)
      * and new objects from the given Propel collection.
      *
      * @param      Collection $books A Propel collection.
      * @param      ConnectionInterface $con Optional connection object
-     * @return   ChildAuthor The current object (for fluent API support)
+     * @return $this|ChildAuthor The current object (for fluent API support)
      */
     public function setBooks(Collection $books, ConnectionInterface $con = null)
     {
+        /** @var ChildBook[] $booksToDelete */
         $booksToDelete = $this->getBooks(new Criteria(), $con)->diff($books);
 
 
@@ -1308,8 +1337,8 @@ abstract class Author implements ActiveRecordInterface
      * Method called to associate a ChildBook object to this object
      * through the ChildBook foreign key attribute.
      *
-     * @param    ChildBook $l ChildBook
-     * @return   \Author The current object (for fluent API support)
+     * @param  ChildBook $l ChildBook
+     * @return $this|\Author The current object (for fluent API support)
      */
     public function addBook(ChildBook $l)
     {
@@ -1318,7 +1347,7 @@ abstract class Author implements ActiveRecordInterface
             $this->collBooksPartial = true;
         }
 
-        if (!in_array($l, $this->collBooks->getArrayCopy(), true)) { // only add it if the **same** object is not already associated
+        if (!$this->collBooks->contains($l)) {
             $this->doAddBook($l);
         }
 
@@ -1326,22 +1355,23 @@ abstract class Author implements ActiveRecordInterface
     }
 
     /**
-     * @param Book $book The book object to add.
+     * @param ChildBook $book The ChildBook object to add.
      */
-    protected function doAddBook($book)
+    protected function doAddBook(ChildBook $book)
     {
         $this->collBooks[]= $book;
         $book->setAuthor($this);
     }
 
     /**
-     * @param  Book $book The book object to remove.
-     * @return ChildAuthor The current object (for fluent API support)
+     * @param  ChildBook $book The ChildBook object to remove.
+     * @return $this|ChildAuthor The current object (for fluent API support)
      */
-    public function removeBook($book)
+    public function removeBook(ChildBook $book)
     {
         if ($this->getBooks()->contains($book)) {
-            $this->collBooks->remove($this->collBooks->search($book));
+            $pos = $this->collBooks->search($book);
+            $this->collBooks->remove($pos);
             if (null === $this->booksScheduledForDeletion) {
                 $this->booksScheduledForDeletion = clone $this->collBooks;
                 $this->booksScheduledForDeletion->clear();
@@ -1354,7 +1384,9 @@ abstract class Author implements ActiveRecordInterface
     }
 
     /**
-     * Clears the current object and sets all attributes to their default values
+     * Clears the current object, sets all attributes to their default values and removes
+     * outgoing references as well as back-references (from other objects to this one. Results probably in a database
+     * change of those foreign objects when you call `save` there).
      */
     public function clear()
     {
@@ -1370,11 +1402,10 @@ abstract class Author implements ActiveRecordInterface
     }
 
     /**
-     * Resets all references to other model objects or collections of model objects.
+     * Resets all references and back-references to other model objects or collections of model objects.
      *
-     * This method is a user-space workaround for PHP's inability to garbage collect
-     * objects with circular references (even in PHP 5.3). This is currently necessary
-     * when using Propel in certain daemon or large-volume/high-memory operations.
+     * This method is used to reset all php object references (not the actual reference in the database).
+     * Necessary for object serialisation.
      *
      * @param      boolean $deep Whether to also clear the references on all referrer objects.
      */
@@ -1388,9 +1419,6 @@ abstract class Author implements ActiveRecordInterface
             }
         } // if ($deep)
 
-        if ($this->collBooks instanceof Collection) {
-            $this->collBooks->clearIterator();
-        }
         $this->collBooks = null;
     }
 

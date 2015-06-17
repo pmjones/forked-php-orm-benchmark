@@ -42,6 +42,7 @@ class Column extends MappingModel
     private $namePrefix;
     private $accessorVisibility;
     private $mutatorVisibility;
+    private $typeHint;
 
     /**
      * The name to use for the tableMap constant that identifies this column.
@@ -131,6 +132,22 @@ class Column extends MappingModel
         $this->valueSet = [];
     }
 
+    /**
+     * @return mixed
+     */
+    public function getTypeHint()
+    {
+        return $this->typeHint;
+    }
+
+    /**
+     * @param mixed $typeHint
+     */
+    public function setTypeHint($typeHint)
+    {
+        $this->typeHint = $typeHint;
+    }
+
     protected function setupObject()
     {
         try {
@@ -168,6 +185,7 @@ class Column extends MappingModel
             $this->phpName = $this->getAttribute('phpName');
             $this->phpSingularName = $this->getAttribute('phpSingularName');
             $this->phpType = $this->getAttribute('phpType');
+            $this->typeHint = $this->getAttribute('typeHint');
             $this->tableMapName = $this->getAttribute('tableMapName');
             $this->description = $this->getAttribute('description');
 
@@ -467,13 +485,13 @@ class Column extends MappingModel
     }
 
     /**
-     * Returns the studly version of the PHP name.
+     * Returns the camelCase version of the PHP name.
      *
      * The studly name is the PHP name with the first character lowercase.
      *
      * @return string
      */
-    public function getStudlyPhpName()
+    public function getCamelCaseName()
     {
         return lcfirst($this->getPhpName());
     }

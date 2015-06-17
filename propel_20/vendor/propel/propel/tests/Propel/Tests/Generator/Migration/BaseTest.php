@@ -7,16 +7,58 @@ namespace Propel\Tests\Generator\Migration;
  */
 class BaseTest extends MigrationTestCase
 {
-    /**
-     * @group test
-     */
+    public function testSimpleAdd()
+    {
+        $originXml = '
+<database>
+    <table name="migration_test_0">
+        <column name="id" type="integer" primaryKey="true" autoIncrement="true" />
+    </table>
+</database>
+';
+
+        $targetXml = '
+<database>
+    <table name="migration_test_0">
+        <column name="id" type="integer" primaryKey="true" autoIncrement="true" />
+        <column name="charfield" type="CHAR" size="1" />
+    </table>
+</database>
+';
+        $this->applyXmlAndTest($originXml);
+        $this->applyXmlAndTest($targetXml);
+    }
+
+    public function testSimpleSize()
+    {
+        $originXml = '
+<database>
+    <table name="migration_test_0">
+        <column name="id" type="integer" primaryKey="true" autoIncrement="true" />
+        <column name="title" type="VARCHAR" size="50" />
+    </table>
+</database>
+';
+
+        $targetXml = '
+<database>
+    <table name="migration_test_0">
+        <column name="id" type="integer" primaryKey="true" autoIncrement="true" />
+        <column name="title" type="VARCHAR" size="250" />
+    </table>
+</database>
+';
+        $this->applyXmlAndTest($originXml);
+        $this->applyXmlAndTest($targetXml);
+    }
+
     public function testCharToChar()
     {
         $originXml = '
 <database>
     <table name="migration_test_1">
         <column name="id" type="integer" primaryKey="true" autoIncrement="true" />
-        <column name="char" type="CHAR" size="1" />
+        <column name="charfield" type="CHAR" size="1" />
     </table>
 </database>
 ';
@@ -25,13 +67,49 @@ class BaseTest extends MigrationTestCase
 <database>
     <table name="migration_test_1">
         <column name="id" type="integer" primaryKey="true" autoIncrement="true" />
-        <column name="char" type="CHAR" size="1" />
+        <column name="charfield" type="CHAR" size="1" />
     </table>
 </database>
 ';
 
         $this->applyXmlAndTest($originXml);
         $this->applyXmlAndTest($targetXml);
+    }
+
+    public function testScale()
+    {
+        $originXml = '
+<database>
+    <table name="migration_test_1">
+        <column name="id" type="integer" primaryKey="true" autoIncrement="true" />
+        <column name="credits" phpName="Credits" type="DECIMAL" size="9" scale="2" required="true"/>
+
+    </table>
+</database>
+';
+
+        $targetXml = '
+<database>
+    <table name="migration_test_1">
+        <column name="id" type="integer" primaryKey="true" autoIncrement="true" />
+        <column name="credits" phpName="Credits" type="DECIMAL" scale="2" required="true"/>
+
+    </table>
+</database>
+';
+
+        $target2Xml = '
+<database>
+    <table name="migration_test_1">
+        <column name="id" type="integer" primaryKey="true" autoIncrement="true" />
+        <column name="credits" phpName="Credits" type="DECIMAL" size="10" scale="2" required="true"/>
+
+    </table>
+</database>
+';
+        $this->applyXmlAndTest($originXml);
+        $this->applyXmlAndTest($targetXml);
+        $this->applyXmlAndTest($target2Xml);
     }
 
     public function testColumnRequireChange()
@@ -85,7 +163,7 @@ class BaseTest extends MigrationTestCase
     {
         $originXml = '
 <database>
-    <table name="migration_test_3">
+    <table name="migration_test_complex">
         <column name="field1" type="CHAR" />
         <column name="field2" type="LONGVARCHAR" />
         <column name="field3" type="CLOB" />
@@ -94,19 +172,22 @@ class BaseTest extends MigrationTestCase
         <column name="field5" type="DECIMAL" />
         <column name="field6" type="TINYINT" />
         <column name="field7" type="SMALLINT" />
+
+        <column name="field_object" type="object" />
     </table>
 </database>
 ';
 
         $targetXml = '
 <database>
-    <table name="migration_test_3">
+    <table name="migration_test_complex">
         <column name="field1" type="LONGVARCHAR" />
 
         <column name="field4" type="DECIMAL" />
         <column name="field5" type="TINYINT" />
         <column name="field6" type="SMALLINT" />
-        <column name="field7" type="NUMERIC" />
+
+        <column name="field_object" type="object" />
     </table>
 </database>
 ';

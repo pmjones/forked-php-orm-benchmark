@@ -31,14 +31,8 @@ use Propel\Generator\Model\Diff\DatabaseDiff;
  */
 class MysqlPlatform extends DefaultPlatform
 {
-
-    /**
-     * @var boolean whether the identifier quoting is enabled
-     */
-    protected $isIdentifierQuotingEnabled = true;
-
-    protected $tableEngineKeyword = 'ENGINE';  // overwritten in build.properties
-    protected $defaultTableEngine = 'MyISAM';  // overwritten in build.properties
+    protected $tableEngineKeyword = 'ENGINE';  // overwritten in propel config
+    protected $defaultTableEngine = 'InnoDB';  // overwritten in propel config
 
     /**
      * Initializes db specific domain mapping.
@@ -62,6 +56,7 @@ class MysqlPlatform extends DefaultPlatform
 
     public function setGeneratorConfig(GeneratorConfigInterface $generatorConfig)
     {
+        parent::setGeneratorConfig($generatorConfig);
         if ($defaultTableEngine = $generatorConfig->get()['database']['adapters']['mysql']['tableType']) {
             $this->defaultTableEngine = $defaultTableEngine;
         }
@@ -227,7 +222,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 
         if ($this->supportsForeignKeys($table)) {
             foreach ($table->getForeignKeys() as $foreignKey) {
-                if ($foreignKey->isSkipSql()) {
+                if ($foreignKey->isSkipSql() || $foreignKey->isPolymorphic()) {
                     continue;
                 }
                 $lines[] = str_replace("
@@ -300,6 +295,13 @@ CREATE TABLE %s
             'Union'           => 'UNION',
         );
 
+        $noQuotedValue = array_flip([
+            'InsertMethod',
+            'Pack_Keys',
+            'PackKeys',
+            'RowFormat',
+        ]);
+
         foreach ($supportedOptions as $name => $sqlName) {
             $parameterValue = null;
 
@@ -311,8 +313,10 @@ CREATE TABLE %s
 
             // if we have a param value, then parse it out
             if (!is_null($parameterValue)) {
-                // if the value is numeric, then there is no need for quotes
-                $parameterValue = is_numeric($parameterValue) ? $parameterValue : $this->quote($parameterValue);
+                // if the value is numeric or is parameter is in $noQuotedValue, then there is no need for quotes
+                if (!is_numeric($parameterValue) && !isset($noQuotedValue[$name])) {
+                    $parameterValue = $this->quote($parameterValue);
+                }
 
                 $tableOptions [] = sprintf('%s=%s', $sqlName, $parameterValue);
             }
@@ -538,7 +542,7 @@ DROP INDEX %s ON %s;
     public function getDropForeignKeyDDL(ForeignKey $fk)
     {
         if (!$this->supportsForeignKeys($fk->getTable())) return '';
-        if ($fk->isSkipSql()) {
+        if ($fk->isSkipSql() || $fk->isPolymorphic()) {
             return;
         }
         $pattern = "
@@ -680,6 +684,57 @@ ALTER TABLE %s CHANGE %s %s;
     }
 
     /**
+     * Builds the DDL SQL to add a column
+     *
+     * @param Column $column
+     *
+     * @return string
+     */
+    public function getAddColumnDDL(Column $column)
+    {
+        $pattern = "
+ALTER TABLE %s ADD %s %s;
+";
+        $tableColumns = $column->getTable()->getColumns();
+
+        // Default to add first if no column is found before the current one
+        $insertPositionDDL = "FIRST";
+        foreach ($tableColumns as $i => $tableColumn) {
+            // We found the column, use the one before it if it's not the first
+            if ($tableColumn->getName() == $column->getName()) {
+                // We have a column that is not the first one
+                if ($i > 0) {
+                    $insertPositionDDL = "AFTER " . $this->quoteIdentifier($tableColumns[$i - 1]->getName());
+                }
+                break;
+            }
+        }
+
+        return sprintf($pattern,
+            $this->quoteIdentifier($column->getTable()->getName()),
+            $this->getColumnDDL($column),
+            $insertPositionDDL
+        );
+    }
+
+    /**
+     * Builds the DDL SQL to add a list of columns
+     *
+     * @param  Column[] $columns
+     *
+     * @return string
+     */
+    public function getAddColumnsDDL($columns)
+    {
+        $lines = '';
+        foreach ($columns as $column) {
+            $lines .= $this->getAddColumnDDL($column);
+        }
+
+        return $lines;
+    }
+
+    /**
      * @see Platform::supportsSchemas()
      */
     public function supportsSchemas()
@@ -721,6 +776,8 @@ ALTER TABLE %s CHANGE %s %s;
     }
 
     /**
+     * {@inheritdoc}
+     *
      * MySQL documentation says that identifiers cannot contain '.'. Thus it
      * should be safe to split the string by '.' and quote each part individually
      * to allow for a <schema>.<table> or <table>.<column> syntax.
@@ -728,9 +785,9 @@ ALTER TABLE %s CHANGE %s %s;
      * @param  string $text the identifier
      * @return string the quoted identifier
      */
-    public function quoteIdentifier($text)
+    public function doQuoting($text)
     {
-        return $this->isIdentifierQuotingEnabled ? '`' . strtr($text, array('.' => '`.`')) . '`' : $text;
+        return '`' . strtr($text, array('.' => '`.`')) . '`';
     }
 
     public function getTimestampFormatter()

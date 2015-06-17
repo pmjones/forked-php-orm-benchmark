@@ -18,6 +18,7 @@ use Propel\Generator\Exception\RuntimeException;
 use Propel\Generator\Model\Column;
 use Propel\Generator\Model\CrossForeignKeys;
 use Propel\Generator\Model\ForeignKey;
+use Propel\Generator\Model\Table;
 
 /**
  * Baseclass for OM-building classes.
@@ -72,7 +73,7 @@ abstract class AbstractOMBuilder extends DataModelBuilder
         $this->addClassBody($script);
         $this->addClassClose($script);
 
-        $ignoredNamespace = $this->getNamespace();
+        $ignoredNamespace = ltrim($this->getNamespace(), '\\');
 
         if ($useStatements = $this->getUseStatements($ignoredNamespace ?: 'namespace')) {
             $script = $useStatements . $script;
@@ -233,7 +234,7 @@ abstract class AbstractOMBuilder extends DataModelBuilder
     }
 
     /**
-     * This declare the class use and get the correct name to use (short classname, Alias, or FQCN)
+     * This declares the class use and returns the correct name to use (short classname, Alias, or FQCN)
      *
      * @param  AbstractOMBuilder $builder
      * @param  boolean           $fqcn    true to return the $fqcn classname
@@ -257,6 +258,21 @@ abstract class AbstractOMBuilder extends DataModelBuilder
     }
 
     /**
+     * This declares the class use and returns the correct name to use
+     *
+     * @param Table $table
+     * @param bool $fqcn
+     * @return string
+     */
+    public function getClassNameFromTable(Table $table, $fqcn = false)
+    {
+        $namespace = $table->getNamespace();
+        $class = $table->getPhpName();
+
+        return $this->declareClassNamespace($class, $namespace, true);
+    }
+
+    /**
      * Declare a class to be use and return it's name or it's alias
      *
      * @param  string         $class     the class name
@@ -266,6 +282,8 @@ abstract class AbstractOMBuilder extends DataModelBuilder
      */
     public function declareClassNamespace($class, $namespace = '', $alias = false)
     {
+        $namespace = trim($namespace, '\\');
+
         // check if the class is already declared
         if (isset($this->declaredClasses[$namespace])
             && isset($this->declaredClasses[$namespace][$class])) {
@@ -299,7 +317,15 @@ abstract class AbstractOMBuilder extends DataModelBuilder
                 return $this->declareClassNamespace($class, $namespace, 'Base' . $class);
             }
 
-            return $this->declareClassNamespace($class, $namespace, 'Child' . $class);
+            if ('Child' == substr($alias, 0, 5)) {
+                //we already requested Child.$class and its in use too,
+                //so use the fqcn
+                return ($namespace ? '\\' . $namespace : '') .  '\\' . $class;
+            } else {
+                $autoAliasName = 'Child' . $class;
+            }
+
+            return $this->declareClassNamespace($class, $namespace, $autoAliasName);
         }
 
         throw new LogicException(sprintf(
@@ -311,8 +337,10 @@ abstract class AbstractOMBuilder extends DataModelBuilder
 
     /**
      * check if the current $class need an alias or if the class could be used with a shortname without conflict
+     *
      * @param string $class
      * @param string $namespace
+     * @return boolean
      */
     protected function needAliasForClassName($class, $namespace)
     {
@@ -599,8 +627,29 @@ abstract class AbstractOMBuilder extends DataModelBuilder
     protected function getCrossFKsPhpNameAffix(CrossForeignKeys $crossFKs, $plural = true)
     {
         $names = [];
-        foreach ($crossFKs->getCrossForeignKeys() as $fk) {
-            $names[] = $this->getFKPhpNameAffix($fk, false);
+
+        if ($plural) {
+            if ($crossFKs->getUnclassifiedPrimaryKeys()) {
+                //we have a non fk as pk as well, so we need to make pluralisation on our own and can't
+                //rely on getFKPhpNameAffix's pluralisation
+                foreach ($crossFKs->getCrossForeignKeys() as $fk) {
+                    $names[] = $this->getFKPhpNameAffix($fk, false);
+                }
+            } else {
+                //we have only fks, so give us names with plural and return those
+                $lastIdx = count($crossFKs->getCrossForeignKeys()) - 1;
+                foreach ($crossFKs->getCrossForeignKeys() as $idx => $fk) {
+                    $needPlural = $idx === $lastIdx; //only last fk should be plural
+                    $names[] = $this->getFKPhpNameAffix($fk, $needPlural);
+                }
+
+                return implode($names);
+            }
+        } else {
+            // no plural, so $plural=false
+            foreach ($crossFKs->getCrossForeignKeys() as $fk) {
+                $names[] = $this->getFKPhpNameAffix($fk, false);
+            }
         }
 
         foreach ($crossFKs->getUnclassifiedPrimaryKeys() as $pk) {
@@ -612,6 +661,36 @@ abstract class AbstractOMBuilder extends DataModelBuilder
         return (true === $plural ? $this->getPluralizer()->getPluralForm($name) : $name);
     }
 
+    /**
+     * @param  CrossForeignKeys $crossFKs
+     * @param  ForeignKey       $excludeFK
+     * @return string
+     */
+    protected function getCrossRefFKGetterName(CrossForeignKeys $crossFKs, ForeignKey $excludeFK)
+    {
+        $names = [];
+
+        $fks = $crossFKs->getCrossForeignKeys();
+
+        foreach ($crossFKs->getMiddleTable()->getForeignKeys() as $fk) {
+            if ($fk !== $excludeFK && ($fk === $crossFKs->getIncomingForeignKey() || in_array($fk, $fks))) {
+                $names[] = $this->getFKPhpNameAffix($fk, false);
+            }
+        }
+
+        foreach ($crossFKs->getUnclassifiedPrimaryKeys() as $pk) {
+            $names[] = $pk->getPhpName();
+        }
+
+        $name = implode($names);
+
+        return $this->getPluralizer()->getPluralForm($name);
+    }
+
+    /**
+     * @param CrossForeignKeys $crossFKs
+     * @return array
+     */
     protected function getCrossFKInformation(CrossForeignKeys $crossFKs)
     {
         $names = [];
@@ -620,7 +699,7 @@ abstract class AbstractOMBuilder extends DataModelBuilder
         $phpDoc = [];
 
         foreach ($crossFKs->getCrossForeignKeys() as $fk) {
-            $crossObjectName  = '$' . lcfirst($this->getFKPhpNameAffix($fk)); //$fk->getForeignTable()->getStudlyPhpName();
+            $crossObjectName  = '$' . lcfirst($this->getFKPhpNameAffix($fk));
             $crossObjectClassName  = $this->getNewObjectBuilder($fk->getForeignTable())->getObjectClassName();
 
             $names[] = $crossObjectClassName;
@@ -642,6 +721,88 @@ abstract class AbstractOMBuilder extends DataModelBuilder
             $shortSignature
         ];
     }
+
+    /**
+     * @param  CrossForeignKeys $crossFKs
+     * @param  array|ForeignKey $crossFK  will be the first variable defined
+     * @return array
+     */
+    protected function getCrossFKAddMethodInformation(CrossForeignKeys $crossFKs, $crossFK = null)
+    {
+        if ($crossFK instanceof ForeignKey) {
+            $crossObjectName = '$' . lcfirst($this->getFKPhpNameAffix($crossFK));
+            $crossObjectClassName = $this->getClassNameFromTable($crossFK->getForeignTable());
+            $signature[] = "$crossObjectClassName $crossObjectName" . ($crossFK->isAtLeastOneLocalColumnRequired() ? '' : ' = null');
+            $shortSignature[] = $crossObjectName;
+            $normalizedShortSignature[] = $crossObjectName;
+            $phpDoc[] = "
+     * @param $crossObjectClassName $crossObjectName";
+        }
+
+        $this->extractCrossInformation($crossFKs, $crossFK, $signature, $shortSignature, $normalizedShortSignature, $phpDoc);
+
+        $signature = implode(', ', $signature);
+        $shortSignature = implode(', ', $shortSignature);
+        $normalizedShortSignature = implode(', ', $normalizedShortSignature);
+        $phpDoc = implode(', ', $phpDoc);
+
+        return [$signature, $shortSignature, $normalizedShortSignature, $phpDoc];
+    }
+
+    /**
+     * Extracts some useful information from a CrossForeignKeys object.
+     *
+     * @param CrossForeignKeys $crossFKs
+     * @param array|ForeignKey $crossFKToIgnore
+     * @param array            $signature
+     * @param array            $shortSignature
+     * @param array            $normalizedShortSignature
+     * @param array            $phpDoc
+     */
+    protected function extractCrossInformation(
+        CrossForeignKeys $crossFKs,
+        $crossFKToIgnore = null,
+        &$signature,
+        &$shortSignature,
+        &$normalizedShortSignature,
+        &$phpDoc
+    ) {
+        foreach ($crossFKs->getCrossForeignKeys() as $fk) {
+            if (is_array($crossFKToIgnore) && in_array($fk, $crossFKToIgnore)) {
+                continue;
+            } else if ($fk === $crossFKToIgnore) {
+                continue;
+            }
+
+            $phpType = $typeHint = $this->getClassNameFromTable($fk->getForeignTable());
+            $name = '$' . lcfirst($this->getFKPhpNameAffix($fk));
+
+            $normalizedShortSignature[] = $name;
+
+            $signature[] = ($typeHint ? "$typeHint " : '') . $name;
+            $shortSignature[] = $name;
+            $phpDoc[] = "
+     * @param $phpType $name";
+        }
+
+        foreach ($crossFKs->getUnclassifiedPrimaryKeys() as $primaryKey) {
+            //we need to add all those $primaryKey s as additional parameter as they are needed
+            //to create the entry in the middle-table.
+            $defaultValue = $primaryKey->getDefaultValueString();
+
+            $phpType = $primaryKey->getPhpType();
+            $typeHint = $primaryKey->isPhpArrayType() ? 'array' : '';
+            $name = '$' . lcfirst($primaryKey->getPhpName());
+
+            $normalizedShortSignature[] = $name;
+            $signature[] = ($typeHint ? "$typeHint " : '') . $name . ('null' !== $defaultValue ? " = $defaultValue" : '');
+            $shortSignature[] = $name;
+            $phpDoc[] = "
+     * @param $phpType $name";
+        }
+
+    }
+
 
     /**
      * @param  CrossForeignKeys $crossFKs
@@ -673,9 +834,11 @@ abstract class AbstractOMBuilder extends DataModelBuilder
     protected static function getRelatedBySuffix(ForeignKey $fk)
     {
         $relCol = '';
-        foreach ($fk->getLocalForeignMapping() as $localColumnName => $foreignColumnName) {
+
+        foreach ($fk->getMapping() as $mapping) {
+            list($localColumn, $foreignValueOrColumn) = $mapping;
+            $localColumnName = $localColumn->getPhpName();
             $localTable  = $fk->getTable();
-            $localColumn = $localTable->getColumn($localColumnName);
             if (!$localColumn) {
                 throw new RuntimeException(sprintf('Could not fetch column: %s in table %s.', $localColumnName, $localTable->getName()));
             }
@@ -723,16 +886,18 @@ abstract class AbstractOMBuilder extends DataModelBuilder
     protected static function getRefRelatedBySuffix(ForeignKey $fk)
     {
         $relCol = '';
-        foreach ($fk->getLocalForeignMapping() as $localColumnName => $foreignColumnName) {
+        foreach ($fk->getMapping() as $mapping) {
+            list($localColumn, $foreignValueOrColumn) = $mapping;
+            $localColumnName = $localColumn->getPhpName();
             $localTable = $fk->getTable();
-            $localColumn = $localTable->getColumn($localColumnName);
             if (!$localColumn) {
                 throw new RuntimeException(sprintf('Could not fetch column: %s in table %s.', $localColumnName, $localTable->getName()));
             }
             $foreignKeysToForeignTable = $localTable->getForeignKeysReferencingTable($fk->getForeignTableName());
-            if ($fk->getForeignTableName() == $fk->getTableName()) {
+            if ($foreignValueOrColumn instanceof Column && $fk->getForeignTableName() == $fk->getTableName()) {
+                $foreignColumnName = $foreignValueOrColumn->getPhpName();
                 // self referential foreign key
-                $relCol .= $fk->getForeignTable()->getColumn($foreignColumnName)->getPhpName();
+                $relCol .= $foreignColumnName;
                 if (count($foreignKeysToForeignTable) > 1) {
                     // several self-referential foreign keys
                     $relCol .= array_search($fk, $foreignKeysToForeignTable);
