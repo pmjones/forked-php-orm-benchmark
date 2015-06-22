@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "21eb24e2cec6bc4c9e2d68d447022d1a",
+    "hash": "321de61682cb1ac3885848cd0b640ba0",
     "packages": [
         {
             "name": "danielstjules/stringy",
@@ -272,6 +272,51 @@
                 "sql"
             ],
             "time": "2015-06-15 07:46:41"
+        },
+        {
+            "name": "illuminate/events",
+            "version": "v5.1.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/illuminate/events.git",
+                "reference": "6b43d28a97a26c935a4a14a13888e16489d7ab45"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/illuminate/events/zipball/6b43d28a97a26c935a4a14a13888e16489d7ab45",
+                "reference": "6b43d28a97a26c935a4a14a13888e16489d7ab45",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/container": "5.1.*",
+                "illuminate/contracts": "5.1.*",
+                "illuminate/support": "5.1.*",
+                "php": ">=5.5.9"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "5.1-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Illuminate\\Events\\": ""
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Taylor Otwell",
+                    "email": "taylorotwell@gmail.com"
+                }
+            ],
+            "description": "The Illuminate Events package.",
+            "homepage": "http://laravel.com",
+            "time": "2015-06-02 19:10:07"
         },
         {
             "name": "illuminate/support",

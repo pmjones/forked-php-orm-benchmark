@@ -23,7 +23,7 @@ class EloquentTestSuite extends AbstractTestSuite
         $this->con = $this->capsule->getConnection()->getPdo();
 
         // Set the event dispatcher used by Eloquent models... (optional)
-        //$capsule->setEventDispatcher(new Dispatcher(new Container));
+        $this->capsule->setEventDispatcher(new \Illuminate\Events\Dispatcher(new \Illuminate\Container\Container()));
 
         // Make this Capsule instance available globally via static methods... (optional)
         $this->capsule->setAsGlobal();
