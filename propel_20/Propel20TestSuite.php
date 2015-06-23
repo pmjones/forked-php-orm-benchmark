@@ -20,7 +20,8 @@ class Propel20TestSuite extends AbstractTestSuite
 	
 	function clearCache()
 	{
-
+        AuthorQuery::create()->getTableMap()->clearInstancePool();
+        BookQuery::create()->getTableMap()->clearInstancePool();
 	}
 	
 	function beginTransaction()
@@ -39,14 +40,14 @@ class Propel20TestSuite extends AbstractTestSuite
 		$author->setFirstName('John' . $i);
 		$author->setLastName('Doe' . $i);
 		$author->save($this->con);
-		$this->authors[]= $author->getId();
+		$this->authors[]= $author;
 	}
 
 	function runBookInsertion($i)
 	{
 		$book = new Book();
 		$book->setTitle('Hello' . $i);
-		$book->setAuthorId($this->authors[array_rand($this->authors)]);
+		$book->setAuthor($this->authors[array_rand($this->authors)]);
 		$book->setISBN('1234');
 		$book->setPrice($i);
 		$book->save($this->con);
@@ -56,13 +57,13 @@ class Propel20TestSuite extends AbstractTestSuite
 	function runPKSearch($i)
 	{
         $author = AuthorQuery::create()
-            ->findPk($this->authors[array_rand($this->authors)], $this->con);
+            ->findPk($this->authors[array_rand($this->authors)]->getId(), $this->con);
 	}
 	
 	function runComplexQuery($i)
 	{
 		$authors = AuthorQuery::create()
-			->where('Author.Id > ?', $this->authors[array_rand($this->authors)])
+			->where('Author.Id > ?', $this->authors[array_rand($this->authors)]->getId())
 			->_or()
             ->Where('(Author.FirstName || Author.LastName) = ?', 'John Doe')
 			->count($this->con);

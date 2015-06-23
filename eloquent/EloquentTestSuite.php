@@ -56,28 +56,28 @@ class EloquentTestSuite extends AbstractTestSuite
 		$author->first_name = 'John' . $i;
 		$author->last_name = 'Doe' . $i;
 		$author->save();
-		$this->authors[]= $author->id;
+		$this->authors[]= $author;
 	}
 
 	function runBookInsertion($i)
 	{
 		$book = new Book();
 		$book->title = 'Hello' . $i;
-		$book->author_id = $this->authors[array_rand($this->authors)];
+		$book->author()->associate($this->authors[array_rand($this->authors)]);
 		$book->isbn = '1234';
 		$book->price = $i;
 		$book->save();
-		$this->books[]= $book->id;
+		$this->books[]= $book;
 	}
 	
 	function runPKSearch($i)
 	{
-        $author = Author::find($this->authors[array_rand($this->authors)]);
+        $author = Author::find($this->authors[array_rand($this->authors)]->id);
 	}
 	
 	function runComplexQuery($i)
 	{
-		$authors = Author::where('id', '>', $this->authors[array_rand($this->authors)])
+		$authors = Author::where('id', '>', $this->authors[array_rand($this->authors)]->id)
             ->orWhere($this->capsule->getConnection()->raw('(first_name || last_name)'), '=', 'John Doe')
             ->count();
 	}
