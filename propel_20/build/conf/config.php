@@ -7,7 +7,7 @@ $manager->setConfiguration(array (
   'dsn' => 'sqlite::memory:',
   'options' =>
   array (
-    'ATTR_PERSISTENT' => false,
+    //'ATTR_PERSISTENT' => false,
   ),
   'settings' =>
   array (
