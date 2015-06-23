@@ -95,7 +95,7 @@ class PropelDMTestSuite extends AbstractTestSuite
 	function runComplexQuery($i)
 	{
         $authors = AuthorQuery::create()
-            ->filterById($this->authors[array_rand($this->authors)]->getId())
+            ->where('Author.Id > ?', $this->authors[array_rand($this->authors)]->getId())
             ->_or()
             ->Where('(Author.FirstName || Author.LastName) = ?', 'John Doe')
             ->count();

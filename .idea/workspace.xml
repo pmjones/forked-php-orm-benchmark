@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="f63aa050-8d85-4566-8922-3884db300d35" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/AbstractTestSuite.php" afterPath="$PROJECT_DIR$/AbstractTestSuite.php" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/TestRunner.php" afterPath="$PROJECT_DIR$/TestRunner.php" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/propel_20/Propel20WithCacheTestSuite.php" afterPath="$PROJECT_DIR$/propel_20/Propel20WithCacheTestSuite.php" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/propel_dm/PropelDMTestSuite.php" afterPath="$PROJECT_DIR$/propel_dm/PropelDMTestSuite.php" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="php-orm-benchmark.iws" />
@@ -29,11 +29,21 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="TestRunner.php" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/TestRunner.php">
+      <file leaf-file-name="Propel20TestSuite.php" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/propel_20/Propel20TestSuite.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.025510205" vertical-offset="0" max-vertical-offset="705">
-              <caret line="1" column="15" selection-start-line="1" selection-start-column="15" selection-end-line="1" selection-end-column="15" />
+            <state vertical-scroll-proportion="-5.75" vertical-offset="837" max-vertical-offset="1425">
+              <caret line="65" column="34" selection-start-line="65" selection-start-column="34" selection-end-line="65" selection-end-column="34" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Propel20FormatOnDemandTestSuite.php" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/propel_20/Propel20FormatOnDemandTestSuite.php">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="588">
+              <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -42,48 +52,48 @@
       <file leaf-file-name="Propel20WithCacheTestSuite.php" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/propel_20/Propel20WithCacheTestSuite.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="-6.25" vertical-offset="810" max-vertical-offset="1410">
-              <caret line="64" column="25" selection-start-line="64" selection-start-column="25" selection-end-line="64" selection-end-column="25" />
+            <state vertical-scroll-proportion="-1.25" vertical-offset="0" max-vertical-offset="375">
+              <caret line="2" column="35" selection-start-line="2" selection-start-column="35" selection-end-line="2" selection-end-column="35" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Propel20FormatOnDemandTestSuite.php" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/propel_20/Propel20FormatOnDemandTestSuite.php">
+      <file leaf-file-name="config.php" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/propel_20/build/conf/config.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="-0.0" vertical-offset="0" max-vertical-offset="480">
+            <state vertical-scroll-proportion="-5.625" vertical-offset="0" max-vertical-offset="360">
+              <caret line="9" column="30" selection-start-line="9" selection-start-column="25" selection-end-line="9" selection-end-column="30" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="configWithCache.php" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/propel_20/build/conf/configWithCache.php">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="-13.75" vertical-offset="0" max-vertical-offset="420">
+              <caret line="22" column="53" selection-start-line="22" selection-start-column="53" selection-end-line="22" selection-end-column="53" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="schema.xml" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/propel_20/schema.xml">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="420">
               <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="TestRunner.php" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/propel_20/TestRunner.php">
+      <file leaf-file-name="PropelDMTestSuite.php" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/propel_dm/PropelDMTestSuite.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="-2.5" vertical-offset="0" max-vertical-offset="150">
-              <caret line="4" column="71" selection-start-line="4" selection-start-column="71" selection-end-line="4" selection-end-column="71" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="TestRunnerPropel20TestSuite.php" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/propel_20/TestRunnerPropel20TestSuite.php">
-          <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="-0.0" vertical-offset="0" max-vertical-offset="240">
-              <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="TestRunner.php" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/propel_dm/TestRunner.php">
-          <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="-5.0" vertical-offset="0" max-vertical-offset="240">
-              <caret line="8" column="9" selection-start-line="8" selection-start-column="9" selection-end-line="8" selection-end-column="9" />
+            <state vertical-scroll-proportion="-10.125" vertical-offset="1257" max-vertical-offset="1905">
+              <caret line="100" column="22" selection-start-line="100" selection-start-column="22" selection-end-line="100" selection-end-column="22" />
               <folding />
             </state>
           </provider>
@@ -99,35 +109,27 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="PropelDMTestSuite.php" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/propel_dm/PropelDMTestSuite.php">
+      <file leaf-file-name="ModelCriteria.php" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/propel_20/vendor/propel/propel/src/Propel/Runtime/ActiveQuery/ModelCriteria.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="-8.25" vertical-offset="1167" max-vertical-offset="1905">
-              <caret line="91" column="33" selection-start-line="91" selection-start-column="8" selection-end-line="92" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="AbstractTestSuite.php" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/AbstractTestSuite.php">
-          <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="-8.875" vertical-offset="612" max-vertical-offset="1200">
-              <caret line="55" column="27" selection-start-line="55" selection-start-column="27" selection-end-line="55" selection-end-column="27" />
+            <state vertical-scroll-proportion="-233.82692" vertical-offset="7446" max-vertical-offset="32340">
+              <caret line="1337" column="18" selection-start-line="1337" selection-start-column="18" selection-end-line="1337" selection-end-column="18" />
               <folding>
-                <marker date="1435061230550" expanded="true" signature="610:627" placeholder="DROP TABLE [..." />
-                <marker date="1435061230550" expanded="true" signature="652:671" placeholder="DROP TABLE [..." />
+                <marker date="1434548980102" expanded="true" signature="55429:55441" placeholder="DELETE FROM ..." />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="TestRunnerPropel20FormatOnDemandTestSuite.php" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/propel_20/TestRunnerPropel20FormatOnDemandTestSuite.php">
+      <file leaf-file-name="Criteria.php" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/propel_20/vendor/propel/propel/src/Propel/Runtime/ActiveQuery/Criteria.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="-6.25" vertical-offset="0" max-vertical-offset="240">
-              <caret line="10" column="0" selection-start-line="10" selection-start-column="0" selection-end-line="10" selection-end-column="0" />
-              <folding />
+            <state vertical-scroll-proportion="-5.0416665" vertical-offset="374" max-vertical-offset="41100">
+              <caret line="51" column="22" selection-start-line="51" selection-start-column="10" selection-end-line="51" selection-end-column="22" />
+              <folding>
+                <marker date="1434548980098" expanded="true" signature="71102:71211" placeholder="INSERT INTO ..." />
+                <marker date="1434548980098" expanded="true" signature="80719:80776" placeholder="SELECT COUNT..propelmatch4cnt..." />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -167,10 +169,13 @@
         <option value="$PROJECT_DIR$/propel_dm/vendor/propel/propel/bin/propel.php" />
         <option value="$PROJECT_DIR$/propel_20_with_cache/Propel20WithCacheTestSuite.php" />
         <option value="$PROJECT_DIR$/propel_20/TestRunner.php" />
-        <option value="$PROJECT_DIR$/propel_dm/PropelDMTestSuite.php" />
         <option value="$PROJECT_DIR$/propel_dm/TestRunner.php" />
         <option value="$PROJECT_DIR$/AbstractTestSuite.php" />
         <option value="$PROJECT_DIR$/TestRunner.php" />
+        <option value="$PROJECT_DIR$/propel_20/vendor/propel/propel/src/Propel/Runtime/ActiveQuery/Criteria.php" />
+        <option value="$PROJECT_DIR$/propel_20/build/conf/configWithCache.php" />
+        <option value="$PROJECT_DIR$/propel_20/Propel20WithCacheTestSuite.php" />
+        <option value="$PROJECT_DIR$/propel_dm/PropelDMTestSuite.php" />
       </list>
     </option>
   </component>
@@ -235,7 +240,75 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
             <PATH_ELEMENT>
+              <option name="myItemId" value="raw_pdo" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="php-orm-benchmark" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="php-orm-benchmark" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
               <option name="myItemId" value="propel_dm" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="php-orm-benchmark" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="php-orm-benchmark" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="propel_20" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="php-orm-benchmark" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="php-orm-benchmark" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="propel_20" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="build" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="php-orm-benchmark" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="php-orm-benchmark" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="propel_20" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="build" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="conf" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -278,6 +351,7 @@
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/propel_20/build/conf" />
       <recent name="$PROJECT_DIR$/propel_dm" />
       <recent name="$PROJECT_DIR$/eloquent" />
       <recent name="$PROJECT_DIR$/eloquent/models" />
@@ -377,50 +451,6 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/doctrine_m/vendor/doctrine/orm/lib/Doctrine/ORM/EntityManager.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-123.458336" vertical-offset="427" max-vertical-offset="12945">
-          <caret line="249" column="20" selection-start-line="249" selection-start-column="20" selection-end-line="249" selection-end-column="20" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/doctrine_24/Doctrine24TestSuite.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-18.75" vertical-offset="360" max-vertical-offset="1890">
-          <caret line="54" column="22" selection-start-line="54" selection-start-column="22" selection-end-line="54" selection-end-column="22" />
-          <folding>
-            <marker date="1434541093006" expanded="true" signature="-1:-1" placeholder="SELECT count..Author..." />
-            <marker date="1434541093006" expanded="true" signature="-1:-1" placeholder="SELECT b FRO..Book..." />
-            <marker date="1434541093006" expanded="true" signature="-1:-1" placeholder="SELECT b, a ..Book..." />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/doctrine_22/vendor/doctrine/orm/lib/Doctrine/ORM/EntityManager.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-15.0" vertical-offset="4710" max-vertical-offset="12360">
-          <caret line="354" column="29" selection-start-line="354" selection-start-column="29" selection-end-line="354" selection-end-column="29" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/doctrine_23/vendor/doctrine/orm/lib/Doctrine/ORM/UnitOfWork.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="170.91667" vertical-offset="7912" max-vertical-offset="46200">
-          <caret line="270" column="20" selection-start-line="270" selection-start-column="20" selection-end-line="270" selection-end-column="20" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/doctrine_24/TestRunner.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-1.25" vertical-offset="0" max-vertical-offset="270">
-          <caret line="2" column="0" selection-start-line="2" selection-start-column="0" selection-end-line="4" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/doctrine_24/TestRunnerDoctrine24ArrayHydrateTestSuite.php">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="926">
@@ -659,28 +689,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/propel_20/build/classes/Base/AuthorQuery.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-7.9583335" vertical-offset="1519" max-vertical-offset="7785">
-          <caret line="125" column="53" selection-start-line="125" selection-start-column="53" selection-end-line="125" selection-end-column="53" />
-          <folding>
-            <marker date="1434547636001" expanded="true" signature="-1:-1" placeholder="SELECT id, f..author..." />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/propel_dm/vendor/propel/propel/src/Propel/Runtime/ActiveQuery/InstancePoolTrait.php">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="-16.125" vertical-offset="513" max-vertical-offset="1125">
           <caret line="66" column="44" selection-start-line="66" selection-start-column="27" selection-end-line="66" selection-end-column="44" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/propel_20/Propel20TestSuite.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-16.25" vertical-offset="45" max-vertical-offset="1425">
-          <caret line="29" column="5" selection-start-line="29" selection-start-column="5" selection-end-line="29" selection-end-column="5" />
           <folding />
         </state>
       </provider>
@@ -709,30 +721,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/propel_20/Propel20WithCacheTestSuite.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-6.25" vertical-offset="810" max-vertical-offset="1410">
-          <caret line="64" column="25" selection-start-line="64" selection-start-column="25" selection-end-line="64" selection-end-column="25" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/propel_20/Propel20FormatOnDemandTestSuite.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="612">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/propel_20/TestRunnerPropel20WithCacheTestSuite.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="612">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/propel_20/TestRunnerPropel20FormatOnDemandTestSuite.php">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="-6.25" vertical-offset="0" max-vertical-offset="240">
@@ -757,14 +745,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/propel_dm/PropelDMTestSuite.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-8.25" vertical-offset="1167" max-vertical-offset="1905">
-          <caret line="91" column="33" selection-start-line="91" selection-start-column="8" selection-end-line="92" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/propel_dm/TestRunner.php">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="-5.0" vertical-offset="0" max-vertical-offset="240">
@@ -778,16 +758,145 @@
         <state vertical-scroll-proportion="-8.875" vertical-offset="612" max-vertical-offset="1200">
           <caret line="55" column="27" selection-start-line="55" selection-start-column="27" selection-end-line="55" selection-end-column="27" />
           <folding>
-            <marker date="1435061230550" expanded="true" signature="610:627" placeholder="DROP TABLE [..." />
-            <marker date="1435061230550" expanded="true" signature="652:671" placeholder="DROP TABLE [..." />
+            <marker date="1435061230550" expanded="true" signature="-1:-1" placeholder="DROP TABLE [..." />
+            <marker date="1435061230550" expanded="true" signature="-1:-1" placeholder="DROP TABLE [..." />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/TestRunner.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.025510205" vertical-offset="0" max-vertical-offset="705">
+        <state vertical-scroll-proportion="-0.625" vertical-offset="0" max-vertical-offset="705">
           <caret line="1" column="15" selection-start-line="1" selection-start-column="15" selection-end-line="1" selection-end-column="15" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/raw_pdo/PDOTestSuite.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="-12.5" vertical-offset="675" max-vertical-offset="1335">
+          <caret line="65" column="63" selection-start-line="65" selection-start-column="63" selection-end-line="65" selection-end-column="63" />
+          <folding>
+            <marker date="1434541097974" expanded="true" signature="-1:-1" placeholder="INSERT INTO ..." />
+            <marker date="1434541097974" expanded="true" signature="-1:-1" placeholder="INSERT INTO ..." />
+            <marker date="1434541097974" expanded="true" signature="-1:-1" placeholder="SELECT autho..author..." />
+            <marker date="1434541097974" expanded="true" signature="-1:-1" placeholder="SELECT book...book..." />
+            <marker date="1434541097974" expanded="true" signature="-1:-1" placeholder="SELECT COUNT..author..." />
+            <marker date="1434541097974" expanded="true" signature="-1:-1" placeholder="SELECT book...book..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/propel_20/vendor/propel/propel/src/Propel/Runtime/ActiveQuery/Criterion/CustomCriterion.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="1.125" vertical-offset="87" max-vertical-offset="675">
+          <caret line="10" column="37" selection-start-line="10" selection-start-column="37" selection-end-line="10" selection-end-column="37" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/propel_dm/vendor/propel/propel/src/Propel/Runtime/ActiveQuery/Criteria.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="-8.166667" vertical-offset="299" max-vertical-offset="41730">
+          <caret line="52" column="10" selection-start-line="52" selection-start-column="10" selection-end-line="52" selection-end-column="10" />
+          <folding>
+            <marker date="1435049289126" expanded="true" signature="-1:-1" placeholder="INSERT INTO ..." />
+            <marker date="1435049289126" expanded="true" signature="-1:-1" placeholder="SELECT COUNT..propelmatch4cnt..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/propel_20/build/classes/Base/AuthorQuery.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="-13.583333" vertical-offset="3589" max-vertical-offset="7785">
+          <caret line="272" column="76" selection-start-line="272" selection-start-column="76" selection-end-line="272" selection-end-column="76" />
+          <folding>
+            <marker date="1434547636001" expanded="true" signature="-1:-1" placeholder="SELECT id, f..author..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/propel_20/vendor/propel/propel/src/Propel/Runtime/ActiveQuery/Criteria.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="-5.0416665" vertical-offset="374" max-vertical-offset="41100">
+          <caret line="51" column="22" selection-start-line="51" selection-start-column="10" selection-end-line="51" selection-end-column="22" />
+          <folding>
+            <marker date="1434548980098" expanded="true" signature="71102:71211" placeholder="INSERT INTO ..." />
+            <marker date="1434548980098" expanded="true" signature="80719:80776" placeholder="SELECT COUNT..propelmatch4cnt..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/propel_20/vendor/propel/propel/src/Propel/Runtime/ActiveQuery/ModelCriteria.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="-233.82692" vertical-offset="7446" max-vertical-offset="32340">
+          <caret line="1337" column="18" selection-start-line="1337" selection-start-column="18" selection-end-line="1337" selection-end-column="18" />
+          <folding>
+            <marker date="1434548980102" expanded="true" signature="55429:55441" placeholder="DELETE FROM ..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/propel_20/schema.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="612">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/propel_20/TestRunnerPropel20WithCacheTestSuite.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="612">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/propel_20/build/conf/config.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="-5.625" vertical-offset="0" max-vertical-offset="360">
+          <caret line="9" column="30" selection-start-line="9" selection-start-column="25" selection-end-line="9" selection-end-column="30" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/propel_20/build/conf/configWithCache.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="-13.75" vertical-offset="0" max-vertical-offset="420">
+          <caret line="22" column="53" selection-start-line="22" selection-start-column="53" selection-end-line="22" selection-end-column="53" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/propel_20/Propel20TestSuite.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="-5.75" vertical-offset="837" max-vertical-offset="1425">
+          <caret line="65" column="34" selection-start-line="65" selection-start-column="34" selection-end-line="65" selection-end-column="34" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/propel_dm/PropelDMTestSuite.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="-10.125" vertical-offset="1257" max-vertical-offset="1905">
+          <caret line="100" column="22" selection-start-line="100" selection-start-column="22" selection-end-line="100" selection-end-column="22" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/propel_20/Propel20WithCacheTestSuite.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="-1.25" vertical-offset="0" max-vertical-offset="375">
+          <caret line="2" column="35" selection-start-line="2" selection-start-column="35" selection-end-line="2" selection-end-column="35" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/propel_20/Propel20FormatOnDemandTestSuite.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="612">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding />
         </state>
       </provider>
