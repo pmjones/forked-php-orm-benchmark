@@ -37,7 +37,7 @@ class Propel20TestSuite extends AbstractTestSuite
 		$author = new Author();
 		$author->setFirstName('John' . $i);
 		$author->setLastName('Doe' . $i);
-		$author->save($this->con);
+		$author->save();
 		$this->authors[]= $author;
 	}
 
@@ -48,23 +48,23 @@ class Propel20TestSuite extends AbstractTestSuite
 		$book->setAuthor($this->authors[array_rand($this->authors)]);
 		$book->setISBN('1234');
 		$book->setPrice($i);
-		$book->save($this->con);
+		$book->save();
 		$this->books[]= $book;
 	}
 	
 	function runPKSearch($i)
 	{
 		$author = AuthorQuery::create()
-			->findPk($this->authors[array_rand($this->authors)]->getId(), $this->con);
+			->findPk($this->authors[array_rand($this->authors)]->getId());
 	}
 	
 	function runComplexQuery($i)
 	{
 		$authors = AuthorQuery::create()
-			->where('Author.Id > ?', $this->authors[array_rand($this->authors)]->getId())
+			->filterById($this->authors[array_rand($this->authors)]->getId(), AuthorQuery::GREATER_THAN)
 			->_or()
 			->Where('(Author.FirstName || Author.LastName) = ?', 'John Doe')
-			->count($this->con);
+			->count();
 	}
 
 	function runHydrate($i)
@@ -72,7 +72,7 @@ class Propel20TestSuite extends AbstractTestSuite
 		$books = BookQuery::create()
 			->filterByPrice(array('min' => $i))
 			->limit(5)
-			->find($this->con);
+			->find();
 		foreach ($books as $book) {
 		}
 	}
@@ -80,9 +80,8 @@ class Propel20TestSuite extends AbstractTestSuite
 	function runJoinSearch($i)
 	{
 		$books = BookQuery::create()
-			->filterByTitle('Hello' . $i)
-			->leftJoinWith('Book.Author')
-			->findOne($this->con);
+			->joinWithAuthor()
+			->findOneByTitle('Hello' . $i);
 	}
 	
 }

@@ -10,7 +10,7 @@ class Propel20FormatOnDemandTestSuite extends Propel20WithCacheTestSuite
 			->filterByPrice(array('min' => $i))
 			->limit(5)
 			->setFormatter(\Propel\Runtime\ActiveQuery\ModelCriteria::FORMAT_ON_DEMAND)
-			->find($this->con);
+			->find();
 		foreach ($books as $book) {
 		}
 	}
@@ -19,9 +19,9 @@ class Propel20FormatOnDemandTestSuite extends Propel20WithCacheTestSuite
 	{
 		$books = BookQuery::create()
 			->filterByTitle('Hello' . $i)
-			->leftJoinWith('Book.Author')
+			->joinWithAuthor()
 			->setFormatter(\Propel\Runtime\ActiveQuery\ModelCriteria::FORMAT_ON_DEMAND)
-			->findOne($this->con);
+			->findOne();
 	}
 	
 }
