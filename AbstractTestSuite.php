@@ -4,6 +4,9 @@ require_once dirname(__FILE__) . '/sfTimer.php';
 
 abstract class AbstractTestSuite
 {
+	/** @var PDO $con */
+	protected $con;
+
 	protected $books = array();
 	protected $authors = array();
 	

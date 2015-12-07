@@ -32,5 +32,8 @@ php TestRunner.php
 
 Run benchmarks using HHVM 3.10.1:
 ```
-hhvm TestRunner.php
+/usr/bin/update-alternatives --install /usr/bin/php php /repo/.docker-stack/stack/php/hhvm-jit.sh 60
+php TestRunner.php
 ```
+
+To return to using PHP 5.6.4, simply exit the Docker shell and enter it again.

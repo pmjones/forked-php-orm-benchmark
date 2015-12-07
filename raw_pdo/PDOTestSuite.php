@@ -30,15 +30,22 @@ class PDOTestSuite extends AbstractTestSuite
 	
 	function runAuthorInsertion($i)
 	{
-		$query = sprintf('INSERT INTO author ([first_name],[last_name]) VALUES (\'John%s\',\'Doe%s\')', $i, $i);
-		$this->con->exec($query);
+		$query = 'INSERT INTO author (first_name, last_name) VALUES (\'John?\',\'Doe?\')';
+		$stmt = $this->con->prepare($query);
+		$stmt->bindParam(1, $i, PDO::PARAM_INT);
+		$stmt->bindParam(2, $i, PDO::PARAM_INT);
+		$stmt->execute();
 		$this->authors[]= $this->con->lastInsertId();
 	}
 
 	function runBookInsertion($i)
 	{
-		$query = sprintf('INSERT INTO book ([title],[isbn],[price],[author_id]) VALUES (\'Hello%s\',\'1234\',%d,%d)', $i, $i, $this->authors[array_rand($this->authors)]);
-		$this->con->exec($query);
+		$query = 'INSERT INTO book (title, isbn, price, author_id) VALUES (\'Hello?\',\'1234\', ?, ?)';
+		$stmt = $this->con->prepare($query);
+		$stmt->bindParam(1, $i, PDO::PARAM_INT);
+		$stmt->bindParam(2, $i, PDO::PARAM_INT);
+		$stmt->bindParam(2, $this->authors[array_rand($this->authors)], PDO::PARAM_INT);
+		$stmt->execute();
 		$this->books[]= $this->con->lastInsertId();
 	}
 	
