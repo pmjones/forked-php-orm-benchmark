@@ -20,20 +20,21 @@ cd .docker-stack
 eval "$(docker-machine env default)"
 ```
 
-Start the supplied docker shell:
-```
-docker-compose run shell
-```
-
 Run benchmarks using PHP 5.6.4:
 ```
+docker-compose run shell
 php TestRunner.php
 ```
 
 Run benchmarks using HHVM 3.10.1:
 ```
+docker-compose run shell
 /usr/bin/update-alternatives --install /usr/bin/php php /repo/.docker-stack/stack/php/hhvm-jit.sh 60
 php TestRunner.php
 ```
 
-To return to using PHP 5.6.4, simply exit the Docker shell and enter it again.
+Run benchmarks using PHP 7.0.0:
+```
+docker-compose run shell_php7
+php TestRunner.php
+```
