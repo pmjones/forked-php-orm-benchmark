@@ -4,8 +4,11 @@ $separator = "|----------------------------------| -------| -------| -------| --
 echo "|-------------------------------------------------------------------------------------------------------|\n";
 echo "| Library                          | Insert | findPk | complex| hydrate|  with  | memory usage |  time  |\n";
 echo $separator;
-
 passthru('php raw_pdo/TestRunner.php');
+echo $separator;
+passthru('php yii1_m/TestRunner.php');
+echo $separator;
+passthru('php yii2_m/TestRunner.php');
 echo $separator;
 //passthru('php propel_14/TestRunner.php');
 //echo $separator;
