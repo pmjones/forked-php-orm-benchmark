@@ -1,9 +1,10 @@
 <?php
-$separator = "|----------------------------------| -------| -------| -------| -------| -------| -------------| -------|\n";
-
 echo "|-------------------------------------------------------------------------------------------------------|\n";
 echo "| Library                          | Insert | findPk | complex| hydrate|  with  | memory usage |  time  |\n";
-echo $separator;
+echo "| --------------------------------:| ------:| ------:| ------:| ------:| ------:| ------------:| ------:|\n";
+
+$separator = "|                                  |        |        |        |        |        |              |        |\n";
+
 passthru('php raw_pdo/TestRunner.php');
 echo $separator;
 passthru('php lessql/TestRunner.php');
