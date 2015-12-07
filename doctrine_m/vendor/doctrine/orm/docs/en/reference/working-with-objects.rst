@@ -103,7 +103,8 @@ from newly opened EntityManager.
         /** @OneToMany(targetEntity="Comment", mappedBy="article") */
         private $comments;
     
-        public function __construct {
+        public function __construct()
+        {
             $this->comments = new ArrayCollection();
         }
     
@@ -820,9 +821,10 @@ in a central location.
     namespace MyDomain\Model;
     
     use Doctrine\ORM\EntityRepository;
+    use Doctrine\ORM\Mapping as ORM;
     
     /**
-     * @entity(repositoryClass="MyDomain\Model\UserRepository")
+     * @ORM\Entity(repositoryClass="MyDomain\Model\UserRepository")
      */
     class User
     {

@@ -19,6 +19,9 @@
 
 namespace Doctrine\ORM\Mapping;
 
+use Doctrine\Instantiator\Instantiator;
+use ReflectionProperty;
+
 /**
  * Acts as a proxy to a nested Property structure, making it look like
  * just a single scalar property.
@@ -28,36 +31,68 @@ namespace Doctrine\ORM\Mapping;
  *
  * TODO: Move this class into Common\Reflection
  */
-class ReflectionEmbeddedProperty
+class ReflectionEmbeddedProperty extends ReflectionProperty
 {
+    /**
+     * @var ReflectionProperty reflection property of the class where the embedded object has to be put
+     */
     private $parentProperty;
-    private $childProperty;
-    private $class;
 
-    public function __construct($parentProperty, $childProperty, $class)
+    /**
+     * @var ReflectionProperty reflection property of the embedded object
+     */
+    private $childProperty;
+
+    /**
+     * @var string name of the embedded class to be eventually instantiated
+     */
+    private $embeddedClass;
+
+    /**
+     * @var Instantiator|null
+     */
+    private $instantiator;
+
+    /**
+     * @param ReflectionProperty $parentProperty
+     * @param ReflectionProperty $childProperty
+     * @param string             $embeddedClass
+     */
+    public function __construct(ReflectionProperty $parentProperty, ReflectionProperty $childProperty, $embeddedClass)
     {
-        $this->parentProperty = $parentProperty;
-        $this->childProperty = $childProperty;
-        $this->class = $class;
+        $this->parentProperty  = $parentProperty;
+        $this->childProperty   = $childProperty;
+        $this->embeddedClass   = (string) $embeddedClass;
+
+        parent::__construct($childProperty->getDeclaringClass()->getName(), $childProperty->getName());
     }
 
-    public function getValue($object)
+    /**
+     * {@inheritDoc}
+     */
+    public function getValue($object = null)
     {
         $embeddedObject = $this->parentProperty->getValue($object);
 
-        if ($embeddedObject === null) {
+        if (null === $embeddedObject) {
             return null;
         }
 
         return $this->childProperty->getValue($embeddedObject);
     }
 
-    public function setValue($object, $value)
+    /**
+     * {@inheritDoc}
+     */
+    public function setValue($object, $value = null)
     {
         $embeddedObject = $this->parentProperty->getValue($object);
 
-        if ($embeddedObject === null) {
-            $embeddedObject = unserialize(sprintf('O:%d:"%s":0:{}', strlen($this->class), $this->class));
+        if (null === $embeddedObject) {
+            $this->instantiator = $this->instantiator ?: new Instantiator();
+
+            $embeddedObject = $this->instantiator->instantiate($this->embeddedClass);
+
             $this->parentProperty->setValue($object, $embeddedObject);
         }
 

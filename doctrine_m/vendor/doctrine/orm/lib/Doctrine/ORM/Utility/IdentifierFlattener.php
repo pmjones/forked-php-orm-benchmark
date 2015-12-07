@@ -17,7 +17,6 @@
  * <http://www.doctrine-project.org>.
  */
 
-
 namespace Doctrine\ORM\Utility;
 
 use Doctrine\ORM\UnitOfWork;
@@ -36,22 +35,22 @@ final class IdentifierFlattener
     /**
      * The UnitOfWork used to coordinate object-level transactions.
      *
-     * @var \Doctrine\ORM\UnitOfWork
+     * @var UnitOfWork
      */
     private $unitOfWork;
 
     /**
      * The metadata factory, used to retrieve the ORM metadata of entity classes.
      *
-     * @var \Doctrine\Common\Persistence\Mapping\ClassMetadataFactory
+     * @var ClassMetadataFactory
      */
     private $metadataFactory;
 
     /**
      * Initializes a new IdentifierFlattener instance, bound to the given EntityManager.
      *
-     * @param \Doctrine\ORM\UnitOfWork $unitOfWork
-     * @param \Doctrine\Common\Persistence\Mapping\ClassMetadataFactory $metadataFactory
+     * @param UnitOfWork           $unitOfWork
+     * @param ClassMetadataFactory $metadataFactory
      */
     public function __construct(UnitOfWork $unitOfWork, ClassMetadataFactory $metadataFactory)
     {
@@ -62,25 +61,39 @@ final class IdentifierFlattener
     /**
      * convert foreign identifiers into scalar foreign key values to avoid object to string conversion failures.
      *
-     * @param \Doctrine\ORM\Mapping\ClassMetadata $class
-     * @param array $id
+     * @param ClassMetadata $class
+     * @param array         $id
+     *
      * @return array
      */
     public function flattenIdentifier(ClassMetadata $class, array $id)
     {
         $flatId = array();
 
-        foreach ($id as $idField => $idValue) {
-            if (isset($class->associationMappings[$idField]) && is_object($idValue)) {
+        foreach ($class->identifier as $field) {
+            if (isset($class->associationMappings[$field]) && isset($id[$field]) && is_object($id[$field])) {
+                /* @var $targetClassMetadata ClassMetadata */
                 $targetClassMetadata = $this->metadataFactory->getMetadataFor(
-                    $class->associationMappings[$idField]['targetEntity']
+                    $class->associationMappings[$field]['targetEntity']
                 );
 
-                $associatedId = $this->unitOfWork->getEntityIdentifier($idValue);
+                if ($this->unitOfWork->isInIdentityMap($id[$field])) {
+                    $associatedId = $this->flattenIdentifier($targetClassMetadata, $this->unitOfWork->getEntityIdentifier($id[$field]));
+                } else {
+                    $associatedId = $this->flattenIdentifier($targetClassMetadata, $targetClassMetadata->getIdentifierValues($id[$field]));
+                }
 
-                $flatId[$idField] = $associatedId[$targetClassMetadata->identifier[0]];
+                $flatId[$field] = implode(' ', $associatedId);
+            } elseif (isset($class->associationMappings[$field])) {
+                $associatedId = array();
+
+                foreach ($class->associationMappings[$field]['joinColumns'] as $joinColumn) {
+                    $associatedId[] = $id[$joinColumn['name']];
+                }
+
+                $flatId[$field] = implode(' ', $associatedId);
             } else {
-                $flatId[$idField] = $idValue;
+                $flatId[$field] = $id[$field];
             }
         }
 

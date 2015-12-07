@@ -4,7 +4,6 @@ namespace Doctrine\Tests\ORM\Tools;
 
 use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Persistence\Mapping\RuntimeReflectionService;
-use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Mapping\ClassMetadataFactory;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Doctrine\ORM\Mapping\Driver\AnnotationDriver;
@@ -64,7 +63,7 @@ class EntityGeneratorTest extends OrmTestCase
         $metadata->table['uniqueConstraints']['name_uniq'] = array('columns' => array('name'));
         $metadata->table['indexes']['status_idx'] = array('columns' => array('status'));
         $metadata->mapField(array('fieldName' => 'name', 'type' => 'string'));
-        $metadata->mapField(array('fieldName' => 'status', 'type' => 'string', 'default' => 'published'));
+        $metadata->mapField(array('fieldName' => 'status', 'type' => 'string', 'options' => array('default' => 'published')));
         $metadata->mapField(array('fieldName' => 'id', 'type' => 'integer', 'id' => true));
         $metadata->mapOneToOne(array('fieldName' => 'author', 'targetEntity' => 'Doctrine\Tests\ORM\Tools\EntityGeneratorAuthor', 'mappedBy' => 'book'));
         $joinColumns = array(
@@ -263,10 +262,10 @@ class EntityGeneratorTest extends OrmTestCase
         $this->assertEquals($author, $book->getAuthor());
 
         $comment = new EntityGeneratorComment();
-        $book->addComment($comment);
+        $this->assertInstanceOf($metadata->name, $book->addComment($comment));
         $this->assertInstanceOf('Doctrine\Common\Collections\ArrayCollection', $book->getComments());
         $this->assertEquals(new \Doctrine\Common\Collections\ArrayCollection(array($comment)), $book->getComments());
-        $book->removeComment($comment);
+        $this->assertInternalType('boolean', $book->removeComment($comment));
         $this->assertEquals(new \Doctrine\Common\Collections\ArrayCollection(array()), $book->getComments());
 
         $this->newInstance($isbnMetadata);
@@ -363,7 +362,9 @@ class EntityGeneratorTest extends OrmTestCase
         $this->assertPhpDocVarType('\Doctrine\Common\Collections\Collection', new \ReflectionProperty($book, 'comments'));
         $this->assertPhpDocReturnType('\Doctrine\Common\Collections\Collection', new \ReflectionMethod($book, 'getComments'));
         $this->assertPhpDocParamType('\Doctrine\Tests\ORM\Tools\EntityGeneratorComment', new \ReflectionMethod($book, 'addComment'));
+        $this->assertPhpDocReturnType('EntityGeneratorBook', new \ReflectionMethod($book, 'addComment'));
         $this->assertPhpDocParamType('\Doctrine\Tests\ORM\Tools\EntityGeneratorComment', new \ReflectionMethod($book, 'removeComment'));
+        $this->assertPhpDocReturnType('boolean', new \ReflectionMethod($book, 'removeComment'));
 
         $this->assertPhpDocVarType('\Doctrine\Tests\ORM\Tools\EntityGeneratorAuthor', new \ReflectionProperty($book, 'author'));
         $this->assertPhpDocReturnType('\Doctrine\Tests\ORM\Tools\EntityGeneratorAuthor', new \ReflectionMethod($book, 'getAuthor'));
@@ -408,7 +409,7 @@ class EntityGeneratorTest extends OrmTestCase
 
         $reflectionService = new RuntimeReflectionService();
 
-        $cm = new ClassMetadata($metadata->name);
+        $cm = new ClassMetadataInfo($metadata->name);
         $cm->initializeReflection($reflectionService);
 
         $driver = $this->createAnnotationDriver();
@@ -427,7 +428,7 @@ class EntityGeneratorTest extends OrmTestCase
 
         $isbn = $this->newInstance($embeddedMetadata);
 
-        $cm = new ClassMetadata($embeddedMetadata->name);
+        $cm = new ClassMetadataInfo($embeddedMetadata->name);
         $cm->initializeReflection($reflectionService);
 
         $driver->loadMetadataForClass($cm->name, $cm);
@@ -450,7 +451,7 @@ class EntityGeneratorTest extends OrmTestCase
 
         $reflectionService = new RuntimeReflectionService();
 
-        $cm = new ClassMetadata($metadata->name);
+        $cm = new ClassMetadataInfo($metadata->name);
         $cm->initializeReflection($reflectionService);
 
         $driver->loadMetadataForClass($cm->name, $cm);
@@ -464,7 +465,7 @@ class EntityGeneratorTest extends OrmTestCase
 
         $isbn = $this->newInstance($embeddedMetadata);
 
-        $cm = new ClassMetadata($embeddedMetadata->name);
+        $cm = new ClassMetadataInfo($embeddedMetadata->name);
         $cm->initializeReflection($reflectionService);
 
         $driver->loadMetadataForClass($cm->name, $cm);
@@ -488,7 +489,7 @@ class EntityGeneratorTest extends OrmTestCase
         $this->newInstance($metadata); // force instantiation (causes autoloading to kick in)
 
         $driver = new AnnotationDriver(new AnnotationReader(), array());
-        $cm     = new ClassMetadata($metadata->name);
+        $cm     = new ClassMetadataInfo($metadata->name);
 
         $cm->initializeReflection(new RuntimeReflectionService);
         $driver->loadMetadataForClass($cm->name, $cm);
@@ -593,7 +594,7 @@ class EntityGeneratorTest extends OrmTestCase
      */
     public function testGetInheritanceTypeString()
     {
-        $reflection = new \ReflectionClass('\Doctrine\ORM\Mapping\ClassMetadata');
+        $reflection = new \ReflectionClass('\Doctrine\ORM\Mapping\ClassMetadataInfo');
         $method     = new \ReflectionMethod($this->_generator, 'getInheritanceTypeString');
         $constants  = $reflection->getConstants();
         $pattern    = '/^INHERITANCE_TYPE_/';
@@ -647,7 +648,7 @@ class EntityGeneratorTest extends OrmTestCase
      */
     public function testGetIdGeneratorTypeString()
     {
-        $reflection = new \ReflectionClass('\Doctrine\ORM\Mapping\ClassMetadata');
+        $reflection = new \ReflectionClass('\Doctrine\ORM\Mapping\ClassMetadataInfo');
         $method     = new \ReflectionMethod($this->_generator, 'getIdGeneratorTypeString');
         $constants  = $reflection->getConstants();
         $pattern    = '/^GENERATOR_TYPE_/';
@@ -704,10 +705,6 @@ class EntityGeneratorTest extends OrmTestCase
      */
     public function testTraitPropertiesAndMethodsAreNotDuplicated()
     {
-        if (PHP_VERSION_ID < 50400) {
-            $this->markTestSkipped('Traits are not available before php 5.4.');
-        }
-
         $cmf = new ClassMetadataFactory();
         $em = $this->_getTestEntityManager();
         $cmf->setEntityManager($em);
@@ -734,10 +731,6 @@ class EntityGeneratorTest extends OrmTestCase
      */
     public function testTraitPropertiesAndMethodsAreNotDuplicatedInChildClasses()
     {
-        if (PHP_VERSION_ID < 50400) {
-            $this->markTestSkipped('Traits are not available before php 5.4.');
-        }
-
         $cmf = new ClassMetadataFactory();
         $em = $this->_getTestEntityManager();
         $cmf->setEntityManager($em);
@@ -945,6 +938,24 @@ class EntityGeneratorTest extends OrmTestCase
         $this->assertTrue($reflParameters[3]->isOptional());
     }
 
+    public function testRegenerateEntityClass()
+    {
+        $metadata = $this->generateBookEntityFixture();
+        $this->loadEntityClass($metadata);
+
+        $className = basename(str_replace('\\', '/', $metadata->name));
+        $path = $this->_tmpDir . '/' . $this->_namespace . '/' . $className . '.php';
+        $classTest = file_get_contents($path);
+
+        $this->_generator->setRegenerateEntityIfExists(true);
+        $this->_generator->setBackupExisting(false);
+
+        $this->_generator->writeEntityClass($metadata, $this->_tmpDir);
+        $classNew = file_get_contents($path);
+
+        $this->assertSame($classTest,$classNew);
+    }
+
     /**
      * @return array
      */
@@ -983,13 +994,13 @@ class EntityGeneratorTest extends OrmTestCase
             )),
             array(array(
                 'fieldName' => 'bigint',
-                'phpType' => 'integer',
+                'phpType' => 'int',
                 'dbType' => 'bigint',
                 'value' => 11
             )),
             array(array(
                 'fieldName' => 'smallint',
-                'phpType' => 'integer',
+                'phpType' => 'int',
                 'dbType' => 'smallint',
                 'value' => 22
             )),
@@ -1041,6 +1052,16 @@ class
 /* Comment */
  Baz {}
      ',
+                array('Foo\Bar\Baz'),
+            ),
+            array(
+                '
+<?php namespace Foo\Bar; class Baz {
+    public static function someMethod(){
+        return self::class;
+    }
+}
+',
                 array('Foo\Bar\Baz'),
             ),
         );

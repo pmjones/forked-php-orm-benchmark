@@ -23,8 +23,8 @@ use Doctrine\Common\Collections\AbstractLazyCollection;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\Common\Collections\Selectable;
-use Doctrine\ORM\Persisters\BasicEntityPersister;
-use Doctrine\ORM\Persisters\EntityPersister;
+use Doctrine\ORM\Persisters\Entity\BasicEntityPersister;
+use Doctrine\ORM\Persisters\Entity\EntityPersister;
 
 /**
  * A lazy collection that allow a fast count when using criteria object
@@ -80,6 +80,20 @@ class LazyCriteriaCollection extends AbstractLazyCollection implements Selectabl
         }
 
         return $this->count = $this->entityPersister->count($this->criteria);
+    }
+
+    /**
+     * check if collection is empty without loading it
+     *
+     * @return boolean TRUE if the collection is empty, FALSE otherwise.
+     */
+    public function isEmpty()
+    {
+        if ($this->isInitialized()) {
+            return $this->collection->isEmpty();
+        }
+
+        return !$this->count();
     }
 
     /**

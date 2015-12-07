@@ -19,6 +19,7 @@
 
 namespace Doctrine\ORM\Tools\Pagination;
 
+use Doctrine\ORM\Query\Parser;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Query;
 use Doctrine\ORM\Query\ResultSetMapping;
@@ -66,7 +67,7 @@ class Paginator implements \Countable, \IteratorAggregate
         }
 
         $this->query = $query;
-        $this->fetchJoinCollection = (Boolean) $fetchJoinCollection;
+        $this->fetchJoinCollection = (bool) $fetchJoinCollection;
     }
 
     /**
@@ -118,31 +119,8 @@ class Paginator implements \Countable, \IteratorAggregate
     public function count()
     {
         if ($this->count === null) {
-            /* @var $countQuery Query */
-            $countQuery = $this->cloneQuery($this->query);
-
-            if ( ! $countQuery->hasHint(CountWalker::HINT_DISTINCT)) {
-                $countQuery->setHint(CountWalker::HINT_DISTINCT, true);
-            }
-
-            if ($this->useOutputWalker($countQuery)) {
-                $platform = $countQuery->getEntityManager()->getConnection()->getDatabasePlatform(); // law of demeter win
-
-                $rsm = new ResultSetMapping();
-                $rsm->addScalarResult($platform->getSQLResultCasing('dctrn_count'), 'count');
-
-                $countQuery->setHint(Query::HINT_CUSTOM_OUTPUT_WALKER, 'Doctrine\ORM\Tools\Pagination\CountOutputWalker');
-                $countQuery->setResultSetMapping($rsm);
-            } else {
-                $this->appendTreeWalker($countQuery, 'Doctrine\ORM\Tools\Pagination\CountWalker');
-            }
-
-            $countQuery->setFirstResult(null)->setMaxResults(null);
-
             try {
-                $data =  $countQuery->getScalarResult();
-                $data = array_map('current', $data);
-                $this->count = array_sum($data);
+                $this->count = array_sum(array_map('current', $this->getCountQuery()->getScalarResult()));
             } catch(NoResultException $e) {
                 $this->count = 0;
             }
@@ -174,7 +152,7 @@ class Paginator implements \Countable, \IteratorAggregate
 
             $whereInQuery = $this->cloneQuery($this->query);
             // don't do this for an empty id array
-            if (count($ids) == 0) {
+            if (count($ids) === 0) {
                 return new \ArrayIterator(array());
             }
 
@@ -229,7 +207,7 @@ class Paginator implements \Countable, \IteratorAggregate
     private function useOutputWalker(Query $query)
     {
         if ($this->useOutputWalkers === null) {
-            return (Boolean) $query->getHint(Query::HINT_CUSTOM_OUTPUT_WALKER) == false;
+            return (bool) $query->getHint(Query::HINT_CUSTOM_OUTPUT_WALKER) === false;
         }
 
         return $this->useOutputWalkers;
@@ -251,5 +229,51 @@ class Paginator implements \Countable, \IteratorAggregate
 
         $hints[] = $walkerClass;
         $query->setHint(Query::HINT_CUSTOM_TREE_WALKERS, $hints);
+    }
+
+    /**
+     * Returns Query prepared to count.
+     *
+     * @return Query
+     */
+    private function getCountQuery()
+    {
+        /* @var $countQuery Query */
+        $countQuery = $this->cloneQuery($this->query);
+
+        if ( ! $countQuery->hasHint(CountWalker::HINT_DISTINCT)) {
+            $countQuery->setHint(CountWalker::HINT_DISTINCT, true);
+        }
+
+        if ($this->useOutputWalker($countQuery)) {
+            $platform = $countQuery->getEntityManager()->getConnection()->getDatabasePlatform(); // law of demeter win
+
+            $rsm = new ResultSetMapping();
+            $rsm->addScalarResult($platform->getSQLResultCasing('dctrn_count'), 'count');
+
+            $countQuery->setHint(Query::HINT_CUSTOM_OUTPUT_WALKER, 'Doctrine\ORM\Tools\Pagination\CountOutputWalker');
+            $countQuery->setResultSetMapping($rsm);
+        } else {
+            $this->appendTreeWalker($countQuery, 'Doctrine\ORM\Tools\Pagination\CountWalker');
+        }
+
+        $countQuery->setFirstResult(null)->setMaxResults(null);
+
+        $parser            = new Parser($countQuery);
+        $parameterMappings = $parser->parse()->getParameterMappings();
+        /* @var $parameters \Doctrine\Common\Collections\Collection|\Doctrine\ORM\Query\Parameter[] */
+        $parameters        = $countQuery->getParameters();
+
+        foreach ($parameters as $key => $parameter) {
+            $parameterName = $parameter->getName();
+
+            if( ! (isset($parameterMappings[$parameterName]) || array_key_exists($parameterName, $parameterMappings))) {
+                unset($parameters[$key]);
+            }
+        }
+
+        $countQuery->setParameters($parameters);
+
+        return $countQuery;
     }
 }

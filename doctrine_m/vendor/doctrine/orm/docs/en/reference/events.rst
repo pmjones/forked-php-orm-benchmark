@@ -164,7 +164,8 @@ the life-time of their registered entities.
    database insert operations. Generated primary key values are
    available in the postPersist event.
 -  preUpdate - The preUpdate event occurs before the database
-   update operations to entity data. It is not called for a DQL UPDATE statement.
+   update operations to entity data. It is not called for a DQL UPDATE statement
+   nor when the computed changeset is empty.
 -  postUpdate - The postUpdate event occurs after the database
    update operations to entity data. It is not called for a DQL UPDATE statement.
 -  postLoad - The postLoad event occurs for an entity after the
@@ -173,6 +174,10 @@ the life-time of their registered entities.
 -  loadClassMetadata - The loadClassMetadata event occurs after the
    mapping metadata for a class has been loaded from a mapping source
    (annotations/xml/yaml). This event is not a lifecycle callback.
+-  onClassMetadataNotFound - Loading class metadata for a particular
+   requested class name failed. Manipulating the given event args instance
+   allows providing fallback metadata even when no actual metadata exists
+   or could be found. This event is not a lifecycle callback.
 -  preFlush - The preFlush event occurs at the very beginning of a flush
    operation. This event is not a lifecycle callback.
 -  onFlush - The onFlush event occurs after the change-sets of all
@@ -186,10 +191,11 @@ the life-time of their registered entities.
 
 .. warning::
 
-    Note that the postLoad event occurs for an entity
-    before any associations have been initialized. Therefore it is not
-    safe to access associations in a postLoad callback or event
-    handler.
+    Note that, when using ``Doctrine\ORM\AbstractQuery#iterate()``, ``postLoad``
+    events will be executed immediately after objects are being hydrated, and therefore
+    associations are not guaranteed to be initialized. It is not safe to combine
+    usage of ``Doctrine\ORM\AbstractQuery#iterate()`` and ``postLoad`` event
+    handlers.
 
 .. warning::
 
@@ -647,7 +653,8 @@ preUpdate
 
 PreUpdate is the most restrictive to use event, since it is called
 right before an update statement is called for an entity inside the
-``EntityManager#flush()`` method.
+``EntityManager#flush()`` method. Note that this event is not
+triggered when the computed changeset is empty.
 
 Changes to associations of the updated entity are never allowed in
 this event, since Doctrine cannot guarantee to correctly handle
@@ -733,7 +740,7 @@ The three post events are called inside ``EntityManager#flush()``.
 Changes in here are not relevant to the persistence in the
 database, but you can use these events to alter non-persistable items,
 like non-mapped fields, logging or even associated classes that are
-directly mapped by Doctrine.
+not directly mapped by Doctrine.
 
 postLoad
 ~~~~~~~~
@@ -942,8 +949,9 @@ Implementing your own resolver :
         }
     }
 
-    // configure the listener resolver.
-    $em->getConfiguration()->setEntityListenerResolver($container->get('my_resolver'));
+    // Configure the listener resolver only before instantiating the EntityManager
+    $configurations->setEntityListenerResolver(new MyEntityListenerResolver);
+    EntityManager::create(.., $configurations, ..);
 
 Load ClassMetadata Event
 ------------------------

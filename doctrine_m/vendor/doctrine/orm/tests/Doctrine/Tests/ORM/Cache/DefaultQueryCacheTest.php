@@ -150,6 +150,51 @@ class DefaultQueryCacheTest extends OrmTestCase
         $this->assertInstanceOf('Doctrine\ORM\Cache\QueryCacheKey', $this->region->calls['put'][8]['key']);
     }
 
+    public function testPutToOneAssociation2LevelsQueryResult()
+    {
+        $result     = array();
+        $uow        = $this->em->getUnitOfWork();
+        $key        = new QueryCacheKey('query.key1', 0);
+        $rsm        = new ResultSetMappingBuilder($this->em);
+        $cityClass  = $this->em->getClassMetadata(City::CLASSNAME);
+        $stateClass = $this->em->getClassMetadata(State::CLASSNAME);
+        $countryClass = $this->em->getClassMetadata(Country::CLASSNAME);
+
+        $rsm->addRootEntityFromClassMetadata(City::CLASSNAME, 'c');
+        $rsm->addJoinedEntityFromClassMetadata(State::CLASSNAME, 's', 'c', 'state', array('id'=>'state_id', 'name'=>'state_name'));
+        $rsm->addJoinedEntityFromClassMetadata(Country::CLASSNAME, 'co', 's', 'country', array('id'=>'country_id', 'name'=>'country_name'));
+
+        for ($i = 0; $i < 4; $i++) {
+            $country  = new Country("Country $i");
+            $state    = new State("State $i", $country);
+            $city     = new City("City $i", $state);
+
+            $result[] = $city;
+
+            $cityClass->setFieldValue($city, 'id', $i);
+            $stateClass->setFieldValue($state, 'id', $i*2);
+            $countryClass->setFieldValue($country, 'id', $i*3);
+
+            $uow->registerManaged($country, array('id' => $country->getId()), array('name' => $country->getName()));
+            $uow->registerManaged($state, array('id' => $state->getId()), array('name' => $city->getName(), 'country' => $country));
+            $uow->registerManaged($city, array('id' => $city->getId()), array('name' => $city->getName(), 'state' => $state));
+        }
+
+        $this->assertTrue($this->queryCache->put($key, $rsm, $result));
+        $this->assertArrayHasKey('put', $this->region->calls);
+        $this->assertCount(9, $this->region->calls['put']);
+
+        $this->assertInstanceOf('Doctrine\ORM\Cache\EntityCacheKey', $this->region->calls['put'][0]['key']);
+        $this->assertInstanceOf('Doctrine\ORM\Cache\EntityCacheKey', $this->region->calls['put'][1]['key']);
+        $this->assertInstanceOf('Doctrine\ORM\Cache\EntityCacheKey', $this->region->calls['put'][2]['key']);
+        $this->assertInstanceOf('Doctrine\ORM\Cache\EntityCacheKey', $this->region->calls['put'][3]['key']);
+        $this->assertInstanceOf('Doctrine\ORM\Cache\EntityCacheKey', $this->region->calls['put'][4]['key']);
+        $this->assertInstanceOf('Doctrine\ORM\Cache\EntityCacheKey', $this->region->calls['put'][5]['key']);
+        $this->assertInstanceOf('Doctrine\ORM\Cache\EntityCacheKey', $this->region->calls['put'][6]['key']);
+        $this->assertInstanceOf('Doctrine\ORM\Cache\EntityCacheKey', $this->region->calls['put'][7]['key']);
+        $this->assertInstanceOf('Doctrine\ORM\Cache\QueryCacheKey', $this->region->calls['put'][8]['key']);
+    }
+
     public function testPutToOneAssociationNullQueryResult()
     {
         $result     = array();
@@ -439,30 +484,6 @@ class DefaultQueryCacheTest extends OrmTestCase
 
     /**
      * @expectedException Doctrine\ORM\Cache\CacheException
-     * @expectedExceptionMessage Entity association field "Doctrine\Tests\Models\Cache\City#travels" not configured as part of the second-level cache.
-     */
-    public function testQueryNotCacheableAssociationException()
-    {
-        $uow        = $this->em->getUnitOfWork();
-        $key        = new QueryCacheKey('query.key1', 0);
-        $rsm        = new ResultSetMappingBuilder($this->em);
-        $cityClass  = $this->em->getClassMetadata(City::CLASSNAME);
-        $city       = new City("City 1", null);
-        $result     = array(
-            $city
-        );
-
-        $cityClass->setFieldValue($city, 'id', 1);
-
-        $rsm->addRootEntityFromClassMetadata(City::CLASSNAME, 'c');
-        $rsm->addJoinedEntityFromClassMetadata(Travel::CLASSNAME, 't', 'c', 'travels', array('id' => 't_id'));
-        $uow->registerManaged($city, array('id' => $city->getId()), array('name' => $city->getName(), 'state' => null));
-
-        $this->queryCache->put($key, $rsm, $result);
-    }
-
-    /**
-     * @expectedException Doctrine\ORM\Cache\CacheException
      * @expectedExceptionMessage Second level cache does not support scalar results.
      */
     public function testScalarResultException()
@@ -471,7 +492,7 @@ class DefaultQueryCacheTest extends OrmTestCase
         $key      = new QueryCacheKey('query.key1', 0);
         $rsm      = new ResultSetMappingBuilder($this->em);
 
-        $rsm->addScalarResult('id', 'u');
+        $rsm->addScalarResult('id', 'u', 'integer');
 
         $this->queryCache->put($key, $rsm, $result);
     }

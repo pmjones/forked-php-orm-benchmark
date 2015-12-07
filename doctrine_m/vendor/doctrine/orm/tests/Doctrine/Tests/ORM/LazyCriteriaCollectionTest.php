@@ -16,7 +16,7 @@ use PHPUnit_Framework_TestCase;
 class LazyCriteriaCollectionTest extends PHPUnit_Framework_TestCase
 {
     /**
-     * @var \Doctrine\ORM\Persisters\EntityPersister|\PHPUnit_Framework_MockObject_MockObject
+     * @var \Doctrine\ORM\Persisters\Entity\EntityPersister|\PHPUnit_Framework_MockObject_MockObject
      */
     private $persister;
 
@@ -35,7 +35,7 @@ class LazyCriteriaCollectionTest extends PHPUnit_Framework_TestCase
      */
     protected function setUp()
     {
-        $this->persister              = $this->getMock('Doctrine\ORM\Persisters\EntityPersister');
+        $this->persister              = $this->getMock('Doctrine\ORM\Persisters\Entity\EntityPersister');
         $this->criteria               = new Criteria();
         $this->lazyCriteriaCollection = new LazyCriteriaCollection($this->persister, $this->criteria);
     }
@@ -102,5 +102,36 @@ class LazyCriteriaCollectionTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(array($foo), $filtered->toArray());
 
         $this->assertEquals(array($foo), $this->lazyCriteriaCollection->matching($criteria)->toArray());
+    }
+
+    public function testIsEmptyUsesCountWhenNotInitialized()
+    {
+        $this->persister->expects($this->once())->method('count')->with($this->criteria)->will($this->returnValue(0));
+
+        $this->assertTrue($this->lazyCriteriaCollection->isEmpty());
+    }
+
+    public function testIsEmptyIsFalseIfCountIsNotZero()
+    {
+        $this->persister->expects($this->once())->method('count')->with($this->criteria)->will($this->returnValue(1));
+
+        $this->assertFalse($this->lazyCriteriaCollection->isEmpty());
+    }
+
+    public function testIsEmptyUsesWrappedCollectionWhenInitialized()
+    {
+        $this
+            ->persister
+            ->expects($this->once())
+            ->method('loadCriteria')
+            ->with($this->criteria)
+            ->will($this->returnValue(array('foo', 'bar', 'baz')));
+
+        // should never call the persister's count
+        $this->persister->expects($this->never())->method('count');
+
+        $this->assertSame(array('foo', 'bar', 'baz'), $this->lazyCriteriaCollection->toArray());
+
+        $this->assertFalse($this->lazyCriteriaCollection->isEmpty());
     }
 }

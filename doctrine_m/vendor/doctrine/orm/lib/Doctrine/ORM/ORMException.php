@@ -238,6 +238,16 @@ class ORMException extends Exception
      *
      * @return ORMException
      */
+    public static function queryCacheUsesNonPersistentCache(CacheDriver $cache)
+    {
+        return new self('Query Cache uses a non-persistent cache driver, ' . get_class($cache) . '.');
+    }
+
+    /**
+     * @param \Doctrine\Common\Cache\Cache $cache
+     *
+     * @return ORMException
+     */
     public static function metadataCacheUsesNonPersistentCache(CacheDriver $cache)
     {
         return new self('Metadata Cache uses a non-persistent cache driver, ' . get_class($cache) . '.');
@@ -286,7 +296,7 @@ class ORMException extends Exception
 
     /**
      * @param string $className
-     * @param string $fieldName
+     * @param string[] $fieldNames
      *
      * @return ORMException
      */
@@ -306,5 +316,13 @@ class ORMException extends Exception
     public static function overwriteInternalDQLFunctionNotAllowed($functionName)
     {
         return new self("It is not allowed to overwrite internal function '$functionName' in the DQL parser through user-defined functions.");
+    }
+
+    /**
+     * @return ORMException
+     */
+    public static function cantUseInOperatorOnCompositeKeys()
+    {
+        return new self("Can't use IN operator on entities that have composite keys.");
     }
 }

@@ -3,7 +3,9 @@ Separating Concerns using Embeddables
 
 Embeddables are classes which are not entities themself, but are embedded
 in entities and can also be queried in DQL. You'll mostly want to use them
-to reduce duplication or separating concerns.
+to reduce duplication or separating concerns. Value objects such as date range
+or address are the primary use case for this feature. Embeddables can only
+contain properties with basic ``@Column`` mapping.
 
 For the purposes of this tutorial, we will assume that you have a ``User``
 class in your application and you would like to store an address in
@@ -84,7 +86,7 @@ Following the example above, your columns would be named as ``address_street``,
 ``address_postalCode``...
 
 You can change this behaviour to meet your needs by changing the
-``columnPrefix`` attribute in the ``@Embeddable`` notation.
+``columnPrefix`` attribute in the ``@Embedded`` notation.
 
 The following example shows you how to set your prefix to ``myPrefix_``:
 
@@ -117,7 +119,7 @@ The following example shows you how to set your prefix to ``myPrefix_``:
               columnPrefix: myPrefix_
 
 To have Doctrine drop the prefix and use the value object's property name
-directly, set ``columnPrefix=false`` (not yet supported with XML configuration):
+directly, set ``columnPrefix=false`` (``use-column-prefix="false"`` for XML):
 
 .. configuration-block::
 
@@ -140,6 +142,12 @@ directly, set ``columnPrefix=false`` (not yet supported with XML configuration):
             address:
               class: Address
               columnPrefix: false
+
+    .. code-block:: xml
+
+        <entity name="User">
+            <embedded name="address" class="Address" use-column-prefix="false" />
+        </entity>
 
 
 DQL

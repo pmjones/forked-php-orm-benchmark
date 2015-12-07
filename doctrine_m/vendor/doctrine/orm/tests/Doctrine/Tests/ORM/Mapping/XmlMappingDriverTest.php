@@ -32,6 +32,19 @@ class XmlMappingDriverTest extends AbstractMappingDriverTest
         $this->assertEquals($expectedMap, $class->discriminatorMap);
     }
 
+    /**
+     * @expectedException Doctrine\ORM\Cache\CacheException
+     * @expectedExceptionMessage Entity association field "Doctrine\Tests\ORM\Mapping\XMLSLC#foo" not configured as part of the second-level cache.
+     */
+    public function testFailingSecondLevelCacheAssociation()
+    {
+        $className = 'Doctrine\Tests\ORM\Mapping\XMLSLC';
+        $mappingDriver = $this->_loadDriver();
+
+        $class = new ClassMetadata($className);
+        $mappingDriver->loadMetadataForClass($className, $class);
+    }
+
     public function testIdentifierWithAssociationKey()
     {
         $driver  = $this->_loadDriver();
@@ -55,6 +68,47 @@ class XmlMappingDriverTest extends AbstractMappingDriverTest
         $class = $this->createClassMetadata('Doctrine\Tests\Models\ValueObjects\Name');
 
         $this->assertEquals(true, $class->isEmbeddedClass);
+    }
+
+    /**
+     * @group DDC-3293
+     * @group DDC-3477
+     * @group 1238
+     */
+    public function testEmbeddedMappingsWithUseColumnPrefix()
+    {
+        $factory = new ClassMetadataFactory();
+        $em      = $this->_getTestEntityManager();
+
+        $em->getConfiguration()->setMetadataDriverImpl($this->_loadDriver());
+        $factory->setEntityManager($em);
+
+        $this->assertEquals(
+            '__prefix__',
+            $factory
+                ->getMetadataFor('Doctrine\Tests\Models\DDC3293\DDC3293UserPrefixed')
+                ->embeddedClasses['address']['columnPrefix']
+        );
+    }
+
+    /**
+     * @group DDC-3293
+     * @group DDC-3477
+     * @group 1238
+     */
+    public function testEmbeddedMappingsWithFalseUseColumnPrefix()
+    {
+        $factory = new ClassMetadataFactory();
+        $em      = $this->_getTestEntityManager();
+
+        $em->getConfiguration()->setMetadataDriverImpl($this->_loadDriver());
+        $factory->setEntityManager($em);
+
+        $this->assertFalse(
+            $factory
+                ->getMetadataFor('Doctrine\Tests\Models\DDC3293\DDC3293User')
+                ->embeddedClasses['address']['columnPrefix']
+        );
     }
 
     public function testEmbeddedMapping()
@@ -135,3 +189,12 @@ class CTI
 class CTIFoo extends CTI {}
 class CTIBar extends CTI {}
 class CTIBaz extends CTI {}
+
+class XMLSLC
+{
+    public $foo;
+}
+class XMLSLCFoo
+{
+    public $id;
+}

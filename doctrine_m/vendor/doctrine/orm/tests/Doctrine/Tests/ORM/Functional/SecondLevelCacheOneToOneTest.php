@@ -2,6 +2,12 @@
 
 namespace Doctrine\Tests\ORM\Functional;
 
+use Doctrine\Tests\Models\Cache\Action;
+use Doctrine\Tests\Models\Cache\Address;
+use Doctrine\Tests\Models\Cache\Client;
+use Doctrine\Tests\Models\Cache\ComplexAction;
+use Doctrine\Tests\Models\Cache\Person;
+use Doctrine\Tests\Models\Cache\Token;
 use Doctrine\Tests\Models\Cache\Traveler;
 use Doctrine\Tests\Models\Cache\TravelerProfile;
 use Doctrine\Tests\Models\Cache\TravelerProfileInfo;
@@ -187,4 +193,93 @@ class SecondLevelCacheOneToOneTest extends SecondLevelCacheAbstractTest
         $this->assertEquals($queryCount, $this->getCurrentQueryCount());
     }
 
+    public function testInverseSidePutAndLoadOneToOneBidirectionalRelation()
+    {
+        $this->loadFixturesPersonWithAddress();
+
+        $this->_em->clear();
+
+        $this->cache->evictEntityRegion(Person::CLASSNAME);
+        $this->cache->evictEntityRegion(Address::CLASSNAME);
+
+        $entity1 = $this->addresses[0]->person;
+        $entity2 = $this->addresses[1]->person;
+
+        $this->assertFalse($this->cache->containsEntity(Person::CLASSNAME, $entity1->id));
+        $this->assertFalse($this->cache->containsEntity(Person::CLASSNAME, $entity2->id));
+        $this->assertFalse($this->cache->containsEntity(Address::CLASSNAME, $entity1->address->id));
+        $this->assertFalse($this->cache->containsEntity(Address::CLASSNAME, $entity2->address->id));
+
+        $p1 = $this->_em->find(Person::CLASSNAME, $entity1->id);
+        $p2 = $this->_em->find(Person::CLASSNAME, $entity2->id);
+
+        $this->assertEquals($entity1->id, $p1->id);
+        $this->assertEquals($entity1->name, $p1->name);
+        $this->assertEquals($entity1->address->id, $p1->address->id);
+        $this->assertEquals($entity1->address->location, $p1->address->location);
+
+        $this->assertEquals($entity2->id, $p2->id);
+        $this->assertEquals($entity2->name, $p2->name);
+        $this->assertEquals($entity2->address->id, $p2->address->id);
+        $this->assertEquals($entity2->address->location, $p2->address->location);
+
+        $this->assertTrue($this->cache->containsEntity(Person::CLASSNAME, $entity1->id));
+        $this->assertTrue($this->cache->containsEntity(Person::CLASSNAME, $entity2->id));
+        // The inverse side its not cached
+        $this->assertFalse($this->cache->containsEntity(Address::CLASSNAME, $entity1->address->id));
+        $this->assertFalse($this->cache->containsEntity(Address::CLASSNAME, $entity2->address->id));
+
+        $this->_em->clear();
+
+        $queryCount = $this->getCurrentQueryCount();
+
+        $p3 = $this->_em->find(Person::CLASSNAME, $entity1->id);
+        $p4 = $this->_em->find(Person::CLASSNAME, $entity2->id);
+
+        $this->assertInstanceOf(Person::CLASSNAME, $p3);
+        $this->assertInstanceOf(Person::CLASSNAME, $p4);
+        $this->assertInstanceOf(Address::CLASSNAME, $p3->address);
+        $this->assertInstanceOf(Address::CLASSNAME, $p4->address);
+
+        $this->assertEquals($entity1->id, $p3->id);
+        $this->assertEquals($entity1->name, $p3->name);
+        $this->assertEquals($entity1->address->id, $p3->address->id);
+        $this->assertEquals($entity1->address->location, $p3->address->location);
+
+        $this->assertEquals($entity2->id, $p4->id);
+        $this->assertEquals($entity2->name, $p4->name);
+        $this->assertEquals($entity2->address->id, $p4->address->id);
+        $this->assertEquals($entity2->address->location, $p4->address->location);
+
+        $this->assertEquals($queryCount + 2, $this->getCurrentQueryCount());
+    }
+
+    public function testPutAndLoadNonCacheableOneToOne()
+    {
+        $this->assertNull($this->cache->getEntityCacheRegion(Client::CLASSNAME));
+        $this->assertInstanceOf('Doctrine\ORM\Cache\Region', $this->cache->getEntityCacheRegion(Token::CLASSNAME));
+
+        $client = new Client('FabioBatSilva');
+        $token  = new Token('token-hash', $client);
+
+        $this->_em->persist($client);
+        $this->_em->persist($token);
+        $this->_em->flush();
+        $this->_em->clear();
+
+        $queryCount = $this->getCurrentQueryCount();
+
+        $this->assertTrue($this->cache->containsEntity(Token::CLASSNAME, $token->token));
+        $this->assertFalse($this->cache->containsEntity(Client::CLASSNAME, $client->id));
+
+        $entity = $this->_em->find(Token::CLASSNAME, $token->token);
+
+        $this->assertInstanceOf(Token::CLASSNAME, $entity);
+        $this->assertInstanceOf(Client::CLASSNAME, $entity->getClient());
+        $this->assertEquals('token-hash', $entity->token);
+        $this->assertEquals($queryCount, $this->getCurrentQueryCount());
+
+        $this->assertEquals('FabioBatSilva', $entity->getClient()->name);
+        $this->assertEquals($queryCount + 1, $this->getCurrentQueryCount());
+    }
 }

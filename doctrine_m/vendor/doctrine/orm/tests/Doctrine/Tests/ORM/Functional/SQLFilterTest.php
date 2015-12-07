@@ -10,15 +10,12 @@ use Doctrine\Common\Cache\ArrayCache;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 
 use Doctrine\Tests\Models\CMS\CmsUser;
-use Doctrine\Tests\Models\CMS\CmsPhonenumber;
 use Doctrine\Tests\Models\CMS\CmsAddress;
 use Doctrine\Tests\Models\CMS\CmsGroup;
 use Doctrine\Tests\Models\CMS\CmsArticle;
-use Doctrine\Tests\Models\CMS\CmsComment;
 
 use Doctrine\Tests\Models\Company\CompanyPerson;
 use Doctrine\Tests\Models\Company\CompanyManager;
-use Doctrine\Tests\Models\Company\CompanyEmployee;
 use Doctrine\Tests\Models\Company\CompanyOrganization;
 use Doctrine\Tests\Models\Company\CompanyAuction;
 
@@ -243,6 +240,28 @@ class SQLFilterTest extends \Doctrine\Tests\OrmFunctionalTestCase
         $this->assertEquals("'en'", $filter->getParameter('locale'));
     }
 
+    /**
+     * @group DDC-3161
+     * @group 1054
+     */
+    public function testSQLFilterGetConnection()
+    {
+        // Setup mock connection
+        $conn = $this->getMockConnection();
+
+        $em = $this->getMockEntityManager($conn);
+        $em->expects($this->once())
+            ->method('getConnection')
+            ->will($this->returnValue($conn));
+
+        $filter = new MyLocaleFilter($em);
+
+        $reflMethod = new \ReflectionMethod('Doctrine\ORM\Query\Filter\SQLFilter', 'getConnection');
+        $reflMethod->setAccessible(true);
+
+        $this->assertSame($conn, $reflMethod->invoke($filter));
+    }
+
     public function testSQLFilterSetParameterInfersType()
     {
         // Setup mock connection
@@ -321,18 +340,18 @@ class SQLFilterTest extends \Doctrine\Tests\OrmFunctionalTestCase
         $query->setQueryCacheDriver($cache);
 
         $query->getResult();
-        $this->assertEquals(2, sizeof($cacheDataReflection->getValue($cache)));
+        $this->assertEquals(1, sizeof($cacheDataReflection->getValue($cache)));
 
         $conf = $this->_em->getConfiguration();
         $conf->addFilter("locale", "\Doctrine\Tests\ORM\Functional\MyLocaleFilter");
         $this->_em->getFilters()->enable("locale");
 
         $query->getResult();
-        $this->assertEquals(3, sizeof($cacheDataReflection->getValue($cache)));
+        $this->assertEquals(2, sizeof($cacheDataReflection->getValue($cache)));
 
         // Another time doesn't add another cache entry
         $query->getResult();
-        $this->assertEquals(3, sizeof($cacheDataReflection->getValue($cache)));
+        $this->assertEquals(2, sizeof($cacheDataReflection->getValue($cache)));
     }
 
     public function testQueryGeneration_DependsOnFilters()

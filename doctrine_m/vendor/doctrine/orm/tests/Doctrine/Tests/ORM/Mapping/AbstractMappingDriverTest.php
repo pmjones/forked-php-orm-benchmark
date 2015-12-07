@@ -9,6 +9,8 @@ use Doctrine\Tests\Models\Company\CompanyFlexContract;
 use Doctrine\Tests\Models\Cache\City;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
+use Doctrine\Tests\Models\DDC2825\ExplicitSchemaAndTable;
+use Doctrine\Tests\Models\DDC2825\SchemaAndTableInTableName;
 
 abstract class AbstractMappingDriverTest extends \Doctrine\Tests\OrmTestCase
 {
@@ -489,8 +491,8 @@ abstract class AbstractMappingDriverTest extends \Doctrine\Tests\OrmTestCase
 
         $class = $factory->getMetadataFor('Doctrine\Tests\Models\DDC1476\DDC1476EntityWithDefaultFieldType');
 
-        $this->assertEquals('ID', $class->columnNames['id']);
-        $this->assertEquals('NAME', $class->columnNames['name']);
+        $this->assertEquals('ID', $class->getColumnName('id'));
+        $this->assertEquals('NAME', $class->getColumnName('name'));
         $this->assertEquals('DDC1476ENTITY_WITH_DEFAULT_FIELD_TYPE', $class->table['name']);
     }
 
@@ -662,7 +664,7 @@ abstract class AbstractMappingDriverTest extends \Doctrine\Tests\OrmTestCase
         $this->assertEquals($personMetadata->name,                      $mapping['entities'][0]['entityClass']);
     }
 
-     /*
+    /*
      * @group DDC-964
      */
     public function testAssociationOverridesMapping()
@@ -743,6 +745,23 @@ abstract class AbstractMappingDriverTest extends \Doctrine\Tests\OrmTestCase
         $this->assertEquals(array('adminaddress_id'=>'id'), $adminAddress['sourceToTargetKeyColumns']);
         $this->assertEquals(array('adminaddress_id'=>'adminaddress_id'), $adminAddress['joinColumnFieldNames']);
         $this->assertEquals(array('id'=>'adminaddress_id'), $adminAddress['targetToSourceKeyColumns']);
+    }
+
+    /*
+     * @group DDC-3579
+     */
+    public function testInversedByOverrideMapping()
+    {
+
+        $factory        = $this->createClassMetadataFactory();
+        $adminMetadata  = $factory->getMetadataFor('Doctrine\Tests\Models\DDC3579\DDC3579Admin');
+
+        // assert groups association mappings
+        $this->assertArrayHasKey('groups', $adminMetadata->associationMappings);
+        $adminGroups = $adminMetadata->associationMappings['groups'];
+
+        // assert override
+        $this->assertEquals('admins', $adminGroups['inversedBy']);
     }
 
     /**
@@ -931,6 +950,32 @@ abstract class AbstractMappingDriverTest extends \Doctrine\Tests\OrmTestCase
         $this->assertArrayHasKey('region', $class->associationMappings['attractions']['cache']);
         $this->assertEquals(ClassMetadata::CACHE_USAGE_READ_ONLY, $class->associationMappings['attractions']['cache']['usage']);
         $this->assertEquals('doctrine_tests_models_cache_city__attractions', $class->associationMappings['attractions']['cache']['region']);
+    }
+
+    /**
+     * @group DDC-2825
+     * @group 881
+     */
+    public function testSchemaDefinitionViaExplicitTableSchemaAnnotationProperty()
+    {
+        /* @var $metadata \Doctrine\ORM\Mapping\ClassMetadata */
+        $metadata = $this->createClassMetadataFactory()->getMetadataFor(ExplicitSchemaAndTable::CLASSNAME);
+
+        $this->assertSame('explicit_schema', $metadata->getSchemaName());
+        $this->assertSame('explicit_table', $metadata->getTableName());
+    }
+
+    /**
+     * @group DDC-2825
+     * @group 881
+     */
+    public function testSchemaDefinitionViaSchemaDefinedInTableNameInTableAnnotationProperty()
+    {
+        /* @var $metadata \Doctrine\ORM\Mapping\ClassMetadata */
+        $metadata = $this->createClassMetadataFactory()->getMetadataFor(SchemaAndTableInTableName::CLASSNAME);
+
+        $this->assertSame('implicit_schema', $metadata->getSchemaName());
+        $this->assertSame('implicit_table', $metadata->getTableName());
     }
 }
 
@@ -1207,7 +1252,7 @@ class DDC1170Entity
     private $value;
 
     /**
-     * @return integer
+     * @return int
      */
     public function getId()
     {

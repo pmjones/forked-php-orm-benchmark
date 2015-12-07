@@ -17,7 +17,6 @@
  * <http://www.doctrine-project.org>.
  */
 
-
 namespace Doctrine\Tests\Models\DirectoryTree;
 
 /**
@@ -26,6 +25,8 @@ namespace Doctrine\Tests\Models\DirectoryTree;
  */
 class File extends AbstractContentItem
 {
+    const CLASSNAME = __CLASS__;
+
     /** @Column(type="string") */
     protected $extension = "html";
 

@@ -25,6 +25,7 @@ use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\Query;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Utility\IdentifierFlattener;
 
 /**
  * Default hydrator cache for entities
@@ -45,6 +46,13 @@ class DefaultEntityHydrator implements EntityHydrator
     private $uow;
 
     /**
+     * The IdentifierFlattener used for manipulating identifiers
+     *
+     * @var \Doctrine\ORM\Utility\IdentifierFlattener
+     */
+    private $identifierFlattener;
+
+    /**
      * @var array
      */
     private static $hints = array(Query::HINT_CACHE_ENABLED => true);
@@ -56,6 +64,7 @@ class DefaultEntityHydrator implements EntityHydrator
     {
         $this->em   = $em;
         $this->uow  = $em->getUnitOfWork();
+        $this->identifierFlattener = new IdentifierFlattener($em->getUnitOfWork(), $em->getMetadataFactory());
     }
 
     /**
@@ -64,16 +73,48 @@ class DefaultEntityHydrator implements EntityHydrator
     public function buildCacheEntry(ClassMetadata $metadata, EntityCacheKey $key, $entity)
     {
         $data = $this->uow->getOriginalEntityData($entity);
-        $data = array_merge($data, $key->identifier); // why update has no identifier values ?
+        $data = array_merge($data, $metadata->getIdentifierValues($entity)); // why update has no identifier values ?
 
         foreach ($metadata->associationMappings as $name => $assoc) {
-
             if ( ! isset($data[$name])) {
                 continue;
             }
 
-            if ( ! isset($assoc['cache']) || ! ($assoc['type'] & ClassMetadata::TO_ONE)) {
+            if ( ! ($assoc['type'] & ClassMetadata::TO_ONE)) {
                 unset($data[$name]);
+
+                continue;
+            }
+
+            if ( ! isset($assoc['cache'])) {
+                $targetClassMetadata = $this->em->getClassMetadata($assoc['targetEntity']);
+                $owningAssociation   = ( ! $assoc['isOwningSide'])
+                    ? $targetClassMetadata->associationMappings[$assoc['mappedBy']]
+                    : $assoc;
+                $associationIds      = $this->identifierFlattener->flattenIdentifier(
+                    $targetClassMetadata,
+                    $targetClassMetadata->getIdentifierValues($data[$name])
+                );
+
+                unset($data[$name]);
+
+                foreach ($associationIds as $fieldName => $fieldValue) {
+                    if (isset($targetClassMetadata->fieldMappings[$fieldName])) {
+                        $fieldMapping = $targetClassMetadata->fieldMappings[$fieldName];
+
+                        $data[$owningAssociation['targetToSourceKeyColumns'][$fieldMapping['columnName']]] = $fieldValue;
+
+                        continue;
+                    }
+
+                    $targetAssoc = $targetClassMetadata->associationMappings[$fieldName];
+
+                    foreach($assoc['targetToSourceKeyColumns'] as $referencedColumn => $localColumn) {
+                        if (isset($targetAssoc['sourceToTargetKeyColumns'][$referencedColumn])) {
+                            $data[$localColumn] = $fieldValue;
+                        }
+                    }
+                }
 
                 continue;
             }
@@ -94,7 +135,6 @@ class DefaultEntityHydrator implements EntityHydrator
             // @TODO - fix it !
             // handle UnitOfWork#createEntity hash generation
             if ( ! is_array($targetId)) {
-
                 $data[reset($assoc['joinColumnFieldNames'])] = $targetId;
 
                 $targetEntity = $this->em->getClassMetadata($assoc['targetEntity']);
@@ -151,6 +191,10 @@ class DefaultEntityHydrator implements EntityHydrator
             $this->uow->registerManaged($entity, $key->identifier, $data);
         }
 
-        return $this->uow->createEntity($entry->class, $data, $hints);
+        $result = $this->uow->createEntity($entry->class, $data, $hints);
+
+        $this->uow->hydrationComplete();
+
+        return $result;
     }
 }

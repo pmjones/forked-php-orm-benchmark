@@ -129,8 +129,7 @@ Optional attributes:
    -  ``comment``: The comment of the column in the schema (might not
       be supported by all vendors).
 
-   -  ``customSchemaOptions``: Array of additional schema options
-      which are mostly vendor specific.
+   -  ``collation``: The collation of the column (only supported by Drizzle, Mysql, PostgreSQL>=9.1, Sqlite and SQLServer).
 
 -  **columnDefinition**: DDL SQL snippet that starts after the column
    name and specifies the complete (non-portable!) column definition.
@@ -358,11 +357,12 @@ conjunction with @Id.
 If this annotation is not specified with @Id the NONE strategy is
 used as default.
 
-Required attributes:
+Optional attributes:
 
 
 -  **strategy**: Set the name of the identifier generation strategy.
    Valid values are AUTO, SEQUENCE, TABLE, IDENTITY, UUID, CUSTOM and NONE.
+   If not specified, default value is AUTO.
 
 Example:
 
@@ -428,7 +428,7 @@ Optional attributes:
    -  ``where``: SQL WHERE condition to be used for partial indexes. It will
       only have effect on supported platforms.
 
-Example:
+Basic example:
 
 .. code-block:: php
 
@@ -436,6 +436,19 @@ Example:
     /**
      * @Entity
      * @Table(name="ecommerce_products",indexes={@Index(name="search_idx", columns={"name", "email"})})
+     */
+    class ECommerceProduct
+    {
+    }
+
+Example with partial indexes:
+
+.. code-block:: php
+
+    <?php
+    /**
+     * @Entity
+     * @Table(name="ecommerce_products",indexes={@Index(name="search_idx", columns={"name", "email"}, options={"where": "(((id IS NOT NULL) AND (name IS NULL)) AND (email IS NULL))"})})
      */
     class ECommerceProduct
     {
@@ -1129,6 +1142,7 @@ Optional attributes:
 
 -  **indexes**: Array of @Index annotations
 -  **uniqueConstraints**: Array of @UniqueConstraint annotations.
+-  **schema**: (>= 2.5) Name of the schema the table lies in.
 
 Example:
 
@@ -1140,6 +1154,7 @@ Example:
      * @Table(name="user",
      *      uniqueConstraints={@UniqueConstraint(name="user_unique",columns={"username"})},
      *      indexes={@Index(name="user_idx", columns={"email"})}
+     *      schema="schema_name"
      * )
      */
     class User { }
@@ -1168,7 +1183,7 @@ Optional attributes:
    -  ``where``: SQL WHERE condition to be used for partial indexes. It will
       only have effect on supported platforms.
 
-Example:
+Basic example:
 
 .. code-block:: php
 
@@ -1181,15 +1196,29 @@ Example:
     {
     }
 
+Example with partial indexes:
+
+.. code-block:: php
+
+    <?php
+    /**
+     * @Entity
+     * @Table(name="ecommerce_products",uniqueConstraints={@UniqueConstraint(name="search_idx", columns={"name", "email"}, options={"where": "(((id IS NOT NULL) AND (name IS NULL)) AND (email IS NULL))"})})
+     */
+    class ECommerceProduct
+    {
+    }
+
 .. _annref_version:
 
 @Version
-~~~~~~~~~~~~~~
+~~~~~~~~
 
-Marker annotation that defines a specified column as version
-attribute used in an optimistic locking scenario. It only works on
-:ref:`@Column <annref_column>` annotations that have the type integer or
-datetime. Combining @Version with :ref:`@Id <annref_id>` is not supported.
+Marker annotation that defines a specified column as version attribute used in
+an :ref:`optimistic locking <transactions-and-concurrency_optimistic-locking>`
+scenario. It only works on :ref:`@Column <annref_column>` annotations that have
+the type ``integer`` or ``datetime``. Combining ``@Version`` with
+:ref:`@Id <annref_id>` is not supported.
 
 Example:
 

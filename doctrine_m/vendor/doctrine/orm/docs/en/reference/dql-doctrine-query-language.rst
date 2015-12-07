@@ -278,7 +278,7 @@ With Nested Conditions in WHERE Clause:
 .. code-block:: php
 
     <?php
-    $query = $em->createQuery('SELECT u from ForumUser u WHERE (u.username = :name OR u.username = :name2) AND u.id = :id');
+    $query = $em->createQuery('SELECT u FROM ForumUser u WHERE (u.username = :name OR u.username = :name2) AND u.id = :id');
     $query->setParameters(array(
         'name' => 'Bob',
         'name2' => 'Alice',
@@ -302,7 +302,7 @@ With Arithmetic Expression in WHERE clause:
     $query = $em->createQuery('SELECT u FROM CmsUser u WHERE ((u.id + 5000) * u.id + 3) < 10000000');
     $users = $query->getResult(); // array of ForumUser objects
 
-Retrieve user entities with Arithmetic Expression in ORDER close, using the ``HIDDEN`` keyword:
+Retrieve user entities with Arithmetic Expression in ORDER clause, using the ``HIDDEN`` keyword:
 
 .. code-block:: php
 
@@ -486,9 +486,9 @@ You use the partial syntax when joining as well:
 Using the ``NEW`` operator you can construct Data Transfer Objects (DTOs) directly from DQL queries.
 
 - When using ``SELECT NEW`` you don't need to specify a mapped entity.
-- You can specify any PHP class, it's only require that the constructor of this class matches the ``NEW`` statement.
+- You can specify any PHP class, it only requires that the constructor of this class matches the ``NEW`` statement.
 - This approach involves determining exactly which columns you really need,
-  and instantiating data-transfer object that containing a constructor with those arguments.
+  and instantiating a data-transfer object that contains a constructor with those arguments.
 
 If you want to select data-transfer objects you should create a class:
 
@@ -719,8 +719,6 @@ classes have to implement the base class :
 
         public function parse(\Doctrine\ORM\Query\Parser $parser)
         {
-            $lexer = $parser->getLexer();
-
             $parser->match(Lexer::T_IDENTIFIER);
             $parser->match(Lexer::T_OPEN_PARENTHESIS);
 
@@ -1404,14 +1402,16 @@ Document syntax:
    e.g. zero or one time
 -  curly brackets {...} are used for repetition, e.g. zero or more
    times
--  double quotation marks "..." define a terminal string a vertical
-   bar \| represents an alternative
+-  double quotation marks "..." define a terminal string
+-  a vertical bar \| represents an alternative
 
 Terminals
 ~~~~~~~~~
 
 
--  identifier (name, email, ...)
+-  identifier (name, email, ...) must match ``[a-z_][a-z0-9_]*``
+-  fully_qualified_name (Doctrine\Tests\Models\CMS\CmsUser) matches PHP's fully qualified class names
+-  aliased_name (CMS:CmsUser) uses two identifiers, one for the namespace alias and one for the class inside it
 -  string ('foo', 'bar''s house', '%ninja%', ...)
 -  char ('/', '\\', ' ', ...)
 -  integer (-1, 0, 1, 34, ...)
@@ -1445,8 +1445,8 @@ Identifiers
     /* Alias Identification declaration (the "u" of "FROM User u") */
     AliasIdentificationVariable :: = identifier
 
-    /* identifier that must be a class name (the "User" of "FROM User u") */
-    AbstractSchemaName ::= identifier
+    /* identifier that must be a class name (the "User" of "FROM User u"), possibly as a fully qualified class name or namespace-aliased */
+    AbstractSchemaName ::= fully_qualified_name | aliased_name | identifier
 
     /* Alias ResultVariable declaration (the "total" of "COUNT(*) AS total") */
     AliasResultVariable = identifier
@@ -1545,7 +1545,7 @@ Select Expressions
     SimpleSelectExpression  ::= (StateFieldPathExpression | IdentificationVariable | FunctionDeclaration | AggregateExpression | "(" Subselect ")" | ScalarExpression) [["AS"] AliasResultVariable]
     PartialObjectExpression ::= "PARTIAL" IdentificationVariable "." PartialFieldSet
     PartialFieldSet         ::= "{" SimpleStateField {"," SimpleStateField}* "}"
-    NewObjectExpression     ::= "NEW" IdentificationVariable "(" NewObjectArg {"," NewObjectArg}* ")"
+    NewObjectExpression     ::= "NEW" AbstractSchemaName "(" NewObjectArg {"," NewObjectArg}* ")"
     NewObjectArg            ::= ScalarExpression | "(" Subselect ")"
 
 Conditional Expressions

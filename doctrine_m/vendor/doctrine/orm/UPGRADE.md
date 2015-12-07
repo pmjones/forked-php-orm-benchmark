@@ -1,5 +1,31 @@
 # Upgrade to 2.5
 
+## Minor BC BREAK: discriminator map must now include all non-transient classes
+
+It is now required that you declare the root of an inheritance in the
+discriminator map.
+
+When declaring an inheritance map, it was previously possible to skip the root
+of the inheritance in the discriminator map. This was actually a validation
+mistake by Doctrine2 and led to problems when trying to persist instances of
+that class.
+
+If you don't plan to persist instances some classes in your inheritance, then
+either:
+
+ - make those classes `abstract`
+ - map those classes as `MappedSuperclass`
+
+## Minor BC BREAK: ``EntityManagerInterface`` instead of ``EntityManager`` in type-hints
+ 
+As of 2.5, classes requiring the ``EntityManager`` in any method signature will now require 
+an ``EntityManagerInterface`` instead.
+If you are extending any of the following classes, then you need to check following
+signatures:
+
+- ``Doctrine\ORM\Tools\DebugUnitOfWorkListener#dumpIdentityMap(EntityManagerInterface $em)``
+- ``Doctrine\ORM\Mapping\ClassMetadataFactory#setEntityManager(EntityManagerInterface $em)``
+
 ## Minor BC BREAK: Custom Hydrators API change
 
 As of 2.5, `AbstractHydrator` does not enforce the usage of cache as part of
@@ -16,10 +42,14 @@ As of 2.5, ``EntityManager`` will follow configured cascades, providing a better
 memory management since associations will be garbage collected, optimizing
 resources consumption on long running jobs.
 
-## BC BREAK: NamingStrategy has a new method ``embeddedFieldToColumnName($propertyName, $embeddedColumnName)``
+## BC BREAK: NamingStrategy interface changes
+
+1. A new method ``embeddedFieldToColumnName($propertyName, $embeddedColumnName)``
 
 This method generates the column name for fields of embedded objects. If you implement your custom NamingStrategy, you
 now also need to implement this new method.
+
+2. A change to method ``joinColumnName()`` to include the $className
 
 ## Updates on entities scheduled for deletion are no longer processed
 
@@ -75,6 +105,42 @@ or any public API on instantiated objects.
 
 Please implement the `Doctrine\ORM\Repository\RepositoryFactory` interface instead of extending
 the `Doctrine\ORM\Repository\DefaultRepositoryFactory`.
+
+## BC BREAK: New object expression DQL queries now respects user provided aliasing and not return consumed fields
+
+When executing DQL queries with new object expressions, instead of returning DTOs numerically indexes, it will now respect user provided aliases. Consider the following query:
+
+    SELECT new UserDTO(u.id,u.name) as user,new AddressDTO(a.street,a.postalCode) as address, a.id as addressId FROM User u INNER JOIN u.addresses a WITH a.isPrimary = true
+    
+Previously, your result would be similar to this:
+
+    array(
+        0=>array(
+            0=>{UserDTO object},
+            1=>{AddressDTO object},
+            2=>{u.id scalar},
+            3=>{u.name scalar},
+            4=>{a.street scalar},
+            5=>{a.postalCode scalar},
+            'addressId'=>{a.id scalar},
+        ),
+        ...
+    )
+
+From now on, the resultset will look like this:
+
+    array(
+        0=>array(
+            'user'=>{UserDTO object},
+            'address'=>{AddressDTO object},
+            'addressId'=>{a.id scalar}
+        ),
+        ...
+    )
+
+## Minor BC BREAK: added second parameter $indexBy in EntityRepository#createQueryBuilder method signature
+
+Added way to access the underlying QueryBuilder#from() method's 'indexBy' parameter when using EntityRepository#createQueryBuilder()
 
 # Upgrade to 2.4
 
