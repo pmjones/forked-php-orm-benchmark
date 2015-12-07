@@ -1,0 +1,7 @@
+# Shell to run benchmarks within
+shell:
+  image: neam/php-benchmark:ubuntu-15.04-fpm-5.6.4-hhvm-3.10.1-phalcon-2.0.9
+  volumes:
+    - ..:/repo:rw
+  working_dir: '/repo'
+  command: "/bin/bash"
