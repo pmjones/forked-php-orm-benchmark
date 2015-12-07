@@ -39,7 +39,7 @@ The reference is the PDOTestSuite (the number of tests is adjusted to make raw P
 
 (updated 2015-Dec-07)
 
-## PHP-FPM 5.6.4 with opcode cache
+## PHP CLI 5.6.4 with opcode cache
 
 | Library                          | Insert | findPk | complex| hydrate|  with  | memory usage |  time  |
 | --------------------------------:| ------:| ------:| ------:| ------:| ------:| ------------:| ------:|
@@ -66,7 +66,7 @@ The reference is the PDOTestSuite (the number of tests is adjusted to make raw P
 |                         Eloquent |   1206 |    733 |    188 |    289 |    527 |   11,272,192 |   4.36 |
 |             EloquentWithoutEvent |   1051 |    707 |    175 |    308 |    833 |   11,010,048 |   3.92 |
 
-## HHVM 3.10.1
+## HHVM CLI 3.10.1 (Corresponding roughly to an up-to-date PHP 5.6)
 
 | Library                          | Insert | findPk | complex| hydrate|  with  | memory usage |  time  |
 | --------------------------------:| ------:| ------:| ------:| ------:| ------:| ------------:| ------:|
@@ -93,3 +93,31 @@ The reference is the PDOTestSuite (the number of tests is adjusted to make raw P
 |                                  |        |        |        |        |        |              |        |
 |                         Eloquent |    633 |    298 |    110 |    101 |    215 |   13,945,632 |   1.75 |
 |             EloquentWithoutEvent |    597 |    318 |    126 |    122 |    242 |   13,865,192 |   1.77 |       
+
+## PHP CLI 7.0.0 GA
+
+| Library                          | Insert | findPk | complex| hydrate|  with  | memory usage |  time  |
+| --------------------------------:| ------:| ------:| ------:| ------:| ------:| ------------:| ------:|
+|                              PDO |     84 |     75 |      4 |     74 |    187 |    1,720,072 |   0.44 |
+|                                  |        |        |        |        |        |              |        |
+|                           LessQL |    208 |    205 |     78 |    139 |    160 |   10,108,848 |   1.07 |
+|                                  |        |        |        |        |        |              |        |
+|                             YiiM |    482 |    224 |     82 |    101 |     77 |    4,194,304 |   2.02 |
+|                    YiiMWithCache |    429 |    195 |     85 |    116 |     93 |    4,194,304 |   1.91 |
+|                                  |        |        |        |        |        |              |        |
+|                            Yii2M |    490 |    511 |     71 |    165 |     96 |    6,291,456 |   2.40 |
+|                Yii2MArrayHydrate |    556 |    592 |     89 |    125 |    124 |    8,388,608 |   2.87 |
+|               Yii2MScalarHydrate |    515 |    573 |     79 |    174 |    117 |    8,388,608 |   2.70 |
+|                                  |        |        |        |        |        |              |        |
+|                         Propel20 |    338 |    121 |    316 |    498 |    522 |    6,291,456 |   2.91 |
+|                Propel20WithCache |    279 |     45 |    372 |    477 |    414 |    6,291,456 |   3.41 |
+|           Propel20FormatOnDemand |    264 |     57 |    407 |    534 |    455 |    6,291,456 |   2.63 |
+|                                  |        |        |        |        |        |              |        |
+|                        DoctrineM |    649 |   1023 |   1777 |    425 |    449 |   14,680,064 |  13.39 |
+|               DoctrineMWithCache |    770 |   1142 |   2492 |    477 |    547 |   14,680,064 |  13.06 |
+|            DoctrineMArrayHydrate |    719 |   1023 |   2058 |    226 |    410 |   14,680,064 |  13.75 |
+|           DoctrineMScalarHydrate |    643 |   1119 |   2653 |    275 |    457 |   14,680,064 |  14.16 |
+|          DoctrineMWithoutProxies |    627 |    576 |   1826 |    319 |    966 |   14,680,064 |  10.83 |
+|                                  |        |        |        |        |        |              |        |
+|                         Eloquent |   1287 |    353 |    140 |    234 |    376 |    8,388,608 |   3.25 |
+|             EloquentWithoutEvent |    818 |    850 |    409 |    330 |    829 |    8,388,608 |   3.84 |
