@@ -125,3 +125,8 @@ The reference is the PDOTestSuite (the number of tests is adjusted to make raw P
 ## HHVM 3.11.x (Corresponding roughly to an up-to-date PHP 7.0)
 
 TODO
+
+Running benchmarks using the Docker shell
+-----------------------------------------
+
+See [.docker-stack/README.md](./.docker-stack/README.md)
