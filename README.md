@@ -121,3 +121,7 @@ The reference is the PDOTestSuite (the number of tests is adjusted to make raw P
 |                                  |        |        |        |        |        |              |        |
 |                         Eloquent |   1287 |    353 |    140 |    234 |    376 |    8,388,608 |   3.25 |
 |             EloquentWithoutEvent |    818 |    850 |    409 |    330 |    829 |    8,388,608 |   3.84 |
+
+## HHVM 3.11.x (Corresponding roughly to an up-to-date PHP 7.0)
+
+TODO
