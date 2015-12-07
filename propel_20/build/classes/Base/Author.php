@@ -65,24 +65,28 @@ abstract class Author implements ActiveRecordInterface
 
     /**
      * The value for the id field.
+     *
      * @var        int
      */
     protected $id;
 
     /**
      * The value for the first_name field.
+     * First Name
      * @var        string
      */
     protected $first_name;
 
     /**
      * The value for the last_name field.
+     * Last Name
      * @var        string
      */
     protected $last_name;
 
     /**
      * The value for the email field.
+     * E-Mail Address
      * @var        string
      */
     protected $email;
@@ -321,7 +325,15 @@ abstract class Author implements ActiveRecordInterface
     {
         $this->clearAllReferences();
 
-        return array_keys(get_object_vars($this));
+        $cls = new \ReflectionClass($this);
+        $propertyNames = [];
+        $serializableProperties = array_diff($cls->getProperties(), $cls->getProperties(\ReflectionProperty::IS_STATIC));
+
+        foreach($serializableProperties as $property) {
+            $propertyNames[] = $property->getName();
+        }
+
+        return $propertyNames;
     }
 
     /**

@@ -22,8 +22,6 @@ use Propel\Generator\Util\SqlParser;
  */
 class MigrationDownCommand extends AbstractCommand
 {
-    const DEFAULT_MIGRATION_TABLE   = 'propel_migration';
-
     /**
      * {@inheritdoc}
      */
@@ -33,12 +31,12 @@ class MigrationDownCommand extends AbstractCommand
 
         $this
             ->addOption('output-dir',       null, InputOption::VALUE_REQUIRED,  'The output directory')
-            ->addOption('migration-table',  null, InputOption::VALUE_REQUIRED,  'Migration table name', self::DEFAULT_MIGRATION_TABLE)
-            ->addOption('connection',       null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Connection to use', array())
+            ->addOption('migration-table',  null, InputOption::VALUE_REQUIRED,  'Migration table name')
+            ->addOption('connection',       null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Connection to use', [])
             ->addOption('fake',             null, InputOption::VALUE_NONE, 'Does not touch the actual schema, but marks previous migration as executed.')
             ->addOption('force',            null, InputOption::VALUE_NONE, 'Continues with the migration even when errors occur.')
             ->setName('migration:down')
-            ->setAliases(array('down'))
+            ->setAliases(['down'])
             ->setDescription('Execute migrations down')
         ;
     }
@@ -48,12 +46,16 @@ class MigrationDownCommand extends AbstractCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $configOptions = array();
+        $configOptions = [];
 
         if ($this->hasInputOption('output-dir', $input)) {
             $configOptions['propel']['paths']['migrationDir'] = $input->getOption('output-dir');
         }
 
+        if ($this->hasInputOption('migration-table', $input)) {
+            $configOptions['propel']['migrations']['tableName'] = $input->getOption('migration-table');
+        }
+        
         $generatorConfig = $this->getGeneratorConfig($configOptions, $input);
 
         $this->createDirectory($generatorConfig->getSection('paths')['migrationDir']);
@@ -61,23 +63,24 @@ class MigrationDownCommand extends AbstractCommand
         $manager = new MigrationManager();
         $manager->setGeneratorConfig($generatorConfig);
 
-        $connections = array();
+        $connections = [];
         $optionConnections = $input->getOption('connection');
         if (!$optionConnections) {
             $connections = $generatorConfig->getBuildConnections();
         } else {
             foreach ($optionConnections as $connection) {
                 list($name, $dsn, $infos) = $this->parseConnection($connection);
-                $connections[$name] = array_merge(array('dsn' => $dsn), $infos);
+                $connections[$name] = array_merge(['dsn' => $dsn], $infos);
             }
         }
 
         $manager->setConnections($connections);
-        $manager->setMigrationTable($input->getOption('migration-table'));
+        $manager->setMigrationTable($generatorConfig->getSection('migrations')['tableName']);
         $manager->setWorkingDirectory($generatorConfig->getSection('paths')['migrationDir']);
 
         $previousTimestamps = $manager->getAlreadyExecutedMigrationTimestamps();
-        if (!$nextMigrationTimestamp = array_pop($previousTimestamps)) {
+        $nextMigrationTimestamp = array_pop($previousTimestamps);
+        if (!$nextMigrationTimestamp) {
             $output->writeln('No migration were ever executed on this database - nothing to reverse.');
 
             return false;
@@ -88,7 +91,8 @@ class MigrationDownCommand extends AbstractCommand
             $manager->getMigrationClassName($nextMigrationTimestamp)
         ));
 
-        if ($nbPreviousTimestamps = count($previousTimestamps)) {
+        $nbPreviousTimestamps = count($previousTimestamps);
+        if ($nbPreviousTimestamps) {
             $previousTimestamp = array_pop($previousTimestamps);
         } else {
             $previousTimestamp = 0;

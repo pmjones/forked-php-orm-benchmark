@@ -16,6 +16,9 @@ use Propel\Tests\Bookstore\Behavior\SortableTable11;
 use Propel\Tests\Bookstore\Behavior\SortableTable11Query;
 use Propel\Tests\Bookstore\Behavior\SortableTable12;
 use Propel\Tests\Bookstore\Behavior\SortableTable12Query;
+use Propel\Tests\Bookstore\Behavior\SortableTable13;
+use Propel\Tests\Bookstore\Behavior\SortableTable13Query;
+use Propel\Tests\Bookstore\Behavior\Map\SortableTable13TableMap;
 use Propel\Tests\Bookstore\Behavior\Map\SortableTable12TableMap;
 use Propel\Tests\Bookstore\Behavior\Map\SortableTable11TableMap;
 use Propel\Tests\TestCaseFixturesDatabase;
@@ -117,10 +120,35 @@ class TestCase extends TestCaseFixturesDatabase
         $t10->save();
     }
 
+    protected function populateTable13()
+    {
+        SortableTable13TableMap::doDeleteAll();
+
+        $t1 = new SortableTable13();
+        $t1->setTitle('row1');
+        $t1->setStyle(SortableTable13TableMap::COL_STYLE_NOVEL);
+        $t1->save();
+
+        $t2 = new SortableTable13();
+        $t2->setTitle('row2');
+        $t2->setStyle(SortableTable13TableMap::COL_STYLE_NOVEL);
+        $t2->save();
+
+        $t3 = new SortableTable13();
+        $t3->setTitle('row3');
+        $t3->setStyle(SortableTable13TableMap::COL_STYLE_ESSAY);
+        $t3->save();
+
+        $t4 = new SortableTable13();
+        $t4->setTitle('row4');
+        $t4->setStyle(SortableTable13TableMap::COL_STYLE_ESSAY);
+        $t4->save();
+    }
+
     protected function getFixturesArray()
     {
         $ts = SortableTable11Query::create()->orderByRank()->find();
-        $ret = array();
+        $ret = [];
         foreach ($ts as $t) {
             $ret[$t->getRank()] = $t->getTitle();
         }
@@ -133,7 +161,7 @@ class TestCase extends TestCaseFixturesDatabase
         $c = new Criteria();
         $c->add(SortableTable12TableMap::SCOPE_COL, $scope);
         $ts  = SortableTable12Query::create(null, $c)->orderByPosition()->find();
-        $ret = array();
+        $ret = [];
 
         foreach ($ts as $t) {
             $ret[$t->getRank()] = $t->getTitle();

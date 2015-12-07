@@ -36,9 +36,19 @@ use Propel\Runtime\Exception\PropelException;
  * @method     ChildBookQuery rightJoin($relation) Adds a RIGHT JOIN clause to the query
  * @method     ChildBookQuery innerJoin($relation) Adds a INNER JOIN clause to the query
  *
+ * @method     ChildBookQuery leftJoinWith($relation) Adds a LEFT JOIN clause and with to the query
+ * @method     ChildBookQuery rightJoinWith($relation) Adds a RIGHT JOIN clause and with to the query
+ * @method     ChildBookQuery innerJoinWith($relation) Adds a INNER JOIN clause and with to the query
+ *
  * @method     ChildBookQuery leftJoinAuthor($relationAlias = null) Adds a LEFT JOIN clause to the query using the Author relation
  * @method     ChildBookQuery rightJoinAuthor($relationAlias = null) Adds a RIGHT JOIN clause to the query using the Author relation
  * @method     ChildBookQuery innerJoinAuthor($relationAlias = null) Adds a INNER JOIN clause to the query using the Author relation
+ *
+ * @method     ChildBookQuery joinWithAuthor($joinType = Criteria::INNER_JOIN) Adds a join clause and with to the query using the Author relation
+ *
+ * @method     ChildBookQuery leftJoinWithAuthor() Adds a LEFT JOIN clause and with to the query using the Author relation
+ * @method     ChildBookQuery rightJoinWithAuthor() Adds a RIGHT JOIN clause and with to the query using the Author relation
+ * @method     ChildBookQuery innerJoinWithAuthor() Adds a INNER JOIN clause and with to the query using the Author relation
  *
  * @method     \AuthorQuery endUse() Finalizes a secondary criteria and merges it with its primary Criteria
  *

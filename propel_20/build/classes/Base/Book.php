@@ -63,30 +63,35 @@ abstract class Book implements ActiveRecordInterface
 
     /**
      * The value for the id field.
+     *
      * @var        int
      */
     protected $id;
 
     /**
      * The value for the title field.
+     * Book Title
      * @var        string
      */
     protected $title;
 
     /**
      * The value for the isbn field.
+     * ISBN Number
      * @var        string
      */
     protected $isbn;
 
     /**
      * The value for the price field.
+     * Price of the book.
      * @var        double
      */
     protected $price;
 
     /**
      * The value for the author_id field.
+     * Foreign Key Author
      * @var        int
      */
     protected $author_id;
@@ -318,7 +323,15 @@ abstract class Book implements ActiveRecordInterface
     {
         $this->clearAllReferences();
 
-        return array_keys(get_object_vars($this));
+        $cls = new \ReflectionClass($this);
+        $propertyNames = [];
+        $serializableProperties = array_diff($cls->getProperties(), $cls->getProperties(\ReflectionProperty::IS_STATIC));
+
+        foreach($serializableProperties as $property) {
+            $propertyNames[] = $property->getName();
+        }
+
+        return $propertyNames;
     }
 
     /**

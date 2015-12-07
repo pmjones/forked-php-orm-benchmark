@@ -36,18 +36,18 @@ class StatementWrapper implements StatementInterface, \IteratorAggregate
      * @see self::bindValue()
      * @var array
      */
-    protected static $typeMap = array(
+    protected static $typeMap = [
         0  => 'PDO::PARAM_NULL',
         1  => 'PDO::PARAM_INT',
         2  => 'PDO::PARAM_STR',
         3  => 'PDO::PARAM_LOB',
         5  => 'PDO::PARAM_BOOL',
-    );
+    ];
 
     /**
      * @var array  The values that have been bound
      */
-    protected $boundValues = array();
+    protected $boundValues = [];
 
     /**
      * @var string
@@ -193,7 +193,7 @@ class StatementWrapper implements StatementInterface, \IteratorAggregate
     {
         $return = $this->statement->execute($input_parameters);
         if ($this->connection->useDebug) {
-            $sql = $this->getExecutedQueryString();
+            $sql = $this->getExecutedQueryString($input_parameters);
             $this->connection->log($sql);
             $this->connection->setLastExecutedQuery($sql);
             $this->connection->incrementQueryCount();
@@ -205,15 +205,18 @@ class StatementWrapper implements StatementInterface, \IteratorAggregate
     /**
      * @return string
      */
-    public function getExecutedQueryString()
+    public function getExecutedQueryString($input_parameters = null)
     {
         $sql = $this->statement->queryString;
-        $matches = array();
+        $matches = [];
         if (preg_match_all('/(:p[0-9]+\b)/', $sql, $matches)) {
             $size = count($matches[1]);
             for ($i = $size-1; $i >= 0; $i--) {
                 $pos = $matches[1][$i];
-                $sql = str_replace($pos, $this->boundValues[$pos], $sql);
+                if (isset($this->boundValues[$pos]))
+                    $sql = str_replace($pos, $this->boundValues[$pos], $sql);
+                if (isset($input_parameters[$pos]))
+                    $sql = str_replace($pos, $input_parameters[$pos], $sql);
             }
         }
 
@@ -323,7 +326,7 @@ class StatementWrapper implements StatementInterface, \IteratorAggregate
 
     public function __call($method, $args)
     {
-        return call_user_func_array(array($this->statement, $method), $args);
+        return call_user_func_array([$this->statement, $method], $args);
     }
 
 }

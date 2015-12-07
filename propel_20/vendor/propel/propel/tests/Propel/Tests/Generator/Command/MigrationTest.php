@@ -6,6 +6,7 @@ use Propel\Generator\Command\MigrationDiffCommand;
 use Propel\Generator\Command\MigrationDownCommand;
 use Propel\Generator\Command\MigrationMigrateCommand;
 use Propel\Generator\Command\MigrationUpCommand;
+use Propel\Generator\Command\MigrationCreateCommand;
 use Propel\Runtime\Propel;
 use Propel\Tests\TestCaseFixturesDatabase;
 use Symfony\Component\Console\Application;
@@ -43,7 +44,7 @@ class MigrationTest extends TestCaseFixturesDatabase
             unlink($file);
         }
 
-        $input = new \Symfony\Component\Console\Input\ArrayInput(array(
+        $input = new \Symfony\Component\Console\Input\ArrayInput([
             'command' => 'migration:diff',
             '--schema-dir' => $this->schemaDir,
             '--config-dir' => $this->configDir,
@@ -51,7 +52,7 @@ class MigrationTest extends TestCaseFixturesDatabase
             '--platform' => ucfirst($this->getDriver()) . 'Platform',
             '--connection' => $this->connectionOption,
             '--verbose' => true
-        ));
+        ]);
 
         $output = new \Symfony\Component\Console\Output\StreamOutput(fopen("php://temp", 'r+'));
         $app->setAutoExit(false);
@@ -79,14 +80,14 @@ class MigrationTest extends TestCaseFixturesDatabase
         $command = new MigrationUpCommand();
         $app->add($command);
 
-        $input = new \Symfony\Component\Console\Input\ArrayInput(array(
+        $input = new \Symfony\Component\Console\Input\ArrayInput([
             'command' => 'migration:up',
             '--config-dir' => $this->configDir,
             '--output-dir' => $this->outputDir,
             '--platform' => ucfirst($this->getDriver()) . 'Platform',
             '--connection' => $this->connectionOption,
             '--verbose' => true
-        ));
+        ]);
 
         $output = new \Symfony\Component\Console\Output\StreamOutput(fopen("php://temp", 'r+'));
         $app->setAutoExit(false);
@@ -108,14 +109,14 @@ class MigrationTest extends TestCaseFixturesDatabase
         $command = new MigrationDownCommand();
         $app->add($command);
 
-        $input = new \Symfony\Component\Console\Input\ArrayInput(array(
+        $input = new \Symfony\Component\Console\Input\ArrayInput([
             'command' => 'migration:down',
             '--config-dir' => $this->configDir,
             '--output-dir' => $this->outputDir,
             '--platform' => ucfirst($this->getDriver()) . 'Platform',
             '--connection' => $this->connectionOption,
             '--verbose' => true
-        ));
+        ]);
 
         $output = new \Symfony\Component\Console\Output\StreamOutput(fopen("php://temp", 'r+'));
         $app->setAutoExit(false);
@@ -137,14 +138,14 @@ class MigrationTest extends TestCaseFixturesDatabase
         $command = new MigrationMigrateCommand();
         $app->add($command);
 
-        $input = new \Symfony\Component\Console\Input\ArrayInput(array(
+        $input = new \Symfony\Component\Console\Input\ArrayInput([
             'command' => 'migration:migrate',
             '--config-dir' => $this->configDir,
             '--output-dir' => $this->outputDir,
             '--platform' => ucfirst($this->getDriver()) . 'Platform',
             '--connection' => $this->connectionOption,
             '--verbose' => true
-        ));
+        ]);
 
         $output = new \Symfony\Component\Console\Output\StreamOutput(fopen("php://temp", 'r+'));
         $app->setAutoExit(false);
@@ -161,6 +162,46 @@ class MigrationTest extends TestCaseFixturesDatabase
 
         //revert this migration change so we have the same database structure as before this test
         $this->testDownCommand();
+    }
+
+    public function testCreateCommand()
+    {
+        $app = new Application('Propel', Propel::VERSION);
+        $command = new MigrationCreateCommand();
+        $app->add($command);
+
+        $files = glob($this->outputDir . '/PropelMigration_*.php');
+        foreach ($files as $file) {
+            unlink($file);
+        }
+
+        $input = new \Symfony\Component\Console\Input\ArrayInput([
+            'command' => 'migration:create',
+            '--schema-dir' => $this->schemaDir,
+            '--config-dir' => $this->configDir,
+            '--output-dir' => $this->outputDir,
+            '--platform' => ucfirst($this->getDriver()) . 'Platform',
+            '--connection' => $this->connectionOption,
+            '--verbose' => true
+        ]);
+
+        $output = new \Symfony\Component\Console\Output\StreamOutput(fopen("php://temp", 'r+'));
+        $app->setAutoExit(false);
+        $result = $app->run($input, $output);
+
+        if (0 !== $result) {
+            rewind($output->getStream());
+            echo stream_get_contents($output->getStream());
+        }
+
+        $this->assertEquals(0, $result, 'migration:create tests exited successfully');
+
+        $files = glob($this->outputDir . '/PropelMigration_*.php');
+        $this->assertGreaterThanOrEqual(1, count($files));
+        $file = $files[0];
+
+        $content = file_get_contents($file);
+        $this->assertNotContains('CREATE TABLE ', $content);
     }
 
 }

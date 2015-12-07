@@ -165,7 +165,7 @@ class PropelModelPager implements \IteratorAggregate, \Countable
 
     public function getLinks($nbLinks = 5)
     {
-        $links = array();
+        $links = [];
         $tmp   = $this->page - floor($nbLinks / 2);
         $check = $this->lastPage - $nbLinks + 1;
         $limit = ($check > 0) ? $check : 1;
@@ -263,7 +263,7 @@ class PropelModelPager implements \IteratorAggregate, \Countable
      */
     public function getFirstPage()
     {
-        return 1;
+        return $this->nbResults === 0 ? 0 : 1;
     }
 
     /**
@@ -317,7 +317,7 @@ class PropelModelPager implements \IteratorAggregate, \Countable
     public function setPage($page)
     {
         $this->page = (int) $page;
-        if ($this->page <= 0) {
+        if ($this->page <= 0 && $this->nbResults > 0) {
             // set first page, which depends on a maximum set
             $this->page = $this->getMaxPerPage() ? 1 : 0;
         }

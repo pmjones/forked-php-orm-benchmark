@@ -51,7 +51,7 @@ class DatabaseComparator
     /**
      * @var array list of excluded tables
      */
-    protected $excludedTables = array();
+    protected $excludedTables = [];
 
     public function __construct($databaseDiff = null)
     {
@@ -149,7 +149,7 @@ class DatabaseComparator
      * @param  boolean              $caseInsensitive
      * @return DatabaseDiff|Boolean
      */
-    public static function computeDiff(Database $fromDatabase, Database $toDatabase, $caseInsensitive = false, $withRenaming = false, $removeTable = true, $excludedTables = array())
+    public static function computeDiff(Database $fromDatabase, Database $toDatabase, $caseInsensitive = false, $withRenaming = false, $removeTable = true, $excludedTables = [])
     {
         $databaseComparator = new self();
         $databaseComparator->setFromDatabase($fromDatabase);
@@ -273,6 +273,16 @@ class DatabaseComparator
      */
     protected function isTableExcluded(Table $table)
     {
-        return in_array($table->getName(), $this->excludedTables);
-    }
-}
+        $tablename = $table->getName();
+        if (in_array($tablename, $this->excludedTables)) {
+            return true;
+        }
+
+        foreach ($this->excludedTables as $exclude_tablename) {
+            if (preg_match('/^'.str_replace('*', '.*', $exclude_tablename).'$/', $tablename)) {
+                return true;
+            }
+        }
+
+        return false;
+    }}

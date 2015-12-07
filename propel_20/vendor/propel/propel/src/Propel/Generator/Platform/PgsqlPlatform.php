@@ -74,14 +74,14 @@ class PgsqlPlatform extends DefaultPlatform
 
     public function getDefaultTypeSizes()
     {
-        return array(
+        return [
             'char'      => 1,
             'character' => 1,
             'integer'   => 32,
             'bigint'    => 64,
             'smallint'  => 16,
             'double precision' => 54
-        );
+        ];
     }
 
     public function getMaxColumnNameLength()
@@ -165,7 +165,7 @@ DROP SEQUENCE %s;
     public function getAddSchemasDDL(Database $database)
     {
         $ret = '';
-        $schemas = array();
+        $schemas = [];
         foreach ($database->getTables() as $table) {
             $vi = $table->getVendorInfoForType('pgsql');
             if ($vi->hasParameter('schema') && !isset($schemas[$vi->getParameter('schema')])) {
@@ -213,8 +213,7 @@ SET search_path TO public;
 
     public function getAddTablesDDL(Database $database)
     {
-        $ret = $this->getBeginDDL();
-        $ret .= $this->getAddSchemasDDL($database);
+        $ret = $this->getAddSchemasDDL($database);
 
         foreach ($database->getTablesForSql() as $table) {
             $this->normalizeTable($table);
@@ -229,9 +228,32 @@ SET search_path TO public;
         foreach ($database->getTablesForSql() as $table) {
             $ret .= $this->getAddForeignKeysDDL($table);
         }
-        $ret .= $this->getEndDDL();
+
+        if (!empty($ret)) {
+            $ret = $this->getBeginDDL() . $ret . $this->getEndDDL();
+        }
 
         return $ret;
+    }
+    
+    /**
+     * @return string
+     */
+    public function getBeginDDL()
+    {
+        return "
+BEGIN;
+";
+    }
+    
+    /**
+     * @return string
+     */
+    public function getEndDDL()
+    {
+        return "
+COMMIT;
+";
     }
 
     /**
@@ -253,7 +275,7 @@ SET search_path TO public;
         $ret .= $this->getUseSchemaDDL($table);
         $ret .= $this->getAddSequenceDDL($table);
 
-        $lines = array();
+        $lines = [];
 
         foreach ($table->getColumns() as $column) {
             $lines[] = $this->getColumnDDL($column);
@@ -345,7 +367,7 @@ DROP TABLE IF EXISTS %s CASCADE;
     {
         $domain = $col->getDomain();
 
-        $ddl = array($this->quoteIdentifier($col->getName()));
+        $ddl = [$this->quoteIdentifier($col->getName())];
         $sqlType = $domain->getSqlType();
         $table = $col->getTable();
         if ($col->isAutoIncrement() && $table && $table->getIdMethodParameters() == null) {
@@ -411,7 +433,7 @@ ALTER TABLE %s RENAME TO %s;
 
     public function hasSize($sqlType)
     {
-        return !in_array($sqlType, array('BYTEA', 'TEXT', 'DOUBLE PRECISION'));
+        return !in_array($sqlType, ['BYTEA', 'TEXT', 'DOUBLE PRECISION']);
     }
 
     public function hasStreamBlobImpl()
