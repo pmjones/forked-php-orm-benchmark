@@ -15,11 +15,11 @@ use yii\base\NotSupportedException;
 use yii\caching\Cache;
 
 /**
- * Connection represents a connection to a database via [PDO](http://www.php.net/manual/en/ref.pdo.php).
+ * Connection represents a connection to a database via [PDO](php.net/manual/en/book.pdo.php).
  *
  * Connection works together with [[Command]], [[DataReader]] and [[Transaction]]
  * to provide data access to various DBMS in a common set of APIs. They are a thin wrapper
- * of the [[PDO PHP extension]](http://www.php.net/manual/en/ref.pdo.php).
+ * of the [[PDO PHP extension]](php.net/manual/en/book.pdo.php).
  *
  * Connection supports database replication and read-write splitting. In particular, a Connection component
  * can be configured with multiple [[masters]] and [[slaves]]. It will do load balancing and failover by choosing
@@ -32,40 +32,40 @@ use yii\caching\Cache;
  * The following example shows how to create a Connection instance and establish
  * the DB connection:
  *
- * ~~~
+ * ```php
  * $connection = new \yii\db\Connection([
  *     'dsn' => $dsn,
  *     'username' => $username,
  *     'password' => $password,
  * ]);
  * $connection->open();
- * ~~~
+ * ```
  *
  * After the DB connection is established, one can execute SQL statements like the following:
  *
- * ~~~
+ * ```php
  * $command = $connection->createCommand('SELECT * FROM post');
  * $posts = $command->queryAll();
  * $command = $connection->createCommand('UPDATE post SET status=1');
  * $command->execute();
- * ~~~
+ * ```
  *
  * One can also do prepared SQL execution and bind parameters to the prepared SQL.
  * When the parameters are coming from user input, you should use this approach
  * to prevent SQL injection attacks. The following is an example:
  *
- * ~~~
+ * ```php
  * $command = $connection->createCommand('SELECT * FROM post WHERE id=:id');
  * $command->bindValue(':id', $_GET['id']);
  * $post = $command->query();
- * ~~~
+ * ```
  *
  * For more information about how to perform various DB queries, please refer to [[Command]].
  *
  * If the underlying DBMS supports transactions, you can perform transactional SQL queries
  * like the following:
  *
- * ~~~
+ * ```php
  * $transaction = $connection->beginTransaction();
  * try {
  *     $connection->createCommand($sql1)->execute();
@@ -75,30 +75,30 @@ use yii\caching\Cache;
  * } catch (Exception $e) {
  *     $transaction->rollBack();
  * }
- * ~~~
+ * ```
  *
  * You also can use shortcut for the above like the following:
  *
- * ~~~
- * $connection->transaction(function() {
+ * ```php
+ * $connection->transaction(function () {
  *     $order = new Order($customer);
  *     $order->save();
  *     $order->addItems($items);
  * });
- * ~~~
+ * ```
  *
  * If needed you can pass transaction isolation level as a second parameter:
  *
- * ~~~
- * $connection->transaction(function(Connection $db) {
+ * ```php
+ * $connection->transaction(function (Connection $db) {
  *     //return $db->...
  * }, Transaction::READ_UNCOMMITTED);
- * ~~~
+ * ```
  *
  * Connection is often used as an application component and configured in the application
  * configuration like the following:
  *
- * ~~~
+ * ```php
  * 'components' => [
  *     'db' => [
  *         'class' => '\yii\db\Connection',
@@ -108,7 +108,7 @@ use yii\caching\Cache;
  *         'charset' => 'utf8',
  *     ],
  * ],
- * ~~~
+ * ```
  *
  * @property string $driverName Name of the DB driver.
  * @property boolean $isActive Whether the DB connection is established. This property is read-only.
@@ -118,8 +118,6 @@ use yii\caching\Cache;
  * read-only.
  * @property QueryBuilder $queryBuilder The query builder for the current DB connection. This property is
  * read-only.
- * @property array $queryCacheInfo The current query cache information, or null if query cache is not enabled.
- * This property is read-only.
  * @property Schema $schema The schema information for the database opened by this connection. This property
  * is read-only.
  * @property Connection $slave The currently active slave connection. Null is returned if there is slave
@@ -155,6 +153,10 @@ class Connection extends Component
      * @var string the Data Source Name, or DSN, contains the information required to connect to the database.
      * Please refer to the [PHP manual](http://www.php.net/manual/en/function.PDO-construct.php) on
      * the format of the DSN string.
+     *
+     * For [SQLite](http://php.net/manual/en/ref.pdo-sqlite.connection.php) you may use a path alias
+     * for specifying the database path, e.g. `sqlite:@app/data/db.sql`.
+     *
      * @see charset
      */
     public $dsn;
@@ -465,22 +467,38 @@ class Connection extends Component
     /**
      * Returns the current query cache information.
      * This method is used internally by [[Command]].
+     * @param integer $duration the preferred caching duration. If null, it will be ignored.
+     * @param \yii\caching\Dependency $dependency the preferred caching dependency. If null, it will be ignored.
      * @return array the current query cache information, or null if query cache is not enabled.
      * @internal
      */
-    public function getQueryCacheInfo()
+    public function getQueryCacheInfo($duration, $dependency)
     {
+        if (!$this->enableQueryCache) {
+            return null;
+        }
+
         $info = end($this->_queryCacheInfo);
-        if ($this->enableQueryCache) {
+        if (is_array($info)) {
+            if ($duration === null) {
+                $duration = $info[0];
+            }
+            if ($dependency === null) {
+                $dependency = $info[1];
+            }
+        }
+
+        if ($duration === 0 || $duration > 0) {
             if (is_string($this->queryCache) && Yii::$app) {
                 $cache = Yii::$app->get($this->queryCache, false);
             } else {
                 $cache = $this->queryCache;
             }
             if ($cache instanceof Cache) {
-                return is_array($info) ? [$cache, $info[0], $info[1]] : [$cache, null, null];
+                return [$cache, $duration, $dependency];
             }
         }
+
         return null;
     }
 
@@ -517,7 +535,7 @@ class Connection extends Component
             Yii::endProfile($token, __METHOD__);
         } catch (\PDOException $e) {
             Yii::endProfile($token, __METHOD__);
-            throw new Exception($e->getMessage(), $e->errorInfo, (int)$e->getCode(), $e);
+            throw new Exception($e->getMessage(), $e->errorInfo, (int) $e->getCode(), $e);
         }
     }
 
@@ -557,12 +575,20 @@ class Connection extends Component
             } elseif (($pos = strpos($this->dsn, ':')) !== false) {
                 $driver = strtolower(substr($this->dsn, 0, $pos));
             }
-            if (isset($driver) && ($driver === 'mssql' || $driver === 'dblib' || $driver === 'sqlsrv')) {
-                $pdoClass = 'yii\db\mssql\PDO';
+            if (isset($driver)) {
+                if ($driver === 'mssql' || $driver === 'dblib') {
+                    $pdoClass = 'yii\db\mssql\PDO';
+                } elseif ($driver === 'sqlsrv') {
+                    $pdoClass = 'yii\db\mssql\SqlsrvPDO';
+                }
             }
         }
 
-        return new $pdoClass($this->dsn, $this->username, $this->password, $this->attributes);
+        $dsn = $this->dsn;
+        if (strncmp('sqlite:@', $dsn, 8) === 0) {
+            $dsn = 'sqlite:' . Yii::getAlias(substr($dsn, 7));
+        }
+        return new $pdoClass($dsn, $this->username, $this->password, $this->attributes);
     }
 
     /**
@@ -918,5 +944,15 @@ class Connection extends Component
         }
 
         return null;
+    }
+
+    /**
+     * Close the connection before serializing.
+     * @return array
+     */
+    public function __sleep()
+    {
+        $this->close();
+        return array_keys((array) $this);
     }
 }

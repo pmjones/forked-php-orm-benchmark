@@ -107,11 +107,19 @@ class FileCache extends Cache
     protected function getValue($key)
     {
         $cacheFile = $this->getCacheFile($key);
+
         if (@filemtime($cacheFile) > time()) {
-            return @file_get_contents($cacheFile);
-        } else {
-            return false;
+            $fp = @fopen($cacheFile, 'r');
+            if ($fp !== false) {
+                @flock($fp, LOCK_SH);
+                $cacheValue = @stream_get_contents($fp);
+                @flock($fp, LOCK_UN);
+                @fclose($fp);
+                return $cacheValue;
+            }
         }
+
+        return false;
     }
 
     /**
@@ -125,6 +133,7 @@ class FileCache extends Cache
      */
     protected function setValue($key, $value, $duration)
     {
+        $this->gc();
         $cacheFile = $this->getCacheFile($key);
         if ($this->directoryLevel > 0) {
             @FileHelper::createDirectory(dirname($cacheFile), $this->dirMode, true);
@@ -139,6 +148,8 @@ class FileCache extends Cache
 
             return @touch($cacheFile, $duration + time());
         } else {
+            $error = error_get_last();
+            Yii::warning("Unable to write cache file '{$cacheFile}': {$error['message']}", __METHOD__);
             return false;
         }
     }
@@ -240,10 +251,16 @@ class FileCache extends Cache
                 if (is_dir($fullPath)) {
                     $this->gcRecursive($fullPath, $expiredOnly);
                     if (!$expiredOnly) {
-                        @rmdir($fullPath);
+                        if (!@rmdir($fullPath)) {
+                            $error = error_get_last();
+                            Yii::warning("Unable to remove directory '{$fullPath}': {$error['message']}", __METHOD__);
+                        }
                     }
                 } elseif (!$expiredOnly || $expiredOnly && @filemtime($fullPath) < time()) {
-                    @unlink($fullPath);
+                    if (!@unlink($fullPath)) {
+                        $error = error_get_last();
+                        Yii::warning("Unable to remove file '{$fullPath}': {$error['message']}", __METHOD__);
+                    }
                 }
             }
             closedir($handle);

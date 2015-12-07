@@ -17,8 +17,8 @@ use yii\base\InvalidParamException;
  * @author Carsten Brandt <mail@cebe.cc>
  * @since 2.0
  *
- * @method ActiveRelationTrait one()
- * @method ActiveRelationTrait[] all()
+ * @method ActiveRecordInterface one()
+ * @method ActiveRecordInterface[] all()
  * @property ActiveRecord $modelClass
  */
 trait ActiveRelationTrait
@@ -44,7 +44,7 @@ trait ActiveRelationTrait
      */
     public $link;
     /**
-     * @var array|object the query associated with the pivot table. Please call [[via()]]
+     * @var array|object the query associated with the junction table. Please call [[via()]]
      * to set this property instead of directly setting it.
      * This property is only used in relational context.
      * @see via()
@@ -78,7 +78,7 @@ trait ActiveRelationTrait
     }
 
     /**
-     * Specifies the relation associated with the pivot table.
+     * Specifies the relation associated with the junction table.
      *
      * Use this method to specify a pivot record/table when declaring a relation in the [[ActiveRecord]] class:
      *
@@ -96,9 +96,9 @@ trait ActiveRelationTrait
      * ```
      *
      * @param string $relationName the relation name. This refers to a relation declared in [[primaryModel]].
-     * @param callable $callable a PHP callback for customizing the relation associated with the pivot table.
+     * @param callable $callable a PHP callback for customizing the relation associated with the junction table.
      * Its signature should be `function($query)`, where `$query` is the query to be customized.
-     * @return static the relation object itself.
+     * @return $this the relation object itself.
      */
     public function via($relationName, callable $callable = null)
     {
@@ -128,7 +128,7 @@ trait ActiveRelationTrait
      * ```
      *
      * @param string $relationName the name of the relation that is the inverse of this relation.
-     * @return static the relation object itself.
+     * @return $this the relation object itself.
      */
     public function inverseOf($relationName)
     {
@@ -195,10 +195,10 @@ trait ActiveRelationTrait
         }
 
         if ($this->via instanceof self) {
-            // via pivot table
+            // via junction table
             /* @var $viaQuery ActiveRelationTrait */
             $viaQuery = $this->via;
-            $viaModels = $viaQuery->findPivotRows($primaryModels);
+            $viaModels = $viaQuery->findJunctionRows($primaryModels);
             $this->filterByModels($viaModels);
         } elseif (is_array($this->via)) {
             // via relation
@@ -215,7 +215,7 @@ trait ActiveRelationTrait
             $this->filterByModels($primaryModels);
         }
 
-        if (count($primaryModels) === 1 && !$this->multiple) {
+        if (!$this->multiple && count($primaryModels) === 1) {
             $model = $this->one();
             foreach ($primaryModels as $i => $primaryModel) {
                 if ($primaryModel instanceof ActiveRecordInterface) {
@@ -230,22 +230,33 @@ trait ActiveRelationTrait
 
             return [$model];
         } else {
+            // https://github.com/yiisoft/yii2/issues/3197
+            // delay indexing related models after buckets are built
+            $indexBy = $this->indexBy;
+            $this->indexBy = null;
             $models = $this->all();
+
             if (isset($viaModels, $viaQuery)) {
                 $buckets = $this->buildBuckets($models, $this->link, $viaModels, $viaQuery->link);
             } else {
                 $buckets = $this->buildBuckets($models, $this->link);
             }
 
+            $this->indexBy = $indexBy;
+            if ($this->indexBy !== null && $this->multiple) {
+                $buckets = $this->indexBuckets($buckets, $this->indexBy);
+            }
+
             $link = array_values(isset($viaQuery) ? $viaQuery->link : $this->link);
             foreach ($primaryModels as $i => $primaryModel) {
-                if ($this->multiple && count($link) == 1 && is_array($keys = $primaryModel[reset($link)])) {
+                if ($this->multiple && count($link) === 1 && is_array($keys = $primaryModel[reset($link)])) {
                     $value = [];
                     foreach ($keys as $key) {
+                        $key = $this->normalizeModelKey($key);
                         if (isset($buckets[$key])) {
                             if ($this->indexBy !== null) {
                                 // if indexBy is set, array_merge will cause renumbering of numeric array
-                                foreach($buckets[$key] as $bucketKey => $bucketValue) {
+                                foreach ($buckets[$key] as $bucketKey => $bucketValue) {
                                     $value[$bucketKey] = $bucketValue;
                                 }
                             } else {
@@ -354,26 +365,18 @@ trait ActiveRelationTrait
         $linkKeys = array_keys($link);
 
         if (isset($map)) {
-            foreach ($models as $i => $model) {
+            foreach ($models as $model) {
                 $key = $this->getModelKey($model, $linkKeys);
                 if (isset($map[$key])) {
                     foreach (array_keys($map[$key]) as $key2) {
-                        if ($this->indexBy !== null) {
-                            $buckets[$key2][$i] = $model;
-                        } else {
-                            $buckets[$key2][] = $model;
-                        }
+                        $buckets[$key2][] = $model;
                     }
                 }
             }
         } else {
-            foreach ($models as $i => $model) {
+            foreach ($models as $model) {
                 $key = $this->getModelKey($model, $linkKeys);
-                if ($this->indexBy !== null) {
-                    $buckets[$key][$i] = $model;
-                } else {
-                    $buckets[$key][] = $model;
-                }
+                $buckets[$key][] = $model;
             }
         }
 
@@ -384,6 +387,28 @@ trait ActiveRelationTrait
         }
 
         return $buckets;
+    }
+
+
+    /**
+     * Indexes buckets by column name.
+     *
+     * @param array $buckets
+     * @var string|callable $column the name of the column by which the query results should be indexed by.
+     * This can also be a callable (e.g. anonymous function) that returns the index value based on the given row data.
+     * @return array
+     */
+    private function indexBuckets($buckets, $indexBy)
+    {
+        $result = [];
+        foreach ($buckets as $key => $models) {
+            $result[$key] = [];
+            foreach ($models as $model) {
+                $index = is_string($indexBy) ? $model[$indexBy] : call_user_func($indexBy, $model);
+                $result[$key][$index] = $model;
+            }
+        }
+        return $result;
     }
 
     /**
@@ -456,26 +481,35 @@ trait ActiveRelationTrait
      */
     private function getModelKey($model, $attributes)
     {
-        if (count($attributes) > 1) {
-            $key = [];
-            foreach ($attributes as $attribute) {
-                $key[] = $model[$attribute];
-            }
-
-            return serialize($key);
-        } else {
-            $attribute = reset($attributes);
-            $key = $model[$attribute];
-
-            return is_scalar($key) ? $key : serialize($key);
+        $key = [];
+        foreach ($attributes as $attribute) {
+            $key[] = $this->normalizeModelKey($model[$attribute]);
         }
+        if (count($key) > 1) {
+            return serialize($key);
+        }
+        $key = reset($key);
+        return is_scalar($key) ? $key : serialize($key);
+    }
+
+    /**
+     * @param mixed $value raw key value.
+     * @return string normalized key value.
+     */
+    private function normalizeModelKey($value)
+    {
+        if (is_object($value) && method_exists($value, '__toString')) {
+            // ensure matching to special objects, which are convertable to string, for cross-DBMS relations, for example: `|MongoId`
+            $value = $value->__toString();
+        }
+        return $value;
     }
 
     /**
      * @param array $primaryModels either array of AR instances or arrays
      * @return array
      */
-    private function findPivotRows($primaryModels)
+    private function findJunctionRows($primaryModels)
     {
         if (empty($primaryModels)) {
             return [];

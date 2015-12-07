@@ -56,12 +56,12 @@ class View extends Component
      * Each renderer may be a view renderer object or the configuration for creating the renderer object.
      * For example, the following configuration enables both Smarty and Twig view renderers:
      *
-     * ~~~
+     * ```php
      * [
      *     'tpl' => ['class' => 'yii\smarty\ViewRenderer'],
      *     'twig' => ['class' => 'yii\twig\ViewRenderer'],
      * ]
-     * ~~~
+     * ```
      *
      * If no renderer is available for the given view file, the view file will be treated as a normal PHP
      * and rendered via [[renderPhpFile()]].
@@ -233,7 +233,7 @@ class View extends Component
         $output = '';
         $this->_viewFiles[] = $viewFile;
 
-        if ($this->beforeRender()) {
+        if ($this->beforeRender($viewFile, $params)) {
             Yii::trace("Rendering view file: $viewFile", __METHOD__);
             $ext = pathinfo($viewFile, PATHINFO_EXTENSION);
             if (isset($this->renderers[$ext])) {
@@ -246,7 +246,7 @@ class View extends Component
             } else {
                 $output = $this->renderPhpFile($viewFile, $params);
             }
-            $this->afterRender($output);
+            $this->afterRender($viewFile, $params, $output);
         }
 
         array_pop($this->_viewFiles);
@@ -267,11 +267,16 @@ class View extends Component
      * This method is invoked right before [[renderFile()]] renders a view file.
      * The default implementation will trigger the [[EVENT_BEFORE_RENDER]] event.
      * If you override this method, make sure you call the parent implementation first.
+     * @param string $viewFile the view file to be rendered.
+     * @param array $params the parameter array passed to the [[render()]] method.
      * @return boolean whether to continue rendering the view file.
      */
-    public function beforeRender()
+    public function beforeRender($viewFile, $params)
     {
-        $event = new ViewEvent;
+        $event = new ViewEvent([
+            'viewFile' => $viewFile,
+            'params' => $params,
+        ]);
         $this->trigger(self::EVENT_BEFORE_RENDER, $event);
 
         return $event->isValid;
@@ -281,14 +286,19 @@ class View extends Component
      * This method is invoked right after [[renderFile()]] renders a view file.
      * The default implementation will trigger the [[EVENT_AFTER_RENDER]] event.
      * If you override this method, make sure you call the parent implementation first.
+     * @param string $viewFile the view file being rendered.
+     * @param array $params the parameter array passed to the [[render()]] method.
      * @param string $output the rendering result of the view file. Updates to this parameter
      * will be passed back and returned by [[renderFile()]].
      */
-    public function afterRender(&$output)
+    public function afterRender($viewFile, $params, &$output)
     {
         if ($this->hasEventHandlers(self::EVENT_AFTER_RENDER)) {
-            $event = new ViewEvent;
-            $event->output = $output;
+            $event = new ViewEvent([
+                'viewFile' => $viewFile,
+                'params' => $params,
+                'output' => $output,
+            ]);
             $this->trigger(self::EVENT_AFTER_RENDER, $event);
             $output = $event->output;
         }
@@ -394,11 +404,11 @@ class View extends Component
      * This method can be used to implement nested layout. For example, a layout can be embedded
      * in another layout file specified as '@app/views/layouts/base.php' like the following:
      *
-     * ~~~
+     * ```php
      * <?php $this->beginContent('@app/views/layouts/base.php'); ?>
-     * ...layout content here...
+     * //...layout content here...
      * <?php $this->endContent(); ?>
-     * ~~~
+     * ```
      *
      * @param string $viewFile the view file that will be used to decorate the content enclosed by this widget.
      * This can be specified as either the view file path or path alias.
@@ -430,12 +440,12 @@ class View extends Component
      * call to end the cache and save the content into cache.
      * A typical usage of fragment caching is as follows,
      *
-     * ~~~
+     * ```php
      * if ($this->beginCache($id)) {
      *     // ...generate content here
      *     $this->endCache();
      * }
-     * ~~~
+     * ```
      *
      * @param string $id a unique ID identifying the fragment to be cached.
      * @param array $properties initial property values for [[FragmentCache]]

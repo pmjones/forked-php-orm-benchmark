@@ -22,7 +22,7 @@ use Yii;
  * @property \yii\db\Connection $db The database connection. This property is read-only.
  * @property \yii\web\ErrorHandler|\yii\console\ErrorHandler $errorHandler The error handler application
  * component. This property is read-only.
- * @property \yii\base\Formatter $formatter The formatter application component. This property is read-only.
+ * @property \yii\i18n\Formatter $formatter The formatter application component. This property is read-only.
  * @property \yii\i18n\I18N $i18n The internationalization application component. This property is read-only.
  * @property \yii\log\Dispatcher $log The log dispatcher application component. This property is read-only.
  * @property \yii\mail\MailerInterface $mailer The mailer application component. This property is read-only.
@@ -87,7 +87,7 @@ abstract class Application extends Module
      * This namespace will be used to load controller classes by prepending it to the controller class name.
      * The default namespace is `app\controllers`.
      *
-     * Please refer to the [guide about class autoloading][guide-concept-autoloading] for more details.
+     * Please refer to the [guide about class autoloading](guide:concept-autoloading.md) for more details.
      */
     public $controllerNamespace = 'app\\controllers';
     /**
@@ -140,7 +140,7 @@ abstract class Application extends Module
      * @var array list of installed Yii extensions. Each array element represents a single extension
      * with the following structure:
      *
-     * ~~~
+     * ```php
      * [
      *     'name' => 'extension name',
      *     'version' => 'version number',
@@ -150,7 +150,7 @@ abstract class Application extends Module
      *         '@alias2' => 'to/path2',
      *     ],
      * ]
-     * ~~~
+     * ```
      *
      * The "bootstrap" class listed above will be instantiated during the application
      * [[bootstrap()|bootstrapping process]]. If the class implements [[BootstrapInterface]],
@@ -180,6 +180,10 @@ abstract class Application extends Module
      * This property is managed by the application. Do not modify this property.
      */
     public $state;
+    /**
+     * @var array list of loaded modules indexed by their class names.
+     */
+    public $loadedModules = [];
 
 
     /**
@@ -283,10 +287,10 @@ abstract class Application extends Module
             if (isset($extension['bootstrap'])) {
                 $component = Yii::createObject($extension['bootstrap']);
                 if ($component instanceof BootstrapInterface) {
-                    Yii::trace("Bootstrap with " . get_class($component) . '::bootstrap()', __METHOD__);
+                    Yii::trace('Bootstrap with ' . get_class($component) . '::bootstrap()', __METHOD__);
                     $component->bootstrap($this);
                 } else {
-                    Yii::trace("Bootstrap with " . get_class($component), __METHOD__);
+                    Yii::trace('Bootstrap with ' . get_class($component), __METHOD__);
                 }
             }
         }
@@ -307,10 +311,10 @@ abstract class Application extends Module
             }
 
             if ($component instanceof BootstrapInterface) {
-                Yii::trace("Bootstrap with " . get_class($component) . '::bootstrap()', __METHOD__);
+                Yii::trace('Bootstrap with ' . get_class($component) . '::bootstrap()', __METHOD__);
                 $component->bootstrap($this);
             } else {
-                Yii::trace("Bootstrap with " . get_class($component), __METHOD__);
+                Yii::trace('Bootstrap with ' . get_class($component), __METHOD__);
             }
         }
     }
@@ -449,6 +453,8 @@ abstract class Application extends Module
     {
         $this->_vendorPath = Yii::getAlias($path);
         Yii::setAlias('@vendor', $this->_vendorPath);
+        Yii::setAlias('@bower', $this->_vendorPath . DIRECTORY_SEPARATOR . 'bower');
+        Yii::setAlias('@npm', $this->_vendorPath . DIRECTORY_SEPARATOR . 'npm');
     }
 
     /**
@@ -514,7 +520,7 @@ abstract class Application extends Module
 
     /**
      * Returns the formatter component.
-     * @return \yii\base\Formatter the formatter application component.
+     * @return \yii\i18n\Formatter the formatter application component.
      */
     public function getFormatter()
     {
@@ -612,7 +618,7 @@ abstract class Application extends Module
         return [
             'log' => ['class' => 'yii\log\Dispatcher'],
             'view' => ['class' => 'yii\web\View'],
-            'formatter' => ['class' => 'yii\base\Formatter'],
+            'formatter' => ['class' => 'yii\i18n\Formatter'],
             'i18n' => ['class' => 'yii\i18n\I18N'],
             'mailer' => ['class' => 'yii\swiftmailer\Mailer'],
             'urlManager' => ['class' => 'yii\web\UrlManager'],

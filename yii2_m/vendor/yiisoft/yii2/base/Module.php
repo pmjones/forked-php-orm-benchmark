@@ -74,7 +74,7 @@ class Module extends ServiceLocator
      * the controller's fully qualified class name, and the rest of the name-value pairs
      * in the array are used to initialize the corresponding controller properties. For example,
      *
-     * ~~~
+     * ```php
      * [
      *   'account' => 'app\controllers\UserController',
      *   'article' => [
@@ -82,7 +82,7 @@ class Module extends ServiceLocator
      *      'pageTitle' => 'something new',
      *   ],
      * ]
-     * ~~~
+     * ```
      */
     public $controllerMap = [];
     /**
@@ -94,7 +94,7 @@ class Module extends ServiceLocator
      * For example, if the namespace of this module is "foo\bar", then the default
      * controller namespace would be "foo\bar\controllers".
      *
-     * See also the [guide section on autoloading][guide-concept-autoloading] to learn more about
+     * See also the [guide section on autoloading](guide:concept-autoloading) to learn more about
      * defining namespaces and how classes are loaded.
      */
     public $controllerNamespace;
@@ -123,10 +123,6 @@ class Module extends ServiceLocator
      * @var array child modules of this module
      */
     private $_modules = [];
-    /**
-     * @var array list of currently requested modules indexed by their class names
-     */
-    private static $_instances = [];
 
 
     /**
@@ -151,7 +147,7 @@ class Module extends ServiceLocator
     public static function getInstance()
     {
         $class = get_called_class();
-        return isset(self::$_instances[$class]) ? self::$_instances[$class] : null;
+        return isset(Yii::$app->loadedModules[$class]) ? Yii::$app->loadedModules[$class] : null;
     }
 
     /**
@@ -162,9 +158,9 @@ class Module extends ServiceLocator
     public static function setInstance($instance)
     {
         if ($instance === null) {
-            unset(self::$_instances[get_called_class()]);
+            unset(Yii::$app->loadedModules[get_called_class()]);
         } else {
-            self::$_instances[get_class($instance)] = $instance;
+            Yii::$app->loadedModules[get_class($instance)] = $instance;
         }
     }
 
@@ -247,11 +243,10 @@ class Module extends ServiceLocator
      */
     public function getViewPath()
     {
-        if ($this->_viewPath !== null) {
-            return $this->_viewPath;
-        } else {
-            return $this->_viewPath = $this->getBasePath() . DIRECTORY_SEPARATOR . 'views';
+        if ($this->_viewPath === null) {
+            $this->_viewPath = $this->getBasePath() . DIRECTORY_SEPARATOR . 'views';
         }
+        return $this->_viewPath;
     }
 
     /**
@@ -270,11 +265,11 @@ class Module extends ServiceLocator
      */
     public function getLayoutPath()
     {
-        if ($this->_layoutPath !== null) {
-            return $this->_layoutPath;
-        } else {
-            return $this->_layoutPath = $this->getViewPath() . DIRECTORY_SEPARATOR . 'layouts';
+        if ($this->_layoutPath === null) {
+            $this->_layoutPath = $this->getViewPath() . DIRECTORY_SEPARATOR . 'layouts';
         }
+
+        return $this->_layoutPath;
     }
 
     /**
@@ -298,12 +293,12 @@ class Module extends ServiceLocator
      * (must start with '@') and the array values are the corresponding paths or aliases.
      * For example,
      *
-     * ~~~
+     * ```php
      * [
      *     '@models' => '@app/models', // an existing alias
      *     '@backend' => __DIR__ . '/../backend',  // a directory
      * ]
-     * ~~~
+     * ```
      */
     public function setAliases($aliases)
     {
@@ -354,9 +349,6 @@ class Module extends ServiceLocator
                 return $this->_modules[$id];
             } elseif ($load) {
                 Yii::trace("Loading module: $id", __METHOD__);
-                if (is_array($this->_modules[$id]) && !isset($this->_modules[$id]['class'])) {
-                    $this->_modules[$id]['class'] = 'yii\base\Module';
-                }
                 /* @var $module Module */
                 $module = Yii::createObject($this->_modules[$id], [$id, $this]);
                 $module->setInstance($module);
@@ -371,7 +363,7 @@ class Module extends ServiceLocator
      * Adds a sub-module to this module.
      * @param string $id module ID
      * @param Module|array|null $module the sub-module to be added to this module. This can
-     * be one of the followings:
+     * be one of the following:
      *
      * - a [[Module]] object
      * - a configuration array: when [[getModule()]] is called initially, the array
@@ -422,7 +414,7 @@ class Module extends ServiceLocator
      *
      * The following is an example for registering two sub-modules:
      *
-     * ~~~
+     * ```php
      * [
      *     'comment' => [
      *         'class' => 'app\modules\comment\CommentModule',
@@ -430,7 +422,7 @@ class Module extends ServiceLocator
      *     ],
      *     'booking' => ['class' => 'app\modules\booking\BookingModule'],
      * ]
-     * ~~~
+     * ```
      *
      * @param array $modules modules (id => module configuration or instances)
      */
@@ -511,14 +503,13 @@ class Module extends ServiceLocator
         }
 
         // module and controller map take precedence
+        if (isset($this->controllerMap[$id])) {
+            $controller = Yii::createObject($this->controllerMap[$id], [$id, $this]);
+            return [$controller, $route];
+        }
         $module = $this->getModule($id);
         if ($module !== null) {
             return $module->createController($route);
-        }
-        if (isset($this->controllerMap[$id])) {
-            $controller = Yii::createObject($this->controllerMap[$id], [$id, $this]);
-
-            return [$controller, $route];
         }
 
         if (($pos = strrpos($route, '/')) !== false) {
@@ -573,7 +564,8 @@ class Module extends ServiceLocator
         }
 
         if (is_subclass_of($className, 'yii\base\Controller')) {
-            return Yii::createObject($className, [$id, $this]);
+            $controller = Yii::createObject($className, [$id, $this]);
+            return get_class($controller) === $className ? $controller : null;
         } elseif (YII_DEBUG) {
             throw new InvalidConfigException("Controller class must extend from \\yii\\base\\Controller.");
         } else {
@@ -587,17 +579,21 @@ class Module extends ServiceLocator
      * The method will trigger the [[EVENT_BEFORE_ACTION]] event. The return value of the method
      * will determine whether the action should continue to run.
      *
+     * In case the action should not run, the request should be handled inside of the `beforeAction` code
+     * by either providing the necessary output or redirecting the request. Otherwise the response will be empty.
+     *
      * If you override this method, your code should look like the following:
      *
      * ```php
      * public function beforeAction($action)
      * {
-     *     if (parent::beforeAction($action)) {
-     *         // your custom code here
-     *         return true;  // or false if needed
-     *     } else {
+     *     if (!parent::beforeAction($action)) {
      *         return false;
      *     }
+     *
+     *     // your custom code here
+     *
+     *     return true; // or false to not run the action
      * }
      * ```
      *

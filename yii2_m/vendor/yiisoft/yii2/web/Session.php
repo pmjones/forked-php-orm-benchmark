@@ -22,14 +22,14 @@ use yii\base\InvalidParamException;
  *
  * Session can be used like an array to set and get session data. For example,
  *
- * ~~~
+ * ```php
  * $session = new Session;
  * $session->open();
  * $value1 = $session['name1'];  // get session variable 'name1'
  * $value2 = $session['name2'];  // get session variable 'name2'
  * foreach ($session as $name => $value) // traverse all session variables
  * $session['name3'] = $value3;  // set session variable 'name3'
- * ~~~
+ * ```
  *
  * Session can be extended to support customized session storage.
  * To do so, override [[useCustomStorage]] so that it returns true, and
@@ -43,7 +43,8 @@ use yii\base\InvalidParamException;
  * useful for displaying confirmation messages. To use flash messages, simply
  * call methods such as [[setFlash()]], [[getFlash()]].
  *
- * @property array $allFlashes Flash messages (key => message). This property is read-only.
+ * @property array $allFlashes Flash messages (key => message or key => [message1, message2]). This property
+ * is read-only.
  * @property array $cookieParams The session cookie parameters. This property is read-only.
  * @property integer $count The number of session variables. This property is read-only.
  * @property string $flash The key identifying the flash message. Note that flash messages and normal session
@@ -204,10 +205,10 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
         if ($this->_hasSessionId === null) {
             $name = $this->getName();
             $request = Yii::$app->getRequest();
-            if (ini_get('session.use_cookies') && !empty($_COOKIE[$name])) {
+            if (!empty($_COOKIE[$name]) && ini_get('session.use_cookies')) {
                 $this->_hasSessionId = true;
-            } elseif (!ini_get('use_only_cookies') && ini_get('use_trans_sid')) {
-                $this->_hasSessionId = $request->get($name) !== null;
+            } elseif (!ini_get('session.use_only_cookies') && ini_get('session.use_trans_sid')) {
+                $this->_hasSessionId = $request->get($name) != '';
             } else {
                 $this->_hasSessionId = false;
             }
@@ -228,6 +229,8 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     }
 
     /**
+     * Gets the session ID.
+     * This is a wrapper for [PHP session_id()](http://php.net/manual/en/function.session-id.php).
      * @return string the current session ID
      */
     public function getId()
@@ -236,6 +239,8 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     }
 
     /**
+     * Sets the session ID.
+     * This is a wrapper for [PHP session_id()](http://php.net/manual/en/function.session-id.php).
      * @param string $value the session ID for the current session
      */
     public function setId($value)
@@ -256,6 +261,8 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     }
 
     /**
+     * Gets the name of the current session.
+     * This is a wrapper for [PHP session_name()](http://php.net/manual/en/function.session-name.php).
      * @return string the current session name
      */
     public function getName()
@@ -264,6 +271,8 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     }
 
     /**
+     * Sets the name for the current session.
+     * This is a wrapper for [PHP session_name()](http://php.net/manual/en/function.session-name.php).
      * @param string $value the session name for the current session, must be an alphanumeric string.
      * It defaults to "PHPSESSID".
      */
@@ -273,6 +282,8 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     }
 
     /**
+     * Gets the current session save path.
+     * This is a wrapper for [PHP session_save_path()](http://php.net/manual/en/function.session-save-path.php).
      * @return string the current session save path, defaults to '/tmp'.
      */
     public function getSavePath()
@@ -281,6 +292,8 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     }
 
     /**
+     * Sets the current session save path.
+     * This is a wrapper for [PHP session_save_path()](http://php.net/manual/en/function.session-save-path.php).
      * @param string $value the current session save path. This can be either a directory name or a path alias.
      * @throws InvalidParamException if the path is not a valid directory
      */
@@ -296,7 +309,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
 
     /**
      * @return array the session cookie parameters.
-     * @see http://us2.php.net/manual/en/function.session-get-cookie-params.php
+     * @see http://php.net/manual/en/function.session-get-cookie-params.php
      */
     public function getCookieParams()
     {
@@ -504,7 +517,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
 
     /**
      * Returns an iterator for traversing the session variables.
-     * This method is required by the interface IteratorAggregate.
+     * This method is required by the interface [[\IteratorAggregate]].
      * @return SessionIterator an iterator for traversing the session variables.
      */
     public function getIterator()
@@ -525,7 +538,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
 
     /**
      * Returns the number of items in the session.
-     * This method is required by Countable interface.
+     * This method is required by [[\Countable]] interface.
      * @return integer number of items in the session.
      */
     public function count()
@@ -625,8 +638,9 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * @param mixed $defaultValue value to be returned if the flash message does not exist.
      * @param boolean $delete whether to delete this flash message right after this method is called.
      * If false, the flash message will be automatically deleted in the next request.
-     * @return mixed the flash message
+     * @return mixed the flash message or an array of messages if addFlash was used
      * @see setFlash()
+     * @see addFlash()
      * @see hasFlash()
      * @see getAllFlashes()
      * @see removeFlash()
@@ -657,7 +671,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      *
      * ```php
      * <?php
-     * foreach(Yii::$app->session->getAllFlashes() as $key => $message) {
+     * foreach (Yii::$app->session->getAllFlashes() as $key => $message) {
      *     echo '<div class="alert alert-' . $key . '">' . $message . '</div>';
      * } ?>
      * ```
@@ -665,12 +679,15 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * With the above code you can use the [bootstrap alert][] classes such as `success`, `info`, `danger`
      * as the flash message key to influence the color of the div.
      *
+     * Note that if you use [[addFlash()]], `$message` will be an array, and you will have to adjust the above code.
+     *
      * [bootstrap alert]: http://getbootstrap.com/components/#alerts
      *
      * @param boolean $delete whether to delete the flash messages right after this method is called.
      * If false, the flash messages will be automatically deleted in the next request.
-     * @return array flash messages (key => message).
+     * @return array flash messages (key => message or key => [message1, message2]).
      * @see setFlash()
+     * @see addFlash()
      * @see getFlash()
      * @see hasFlash()
      * @see removeFlash()
@@ -699,9 +716,10 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     }
 
     /**
-     * Stores a flash message.
+     * Sets a flash message.
      * A flash message will be automatically deleted after it is accessed in a request and the deletion will happen
      * in the next request.
+     * If there is already an existing flash message with the same key, it will be overwritten by the new one.
      * @param string $key the key identifying the flash message. Note that flash messages
      * and normal session variables share the same name space. If you have a normal
      * session variable using the same name, its value will be overwritten by this method.
@@ -711,6 +729,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * regardless if it is accessed or not. If true (default value), the flash message will remain until after
      * it is accessed.
      * @see getFlash()
+     * @see addFlash()
      * @see removeFlash()
      */
     public function setFlash($key, $value = true, $removeAfterAccess = true)
@@ -722,6 +741,35 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     }
 
     /**
+     * Adds a flash message.
+     * If there are existing flash messages with the same key, the new one will be appended to the existing message array.
+     * @param string $key the key identifying the flash message.
+     * @param mixed $value flash message
+     * @param boolean $removeAfterAccess whether the flash message should be automatically removed only if
+     * it is accessed. If false, the flash message will be automatically removed after the next request,
+     * regardless if it is accessed or not. If true (default value), the flash message will remain until after
+     * it is accessed.
+     * @see getFlash()
+     * @see setFlash()
+     * @see removeFlash()
+     */
+    public function addFlash($key, $value = true, $removeAfterAccess = true)
+    {
+        $counters = $this->get($this->flashParam, []);
+        $counters[$key] = $removeAfterAccess ? -1 : 0;
+        $_SESSION[$this->flashParam] = $counters;
+        if (empty($_SESSION[$key])) {
+            $_SESSION[$key] = [$value];
+        } else {
+            if (is_array($_SESSION[$key])) {
+                $_SESSION[$key][] = $value;
+            } else {
+                $_SESSION[$key] = [$_SESSION[$key], $value];
+            }
+        }
+    }
+
+    /**
      * Removes a flash message.
      * @param string $key the key identifying the flash message. Note that flash messages
      * and normal session variables share the same name space.  If you have a normal
@@ -729,6 +777,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * @return mixed the removed flash message. Null if the flash message does not exist.
      * @see getFlash()
      * @see setFlash()
+     * @see addFlash()
      * @see removeAllFlashes()
      */
     public function removeFlash($key)
@@ -748,6 +797,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * by this method.
      * @see getFlash()
      * @see setFlash()
+     * @see addFlash()
      * @see removeFlash()
      */
     public function removeAllFlashes()
@@ -760,9 +810,9 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     }
 
     /**
-     * Returns a value indicating whether there is a flash message associated with the specified key.
-     * @param string $key key identifying the flash message
-     * @return boolean whether the specified flash message exists
+     * Returns a value indicating whether there are flash messages associated with the specified key.
+     * @param string $key key identifying the flash message type
+     * @return boolean whether any flash messages exist under specified key
      */
     public function hasFlash($key)
     {
@@ -770,7 +820,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     }
 
     /**
-     * This method is required by the interface ArrayAccess.
+     * This method is required by the interface [[\ArrayAccess]].
      * @param mixed $offset the offset to check on
      * @return boolean
      */
@@ -782,7 +832,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     }
 
     /**
-     * This method is required by the interface ArrayAccess.
+     * This method is required by the interface [[\ArrayAccess]].
      * @param integer $offset the offset to retrieve element.
      * @return mixed the element at the offset, null if no element is found at the offset
      */
@@ -794,7 +844,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     }
 
     /**
-     * This method is required by the interface ArrayAccess.
+     * This method is required by the interface [[\ArrayAccess]].
      * @param integer $offset the offset to set element
      * @param mixed $item the element value
      */
@@ -805,7 +855,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     }
 
     /**
-     * This method is required by the interface ArrayAccess.
+     * This method is required by the interface [[\ArrayAccess]].
      * @param mixed $offset the offset to unset element
      */
     public function offsetUnset($offset)

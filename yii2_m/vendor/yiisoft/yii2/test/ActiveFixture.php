@@ -57,7 +57,7 @@ class ActiveFixture extends BaseActiveFixture
     public function init()
     {
         parent::init();
-        if (!isset($this->modelClass) && !isset($this->tableName)) {
+        if ($this->modelClass === null && $this->tableName === null) {
             throw new InvalidConfigException('Either "modelClass" or "tableName" must be set.');
         }
     }
@@ -65,6 +65,7 @@ class ActiveFixture extends BaseActiveFixture
     /**
      * Loads the fixture.
      *
+     * The default implementation will first clean up the table by calling [[resetTable()]].
      * It will then populate the table with the data returned by [[getData()]].
      *
      * If you override this method, you should consider calling the parent implementation
@@ -72,33 +73,13 @@ class ActiveFixture extends BaseActiveFixture
      */
     public function load()
     {
-        parent::load();
-
-        $table = $this->getTableSchema();
-
-        foreach ($this->getData() as $alias => $row) {
-            $this->db->createCommand()->insert($table->fullName, $row)->execute();
-            if ($table->sequenceName !== null) {
-                foreach ($table->primaryKey as $pk) {
-                    if (!isset($row[$pk])) {
-                        $row[$pk] = $this->db->getLastInsertID($table->sequenceName);
-                        break;
-                    }
-                }
-            }
-            $this->data[$alias] = $row;
-        }
-    }
-
-    /**
-     * Unloads the fixture.
-     *
-     * The default implementation will clean up the table by calling [[resetTable()]].
-     */
-    public function unload()
-    {
         $this->resetTable();
-        parent::unload();
+        $this->data = [];
+        $table = $this->getTableSchema();
+        foreach ($this->getData() as $alias => $row) {
+            $primaryKeys = $this->db->schema->insert($table->fullName, $row);
+            $this->data[$alias] = array_merge($row, $primaryKeys);
+        }
     }
 
     /**
