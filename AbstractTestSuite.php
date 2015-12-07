@@ -53,7 +53,7 @@ abstract class AbstractTestSuite
 		$t1 =  $this->runTest('runAuthorInsertion', 1700);
 		$t1 += $this->runTest('runBookInsertion', 1700);
 		$t2 = $this->runTest('runPKSearch', 1900);
-		//$t3 = $this->runTest('runComplexQuery', 190);// TODO: ComplexQuery are different for orms
+		$t3 = 000; //$this->runTest('runComplexQuery', 190);// TODO: ComplexQuery are different for orms
 		$t4 = $this->runTest('runHydrate', 750);
 		$t5 = $this->runTest('runJoinSearch', 700);
 		echo sprintf("| %32s | %6d | %6d | %6d | %6d | %6d | ", str_replace('TestSuite', '', get_class($this)), $t1, $t2, $t3, $t4, $t5);
