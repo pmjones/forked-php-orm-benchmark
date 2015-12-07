@@ -27,10 +27,12 @@ docker-compose run shell
 
 Run benchmarks using PHP 5.6.4:
 ```
+/usr/bin/update-alternatives --install /usr/bin/php php /usr/bin/php5 60
 php TestRunner.php
 ```
 
 Run benchmarks using HHVM 3.10.1:
 ```
-hhvm TestRunner.php
+/usr/bin/update-alternatives --install /usr/bin/php php /repo/.docker-stack/stack/php/hhvm-jit.sh 60
+php TestRunner.php
 ```
