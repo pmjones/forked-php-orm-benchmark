@@ -19,8 +19,7 @@ class Book extends CActiveRecord
             'title' => 'string NOT NULL',
             'isbn' => 'string(24) NOT NULL',
             'price' => 'decimal NOT NULL',
-            'author_id' => 'int NOT NULL',
-            'FOREIGN KEY (author_id) REFERENCES Author(id)'
+            'author_id' => 'int',
         ]);
     }
 

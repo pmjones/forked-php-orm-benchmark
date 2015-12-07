@@ -6,11 +6,11 @@ class Propel20WithCacheTestSuite extends Propel20TestSuite
 {
 	function initialize()
 	{
-        $loader = require_once __DIR__ . '/../propel_20/vendor/autoload.php';
+		$loader = require_once __DIR__ . '/../propel_20/vendor/autoload.php';
 
 		include realpath(dirname(__FILE__) . '/build/conf/configWithCache.php');
 
-        $loader->add('', __DIR__ . '/build/classes');
+		$loader->add('', __DIR__ . '/build/classes');
 
 		\Propel\Runtime\Propel::disableInstancePooling();
 		

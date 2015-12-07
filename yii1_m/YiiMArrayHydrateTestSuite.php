@@ -23,7 +23,7 @@ class YiiMArrayHydrateTestSuite extends YiiMWithCacheTestSuite
 
     public function runJoinSearch($i)
     {
-        $book = \app\models\Book::find()->from('Book b')->where('b.title = ?', ['Hello' . $i])->limit(1)->asArray()->one();
+        $book = \app\models\Book::find()->from('Book b')->with('author')->where('b.title = ?', ['Hello' . $i])->limit(1)->asArray()->one();
 //        $book = $this->em->createQuery(
 //            'SELECT b, a FROM Book b JOIN b.author a WHERE b.title = ?1'
 //        )->setParameter(1, 'Hello' . $i)

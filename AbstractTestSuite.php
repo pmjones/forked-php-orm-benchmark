@@ -64,15 +64,13 @@ abstract class AbstractTestSuite
 		$this->clearCache();
 
 		$timer = new sfTimer();
-        $this->beginTransaction();
+		$this->beginTransaction();
 		for($i=0; $i<$nbTest; $i++) {
 			$this->$methodName($i);
 		}
-        $this->commit();
+		$this->commit();
 		$t = $timer->getElapsedTime();
 
 		return $t * 1000;
 	}
-	
-	
 }

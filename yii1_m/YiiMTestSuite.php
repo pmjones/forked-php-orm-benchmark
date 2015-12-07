@@ -61,7 +61,7 @@ class YiiMTestSuite extends AbstractTestSuite
         $book->title = 'Hello' . $i;
         $book->isbn = '1234';
         $book->price = $i;
-        $book->author_id = $this->authors[array_rand($this->authors)]->id;
+        $book->author = $this->authors[array_rand($this->authors)];
 
         $book->save(false);
 
@@ -112,6 +112,7 @@ class YiiMTestSuite extends AbstractTestSuite
             'alias' => 'b',
             'condition' => 'b.title = :t',
             'params' => [':t' => 'Hello' . $i],
+            'with' => ['author']
         ));
 //        $book = $this->em->createQuery(
 //            'SELECT b, a FROM Book b JOIN b.author a WHERE b.title = ?1'

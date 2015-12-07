@@ -67,8 +67,8 @@ class Yii2MTestSuite extends AbstractTestSuite
         $book->isbn = '1234';
         $book->price = $i;
 
-        $book->author_id = $this->authors[array_rand($this->authors)]->id;
-//        $book->link('author', $this->authors[array_rand($this->authors)]);
+        //$book->author_id = $this->authors[array_rand($this->authors)]->id;
+        $book->link('author', $this->authors[array_rand($this->authors)]);
         $book->save(false);
 
         $this->books[] = $book;

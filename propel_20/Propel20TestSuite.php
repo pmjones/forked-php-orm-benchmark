@@ -6,11 +6,11 @@ class Propel20TestSuite extends AbstractTestSuite
 {
 	function initialize()
 	{
-        $loader = require_once "vendor/autoload.php";
+		$loader = require_once "vendor/autoload.php";
 
 		include realpath(dirname(__FILE__) . '/build/conf/config.php');
 
-        $loader->add('', __DIR__ . '/build/classes');
+		$loader->add('', __DIR__ . '/build/classes');
 
 		\Propel\Runtime\Propel::disableInstancePooling();
 		
@@ -20,8 +20,6 @@ class Propel20TestSuite extends AbstractTestSuite
 	
 	function clearCache()
 	{
-        AuthorQuery::create()->getTableMap()->clearInstancePool();
-        BookQuery::create()->getTableMap()->clearInstancePool();
 	}
 	
 	function beginTransaction()
@@ -51,13 +49,13 @@ class Propel20TestSuite extends AbstractTestSuite
 		$book->setISBN('1234');
 		$book->setPrice($i);
 		$book->save($this->con);
-		$this->books[]= $book->getId();
+		$this->books[]= $book;
 	}
 	
 	function runPKSearch($i)
 	{
-        $author = AuthorQuery::create()
-            ->findPk($this->authors[array_rand($this->authors)]->getId(), $this->con);
+		$author = AuthorQuery::create()
+			->findPk($this->authors[array_rand($this->authors)]->getId(), $this->con);
 	}
 	
 	function runComplexQuery($i)
@@ -65,7 +63,7 @@ class Propel20TestSuite extends AbstractTestSuite
 		$authors = AuthorQuery::create()
 			->where('Author.Id > ?', $this->authors[array_rand($this->authors)]->getId())
 			->_or()
-            ->Where('(Author.FirstName || Author.LastName) = ?', 'John Doe')
+			->Where('(Author.FirstName || Author.LastName) = ?', 'John Doe')
 			->count($this->con);
 	}
 
