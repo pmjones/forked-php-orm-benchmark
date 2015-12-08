@@ -37,7 +37,8 @@ abstract class AbstractTestSuite
 			[title] VARCHAR(255)  NOT NULL,
 			[isbn] VARCHAR(24)  NOT NULL,
 			[price] FLOAT,
-			[author_id] INTEGER
+			[author_id] INTEGER,
+			FOREIGN KEY (author_id) REFERENCES author(id)
 		)');
 		$this->con->exec('CREATE TABLE [author]
 		(
@@ -50,12 +51,12 @@ abstract class AbstractTestSuite
 	
 	public function run()
 	{
-		$t1 =  $this->runTest('runAuthorInsertion', 1700);
-		$t1 += $this->runTest('runBookInsertion', 1700);
-		$t2 = $this->runTest('runPKSearch', 1900);
-		$t3 = 000; //$this->runTest('runComplexQuery', 190);// TODO: ComplexQuery are different for orms
-		$t4 = $this->runTest('runHydrate', 750);
-		$t5 = $this->runTest('runJoinSearch', 700);
+		$t1 =  $this->runTest('runAuthorInsertion', 2000);
+		$t1 += $this->runTest('runBookInsertion', 2000);
+		$t2 = $this->runTest('runPKSearch', 500);
+		$t3 = $this->runTest('runComplexQuery', 1000);
+		$t4 = $this->runTest('runHydrate', 1000);
+		$t5 = $this->runTest('runJoinSearch', 1000);
 		echo sprintf("| %32s | %6d | %6d | %6d | %6d | %6d | ", str_replace('TestSuite', '', get_class($this)), $t1, $t2, $t3, $t4, $t5);
 	}
 	
