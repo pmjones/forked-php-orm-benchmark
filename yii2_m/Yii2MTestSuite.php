@@ -67,8 +67,8 @@ class Yii2MTestSuite extends AbstractTestSuite
         $book->isbn = '1234';
         $book->price = $i;
 
-        //$book->author_id = $this->authors[array_rand($this->authors)]->id;
-        $book->link('author', $this->authors[array_rand($this->authors)]);
+        $book->author_id = $this->authors[array_rand($this->authors)]->id;
+        //$book->link('author', $this->authors[array_rand($this->authors)]);
         $book->save(false);
 
         $this->books[] = $book;
@@ -107,7 +107,7 @@ class Yii2MTestSuite extends AbstractTestSuite
 
     public function runJoinSearch($i)
     {
-        $book = Book::find()->from('Book b')->with('author')->where('b.title = :t', [':t' => 'Hello' . $i])->one();
+        $book = Book::find()->from('Book b')->joinWith('author')->where('b.title = :t', [':t' => 'Hello' . $i])->one();
 //        $book = $this->em->createQuery(
 //            'SELECT b, a FROM Book b JOIN b.author a WHERE b.title = ?1'
 //        )->setParameter(1, 'Hello' . $i)

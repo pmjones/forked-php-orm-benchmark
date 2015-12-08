@@ -21,7 +21,7 @@ class Yii2MScalarHydrateTestSuite extends Yii2MTestSuite
 
     public function runJoinSearch($i)
     {
-        $book = \app\models\Book::find()->from('Book b')->with('author')->where('b.title = :t', ['t' => 'Hello' . $i])->limit(1)->scalar();
+        $book = \app\models\Book::find()->from('Book b')->joinWith('author')->where('b.title = :t', ['t' => 'Hello' . $i])->limit(1)->scalar();
 //        $book = $this->em->createQuery(
 //            'SELECT b, a FROM Book b JOIN b.author a WHERE b.title = ?1'
 //        )->setParameter(1, 'Hello' . $i)
