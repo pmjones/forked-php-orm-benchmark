@@ -80,7 +80,7 @@ class LessQLTestSuite extends AbstractTestSuite
 	{
 		$stmt = $this->db
 				->table('author')
-				->where('id > ? OR first_name || last_name = ? ', $this->authors[array_rand($this->authors)], 'John Doe')
+				->where('id > ? OR (first_name || last_name) = ? ', $this->authors[array_rand($this->authors)], 'John Doe')
 				->count();
 
 	}
