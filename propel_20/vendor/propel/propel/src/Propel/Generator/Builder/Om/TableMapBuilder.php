@@ -182,7 +182,7 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
      */
     protected function addConstants()
     {
-        return $this->renderTemplate('tableMapConstants', array(
+        return $this->renderTemplate('tableMapConstants', [
             'className'         => $this->getClasspath(),
             'dbName'            => $this->getDatabase()->getName(),
             'tableName'         => $this->getTable()->getName(),
@@ -193,7 +193,7 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
             'nbHydrateColumns'  => $this->getTable()->getNumColumns() - $this->getTable()->getNumLazyLoadColumns(),
             'columns'           => $this->getTable()->getColumns(),
             'stringFormat'      => $this->getTable()->getDefaultStringFormat(),
-        ));
+        ]);
     }
 
     /**
@@ -205,9 +205,9 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
         foreach ($this->getTable()->getColumns() as $col) {
             $script .= "
     /**
-     * the column name for the " . strtoupper($col->getName()) ." field
+     * the column name for the " . $col->getName() ." field
      */
-    const ".$col->getConstantName() ." = '" . $this->getTable()->getName() . ".".strtoupper($col->getName())."';
+    const ".$col->getConstantName() ." = '" . $this->getTable()->getName() . ".".$col->getName()."';
 ";
         } // foreach
     }
@@ -221,7 +221,7 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
         foreach ($this->getTable()->getColumns() as $col) {
             if ($col->isEnumType()) {
                 $script .= "
-    /** The enumerated values for the " . strtoupper($col->getName()) . " field */";
+    /** The enumerated values for the " . $col->getName() . " field */";
                 foreach ($col->getValueSet() as $value) {
                     $script .= "
     const " . $col->getConstantName() . '_' . $this->getEnumValueConstant($value) . " = '" . $value . "';";
@@ -318,10 +318,10 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
 
             $script .= "
     /** A key representing a particular subclass */
-    const CLASSKEY_".strtoupper($child->getKey())." = '" . $child->getKey() . "';
+    const CLASSKEY_".$child->getConstantSuffix()." = '" . $child->getKey() . "';
 ";
 
-            if (strtoupper($child->getClassName()) != strtoupper($child->getKey())) {
+            if (strtoupper($child->getClassName()) != $child->getConstantSuffix()) {
                 $script .= "
     /** A key representing a particular subclass */
     const CLASSKEY_".strtoupper($child->getClassname())." = '" . $fqcn . "';
@@ -330,7 +330,7 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
 
             $script .= "
     /** A class that can be returned by this tableMap. */
-    const CLASSNAME_".strtoupper($child->getKey())." = '". $fqcn . "';
+    const CLASSNAME_".$child->getConstantSuffix()." = '". $fqcn . "';
 ";
         }
     }
@@ -357,14 +357,14 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
         $tableColumns = $this->getTable()->getColumns();
 
         $fieldNamesPhpName       = '';
-        $fieldNamesStudlyPhpName = '';
+        $fieldNamesCamelCaseName = '';
         $fieldNamesColname       = '';
         $fieldNamesRawColname    = '';
         $fieldNamesFieldName     = '';
         $fieldNamesNum           = '';
 
         $fieldKeysPhpName        = '';
-        $fieldKeysStudlyPhpName  = '';
+        $fieldKeysCamelCaseName  = '';
         $fieldKeysColname        = '';
         $fieldKeysRawColname     = '';
         $fieldKeysFieldName      = '';
@@ -372,34 +372,34 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
 
         foreach ($tableColumns as $num => $col) {
             $fieldNamesPhpName       .= "'" . $col->getPhpName() . "', ";
-            $fieldNamesStudlyPhpName .= "'" . $col->getStudlyPhpName() . "', ";
+            $fieldNamesCamelCaseName .= "'" . $col->getCamelCaseName() . "', ";
             $fieldNamesColname       .= $this->getColumnConstant($col, $this->getTableMapClass()) . ", ";
             $fieldNamesRawColname    .= "'" . $col->getConstantName() . "', ";
             $fieldNamesFieldName     .= "'" . $col->getName() . "', ";
             $fieldNamesNum           .= "$num, ";
 
             $fieldKeysPhpName        .= "'" . $col->getPhpName() . "' => $num, ";
-            $fieldKeysStudlyPhpName  .= "'" . $col->getStudlyPhpName() . "' => $num, ";
+            $fieldKeysCamelCaseName  .= "'" . $col->getCamelCaseName() . "' => $num, ";
             $fieldKeysColname        .= $this->getColumnConstant($col, $this->getTableMapClass())." => $num, ";
             $fieldKeysRawColname     .= "'" . $col->getConstantName() . "' => $num, ";
             $fieldKeysFieldName      .= "'" . $col->getName() . "' => $num, ";
             $fieldKeysNum            .= "$num, ";
         }
 
-        return $this->renderTemplate('tableMapFields', array(
+        return $this->renderTemplate('tableMapFields', [
                 'fieldNamesPhpName'       => $fieldNamesPhpName,
-                'fieldNamesStudlyPhpName' => $fieldNamesStudlyPhpName,
+                'fieldNamesCamelCaseName' => $fieldNamesCamelCaseName,
                 'fieldNamesColname'       => $fieldNamesColname,
                 'fieldNamesRawColname'    => $fieldNamesRawColname,
                 'fieldNamesFieldName'     => $fieldNamesFieldName,
                 'fieldNamesNum'           => $fieldNamesNum,
                 'fieldKeysPhpName'        => $fieldKeysPhpName,
-                'fieldKeysStudlyPhpName'  => $fieldKeysStudlyPhpName,
+                'fieldKeysCamelCaseName'  => $fieldKeysCamelCaseName,
                 'fieldKeysColname'        => $fieldKeysColname,
                 'fieldKeysRawColname'     => $fieldKeysRawColname,
                 'fieldKeysFieldName'      => $fieldKeysFieldName,
                 'fieldKeysNum'            => $fieldKeysNum,
-        ));
+        ]);
     }
 
     /**
@@ -461,6 +461,7 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
         // attributes
         \$this->setName('".$table->getName()."');
         \$this->setPhpName('".$table->getPhpName()."');
+        \$this->setIdentifierQuoting(".($table->isIdentifierQuotingEnabled() ? 'true' : 'false').");
         \$this->setClassName('" . addslashes($this->getStubObjectBuilder()->getFullyQualifiedClassName()) . "');
         \$this->setPackage('" . parent::getPackage() . "');";
         if ($table->getIdMethod() == "native") {
@@ -495,7 +496,7 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
             $script .= "
         // columns";
         foreach ($table->getColumns() as $col) {
-            $cup = strtoupper($col->getName());
+            $columnName = $col->getName();
             $cfc = $col->getPhpName();
             if (!$col->getSize()) {
                 $size = "null";
@@ -507,30 +508,30 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
                 if ($col->isForeignKey()) {
                     foreach ($col->getForeignKeys() as $fk) {
                         $script .= "
-        \$this->addForeignPrimaryKey('$cup', '$cfc', '".$col->getType()."' , '".$fk->getForeignTableName()."', '".strtoupper($fk->getMappedForeignColumn($col->getName()))."', ".($col->isNotNull() ? 'true' : 'false').", ".$size.", $default);";
+        \$this->addForeignPrimaryKey('$columnName', '$cfc', '".$col->getType()."' , '".$fk->getForeignTableName()."', '".$fk->getMappedForeignColumn($col->getName())."', ".($col->isNotNull() ? 'true' : 'false').", ".$size.", $default);";
                     }
                 } else {
                     $script .= "
-        \$this->addPrimaryKey('$cup', '$cfc', '".$col->getType()."', ".var_export($col->isNotNull(), true).", ".$size.", $default);";
+        \$this->addPrimaryKey('$columnName', '$cfc', '".$col->getType()."', ".var_export($col->isNotNull(), true).", ".$size.", $default);";
                 }
             } else {
                 if ($col->isForeignKey()) {
                     foreach ($col->getForeignKeys() as $fk) {
                         $script .= "
-        \$this->addForeignKey('$cup', '$cfc', '".$col->getType()."', '".$fk->getForeignTableName()."', '".strtoupper($fk->getMappedForeignColumn($col->getName()))."', ".($col->isNotNull() ? 'true' : 'false').", ".$size.", $default);";
+        \$this->addForeignKey('$columnName', '$cfc', '".$col->getType()."', '".$fk->getForeignTableName()."', '".$fk->getMappedForeignColumn($col->getName())."', ".($col->isNotNull() ? 'true' : 'false').", ".$size.", $default);";
                     }
                 } else {
                     $script .= "
-        \$this->addColumn('$cup', '$cfc', '".$col->getType()."', ".var_export($col->isNotNull(), true).", ".$size.", $default);";
+        \$this->addColumn('$columnName', '$cfc', '".$col->getType()."', ".var_export($col->isNotNull(), true).", ".$size.", $default);";
                 }
             } // if col-is prim key
             if ($col->isEnumType()) {
                 $script .= "
-        \$this->getColumn('$cup', false)->setValueSet(" . var_export($col->getValueSet(), true). ");";
+        \$this->getColumn('$columnName')->setValueSet(" . var_export($col->getValueSet(), true). ");";
             }
             if ($col->isPrimaryString()) {
                 $script .= "
-        \$this->getColumn('$cup', false)->setPrimaryString(true);";
+        \$this->getColumn('$columnName')->setPrimaryString(true);";
             }
         } // foreach
 
@@ -553,33 +554,31 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
     public function buildRelations()
     {";
         foreach ($this->getTable()->getForeignKeys() as $fkey) {
-            $columnMapping = 'array(';
-            foreach ($fkey->getLocalForeignMapping() as $key => $value) {
-                $columnMapping .= "'$key' => '$value', ";
-            }
-            $columnMapping .= ')';
+            $joinCondition = var_export($fkey->getNormalizedMap($fkey->getMapping()), true);
             $onDelete = $fkey->hasOnDelete() ? "'" . $fkey->getOnDelete() . "'" : 'null';
             $onUpdate = $fkey->hasOnUpdate() ? "'" . $fkey->getOnUpdate() . "'" : 'null';
+            $isPolymorphic = $fkey->isPolymorphic() ? 'true' : 'false';
             $script .= "
-        \$this->addRelation('" . $this->getFKPhpNameAffix($fkey) . "', '" . addslashes($this->getNewStubObjectBuilder($fkey->getForeignTable())->getFullyQualifiedClassName()) . "', RelationMap::MANY_TO_ONE, $columnMapping, $onDelete, $onUpdate);";
+        \$this->addRelation('" . $this->getFKPhpNameAffix($fkey) . "', '" . addslashes($this->getNewStubObjectBuilder($fkey->getForeignTable())->getFullyQualifiedClassName()) . "', RelationMap::MANY_TO_ONE, $joinCondition, $onDelete, $onUpdate, null, $isPolymorphic);";
         }
+
         foreach ($this->getTable()->getReferrers() as $fkey) {
             $relationName = $this->getRefFKPhpNameAffix($fkey);
-            $columnMapping = 'array(';
-            foreach ($fkey->getForeignLocalMapping() as $key => $value) {
-                $columnMapping .= "'$key' => '$value', ";
-            }
-            $columnMapping .= ')';
+            $joinCondition = var_export($fkey->getNormalizedMap($fkey->getMapping()), true);
             $onDelete = $fkey->hasOnDelete() ? "'" . $fkey->getOnDelete() . "'" : 'null';
             $onUpdate = $fkey->hasOnUpdate() ? "'" . $fkey->getOnUpdate() . "'" : 'null';
+            $isPolymorphic = $fkey->isPolymorphic() ? 'true' : 'false';
             $script .= "
-        \$this->addRelation('$relationName', '" . addslashes($this->getNewStubObjectBuilder($fkey->getTable())->getFullyQualifiedClassName()) . "', RelationMap::ONE_TO_" . ($fkey->isLocalPrimaryKey() ? "ONE" : "MANY") .", $columnMapping, $onDelete, $onUpdate";
+        \$this->addRelation('$relationName', '" . addslashes($this->getNewStubObjectBuilder($fkey->getTable())->getFullyQualifiedClassName()) . "', RelationMap::ONE_TO_" . ($fkey->isLocalPrimaryKey() ? "ONE" : "MANY") .", $joinCondition, $onDelete, $onUpdate";
             if ($fkey->isLocalPrimaryKey()) {
-                 $script .= ");";
+                 $script .= ", null";
             } else {
-                $script .= ", '" . $this->getRefFKPhpNameAffix($fkey, true) . "');";
+                $script .= ", '" . $this->getRefFKPhpNameAffix($fkey, true) . "'";
             }
+
+            $script .= ", $isPolymorphic);";
         }
+
         foreach ($this->getTable()->getCrossFks() as $crossFKs) {
             foreach ($crossFKs->getCrossForeignKeys() as $crossFK) {
                 $relationName = $this->getFKPhpNameAffix($crossFK);
@@ -601,7 +600,8 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
      */
     protected function addGetBehaviors(&$script)
     {
-        if ($behaviors = $this->getTable()->getBehaviors()) {
+        $behaviors = $this->getTable()->getBehaviors();
+        if ($behaviors) {
             $script .= "
     /**
      *
@@ -672,8 +672,8 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
             return;
         }
 
-        $add = array();
-        $removeObjects = array();
+        $add = [];
+        $removeObjects = [];
         foreach ($pks as $pk) {
             $add[] = '$obj->get' . $pk->getPhpName() . '()';
             $removeObjects[] = '$value->get' . $pk->getPhpName() . '()';
@@ -681,26 +681,26 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
         $addInstancePoolKeySnippet = $this->getInstancePoolKeySnippet($add);
         $removeInstancePoolKeySnippetObjects = $this->getInstancePoolKeySnippet($removeObjects);
 
-        $removePks = array();
+        $removePks = [];
         $nbPks = count($pks);
         for ($i = 0; $i < $nbPks; $i++) {
             $removePks[] = "\$value[$i]";
         }
         $removeInstancePoolKeySnippetPks = $this->getInstancePoolKeySnippet($removePks);
 
-        return $this->renderTemplate('tableMapInstancePool', array(
+        return $this->renderTemplate('tableMapInstancePool', [
                 'objectClassName'                     => $this->getStubObjectBuilder()->getClassName(),
                 'addInstancePoolKeySnippet'           => $addInstancePoolKeySnippet,
                 'removeInstancePoolKeySnippetObjects' => $removeInstancePoolKeySnippetObjects,
                 'removeInstancePoolKeySnippetPks'     => $removeInstancePoolKeySnippetPks,
                 'countPks'                            => count($pks)
-        ));
+        ]);
     }
 
     public function addClearRelatedInstancePool()
     {
         $table = $this->getTable();
-        $relatedClassNames = array();
+        $relatedClassNames = [];
 
         // Handle ON DELETE CASCADE for updating instance pool
         foreach ($table->getReferrers() as $fk) {
@@ -709,15 +709,14 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
             $tblFK = $fk->getTable();
 
             $joinedTableTableMapBuilder = $this->getNewTableMapBuilder($tblFK)->getTableMapBuilder();
-            $this->declareClassFromBuilder($joinedTableTableMapBuilder);
+            $tableMapClassName = $this->declareClassFromBuilder($joinedTableTableMapBuilder, true);
 
             if (!$tblFK->isForReferenceOnly()) {
                 // we can't perform operations on tables that are
                 // not within the schema (i.e. that we have no map for, etc.)
 
                 if (ForeignKey::CASCADE === $fk->getOnDelete()  || ForeignKey::SETNULL === $fk->getOnDelete()) {
-                    $class = $this->getClassNameFromBuilder($joinedTableTableMapBuilder);
-                    $relatedClassNames[$class] = $class;
+                    $relatedClassNames[$tableMapClassName] = $tableMapClassName;
                 }
             }
         }
@@ -726,10 +725,10 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
             return '';
         }
 
-        return $this->renderTemplate('tableMapClearRelatedInstancePool', array(
+        return $this->renderTemplate('tableMapClearRelatedInstancePool', [
             'tableName'           => $table->getName(),
             'relatedClassNames'   => $relatedClassNames,
-        ));
+        ]);
     }
 
     /**
@@ -764,8 +763,8 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
         // We have to iterate through all the columns so that we know the offset of the primary
         // key columns.
         $n = 0;
-        $pk = array();
-        $cond = array();
+        $pk = [];
+        $cond = [];
         foreach ($this->getTable()->getColumns() as $col) {
             if (!$col->isLazyLoad()) {
                 if ($col->isPrimaryKey()) {
@@ -786,7 +785,7 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
      *
      * @param array  \$row       resultset row.
      * @param int    \$offset    The 0-based offset for reading from the resultset row.
-     * @param string \$indexType One of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_STUDLYPHPNAME
+     * @param string \$indexType One of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_CAMELNAME
      *                           TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME, TableMap::TYPE_NUM
      *
      * @return string The primary key hash of the row
@@ -825,7 +824,7 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
      *
      * @param array  \$row       resultset row.
      * @param int    \$offset    The 0-based offset for reading from the resultset row.
-     * @param string \$indexType One of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_STUDLYPHPNAME
+     * @param string \$indexType One of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_CAMELNAME
      *                           TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME, TableMap::TYPE_NUM
      *
      * @return mixed The primary key of the row
@@ -843,7 +842,7 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
             \$pks = [];
             ";
 
-            $pks = array();
+            $pks = [];
             foreach ($table->getColumns() as $col) {
                 if (!$col->isLazyLoad()) {
                     if ($col->isPrimaryKey()) {
@@ -937,8 +936,8 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
 ";
             foreach ($col->getChildren() as $child) {
                 $script .= "
-                case {$this->getTableMapClassName()}::CLASSKEY_".strtoupper($child->getKey()).":
-                    \$omClass = {$this->getTableMapClassName()}::CLASSNAME_".strtoupper($child->getKey()).";
+                case {$this->getTableMapClassName()}::CLASSKEY_".$child->getConstantSuffix().":
+                    \$omClass = {$this->getTableMapClassName()}::CLASSNAME_".$child->getConstantSuffix().";
                     break;
 ";
             } /* foreach */
@@ -1028,7 +1027,7 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
      * @param array  \$row       row returned by DataFetcher->fetch().
      * @param int    \$offset    The 0-based offset for reading from the resultset row.
      * @param string \$indexType The index type of \$row. Mostly DataFetcher->getIndexType().
-                                 One of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_STUDLYPHPNAME
+                                 One of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_CAMELNAME
      *                           TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME, TableMap::TYPE_NUM.
      *
      * @throws PropelException Any exceptions caught during processing will be
@@ -1170,7 +1169,7 @@ class ".$this->getUnqualifiedClassName()." extends TableMap
         foreach ($this->getTable()->getColumns() as $col) {
             if (!$col->isLazyLoad()) {
                 $script .= "
-            \$criteria->addSelectColumn(\$alias . '." . $col->getUppercasedName()."');";
+            \$criteria->addSelectColumn(\$alias . '." . $col->getName()."');";
             } // if !col->isLazyLoad
         } // foreach
         $script .= "

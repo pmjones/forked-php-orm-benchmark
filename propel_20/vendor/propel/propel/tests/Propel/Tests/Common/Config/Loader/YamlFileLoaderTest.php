@@ -79,12 +79,12 @@ EOF;
 
         $actual = $this->loader->load('empty.yaml');
 
-        $this->assertEquals(array(), $actual);
+        $this->assertEquals([], $actual);
     }
 
     /**
      * @expectedException Propel\Common\Config\Exception\InputOutputException
-     * @expectedMessage You don't have permissions to access configuration file notreadable.yaml.
+     * @expectedExceptionMessage You don't have permissions to access configuration file notreadable.yaml.
      */
     public function testYamlFileNotReadableThrowsException()
     {

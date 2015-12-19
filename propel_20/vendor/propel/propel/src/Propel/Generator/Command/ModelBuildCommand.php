@@ -30,6 +30,7 @@ class ModelBuildCommand extends AbstractCommand
 
         $this
             ->addOption('mysql-engine', null, InputOption::VALUE_REQUIRED,  'MySQL engine (MyISAM, InnoDB, ...)')
+            ->addOption('schema-dir', null, InputOption::VALUE_REQUIRED,  'The directory where the schema files are placed')
             ->addOption('output-dir', null, InputOption::VALUE_REQUIRED, 'The output directory')
             ->addOption('object-class', null, InputOption::VALUE_REQUIRED, 'The object class generator name')
             ->addOption('object-stub-class', null, InputOption::VALUE_REQUIRED, 'The object stub class generator name')
@@ -42,11 +43,11 @@ class ModelBuildCommand extends AbstractCommand
             ->addOption('pluralizer-class', null, InputOption::VALUE_REQUIRED, 'The pluralizer class name')
             ->addOption('enable-identifier-quoting', null, InputOption::VALUE_NONE, 'Identifier quoting may result in undesired behavior (especially in Postgres)')
             ->addOption('target-package', null, InputOption::VALUE_REQUIRED, '', '')
-            ->addOption('enable-package-object-model', null, InputOption::VALUE_NONE, '')
+            ->addOption('disable-package-object-model', null, InputOption::VALUE_NONE, 'Disable schema database merging (packageObjectModel)')
             ->addOption('disable-namespace-auto-package', null, InputOption::VALUE_NONE, 'Disable namespace auto-packaging')
             ->addOption('composer-dir', null, InputOption::VALUE_REQUIRED, 'Directory in which your composer.json resides', null)
             ->setName('model:build')
-            ->setAliases(array('build'))
+            ->setAliases(['build'])
             ->setDescription('Build the model classes based on Propel XML schemas')
         ;
     }
@@ -56,16 +57,14 @@ class ModelBuildCommand extends AbstractCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $configOptions = array();
+        $configOptions = [];
         $inputOptions = $input->getOptions();
 
         foreach ($inputOptions as $key => $option) {
             if (null !== $option) {
                 switch ($key) {
-                    case 'input-dir':
-                        if ('.' !== $option) {
-                            $configOptions['propel']['paths']['schemaDir'] = $option;
-                        }
+                    case 'schema-dir':
+                        $configOptions['propel']['paths']['schemaDir'] = $option;
                         break;
                     case 'output-dir':
                         $configOptions['propel']['paths']['phpDir'] = $option;
@@ -100,19 +99,14 @@ class ModelBuildCommand extends AbstractCommand
                     case 'composer-dir':
                         $configOptions['propel']['paths']['composerDir'] = $option;
                         break;
-                    case 'enable-identifier-quoting':
+                    case 'disable-package-object-model':
                         if ($option) {
-                            $configOptions['propel']['generator']['objectModel']['disableIdentifierQuoting'] = !$option;
+                            $configOptions['propel']['generator']['packageObjectModel'] = false;
                         }
                         break;
-                    case 'enable-package-object-model':
+                    case 'disable-namespace-auto-package':
                         if ($option) {
-                            $configOptions['propel']['generator']['packageObjectModel'] = $option;
-                        }
-                        break;
-                    case 'disable-namespace-autopackage':
-                        if ($option) {
-                            $configOptions['propel']['generator']['namespaceAutoPackage'] = !$option;
+                            $configOptions['propel']['generator']['namespaceAutoPackage'] = false;
                         }
                         break;
                     case 'mysql-engine':

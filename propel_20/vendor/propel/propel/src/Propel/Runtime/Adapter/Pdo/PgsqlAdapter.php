@@ -137,10 +137,11 @@ class PgsqlAdapter extends PdoAdapter implements SqlAdapterInterface
     }
 
     /**
-     * @param string   $sql
      * @param Criteria $criteria
+     *
+     * @return string
      */
-    public function applyGroupBy(&$sql, Criteria $criteria)
+    public function getGroupBy(Criteria $criteria)
     {
         $groupBy = $criteria->getGroupByColumns();
 
@@ -163,9 +164,11 @@ class PgsqlAdapter extends PdoAdapter implements SqlAdapterInterface
             }
 
             if ($groupBy) {
-                $sql .= ' GROUP BY ' . implode(',', $groupBy);
+                return ' GROUP BY ' . implode(',', $groupBy);
             }
         }
+
+        return '';
     }
 
     /**
@@ -194,14 +197,10 @@ class PgsqlAdapter extends PdoAdapter implements SqlAdapterInterface
             $sql .= '/* ' . $queryComment . ' */ ';
         }
         if ($realTableName = $criteria->getTableForAlias($tableName)) {
-            if ($this->useQuoteIdentifier()) {
-                $realTableName = $this->quoteIdentifierTable($realTableName);
-            }
+            $realTableName = $criteria->quoteIdentifierTable($realTableName);
             $sql .= 'FROM ' . $realTableName . ' AS ' . $tableName;
         } else {
-            if ($this->useQuoteIdentifier()) {
-                $tableName = $this->quoteIdentifierTable($tableName);
-            }
+            $tableName = $criteria->quoteIdentifierTable($tableName);
             $sql .= 'FROM ' . $tableName;
         }
 
@@ -217,7 +216,7 @@ class PgsqlAdapter extends PdoAdapter implements SqlAdapterInterface
     public function quoteIdentifierTable($table)
     {
         // e.g. 'database.table alias' should be escaped as '"database"."table" "alias"'
-        return '"' . strtr($table, array('.' => '"."', ' ' => '" "')) . '"';
+        return '"' . strtr($table, ['.' => '"."', ' ' => '" "']) . '"';
     }
 
     /**
@@ -232,7 +231,7 @@ class PgsqlAdapter extends PdoAdapter implements SqlAdapterInterface
     public function doExplainPlan(ConnectionInterface $con, $query)
     {
         if ($query instanceof Criteria) {
-            $params = array();
+            $params = [];
             $dbMap = Propel::getServiceContainer()->getDatabaseMap($query->getDbName());
             $sql = $query->createSelectSql($params);
         } else {

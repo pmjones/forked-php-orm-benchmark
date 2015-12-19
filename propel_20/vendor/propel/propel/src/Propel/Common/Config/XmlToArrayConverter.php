@@ -25,7 +25,7 @@ class XmlToArrayConverter
      *
      * @return Array
      *
-     * @throws Propel\Common\Config\Exception\XmlParseException if parse errors occur
+     * @throws \Propel\Common\Config\Exception\XmlParseException if parse errors occur
      */
     public static function convert($xmlToParse)
     {
@@ -37,13 +37,9 @@ class XmlToArrayConverter
             $xmlToParse = file_get_contents($xmlToParse);
         }
 
-        if (false === $xmlToParse) {
-            throw new InvalidArgumentException('Error while reading configuration file');
-        }
-
         //Empty xml file returns empty array
         if ('' === $xmlToParse) {
-            return array();
+            return [];
         }
 
         if ($xmlToParse[0] !== '<') {
@@ -59,7 +55,6 @@ class XmlToArrayConverter
         libxml_clear_errors();
         libxml_use_internal_errors($currentInternalErrors);
         libxml_disable_entity_loader($currentEntityLoader);
-
 
         if (count($errors) > 0) {
             throw new XmlParseException($errors);
@@ -79,7 +74,7 @@ class XmlToArrayConverter
      */
     protected static function simpleXmlToArray($xml)
     {
-        $ar = array();
+        $ar = [];
         foreach ($xml->children() as $k => $v) {
             // recurse the child
             $child = self::simpleXmlToArray($v);
@@ -113,7 +108,7 @@ class XmlToArrayConverter
                 // array, that it has numeric keys.  this distinguishes it from simply having other
                 // nested element data.
                 if (!is_array($ar[$k]) || !isset($ar[$k][0])) {
-                    $ar[$k] = array($ar[$k]);
+                    $ar[$k] = [$ar[$k]];
                 }
 
                 $ar[$k][] = $child;

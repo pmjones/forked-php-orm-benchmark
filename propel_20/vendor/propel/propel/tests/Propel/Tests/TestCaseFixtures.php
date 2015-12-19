@@ -50,12 +50,12 @@ class TestCaseFixtures extends TestCase
     {
         $dsn = $this->getFixturesConnectionDsn();
 
-        $options = array(
+        $options = [
             'command' => 'test:prepare',
             '--vendor' => $this->getDriver(),
             '--dsn' => $dsn,
             '--verbose' => true
-        );
+        ];
 
         if (!static::$withDatabaseSchema) {
             $options['--exclude-database'] = true;
@@ -83,7 +83,7 @@ class TestCaseFixtures extends TestCase
         }
 
         $finder = new Finder();
-        $finder->files()->name('*.php')->in(__DIR__.'/../../../src/Propel/Generator/Command');
+        $finder->files()->name('*.php')->in(__DIR__.'/../../../src/Propel/Generator/Command')->depth(0);
 
         $app = new Application('Propel', Propel::VERSION);
 

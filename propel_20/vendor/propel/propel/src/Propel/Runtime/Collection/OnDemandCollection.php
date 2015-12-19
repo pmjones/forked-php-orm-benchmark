@@ -24,6 +24,10 @@ use Propel\Runtime\Map\TableMap;
  */
 class OnDemandCollection extends Collection
 {
+    /**
+     * @var \Iterator
+     */
+    private $lastIterator;
 
     /**
      * @param AbstractFormatter    $formatter
@@ -43,7 +47,7 @@ class OnDemandCollection extends Collection
      * @param boolean $usePrefix              If true, the returned array prefixes keys
      *                                        with the model class name ('Article_0', 'Article_1', etc).
      * @param string  $keyType                (optional) One of the class type constants TableMap::TYPE_PHPNAME,
-     *                                        TableMap::TYPE_STUDLYPHPNAME, TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME,
+     *                                        TableMap::TYPE_CAMELNAME, TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME,
      *                                        TableMap::TYPE_NUM. Defaults to TableMap::TYPE_PHPNAME.
      * @param boolean $includeLazyLoadColumns (optional) Whether to include lazy loaded columns. Defaults to TRUE.
      * @param array   $alreadyDumpedObjects   List of objects to skip to avoid recursion
@@ -68,9 +72,9 @@ class OnDemandCollection extends Collection
      *
      * @return array
      */
-    public function toArray($keyColumn = null, $usePrefix = false, $keyType = TableMap::TYPE_PHPNAME, $includeLazyLoadColumns = true, $alreadyDumpedObjects = array())
+    public function toArray($keyColumn = null, $usePrefix = false, $keyType = TableMap::TYPE_PHPNAME, $includeLazyLoadColumns = true, $alreadyDumpedObjects = [])
     {
-        $ret = array();
+        $ret = [];
         $keyGetterMethod = 'get' . $keyColumn;
 
         /** @var $obj ActiveRecordInterface */

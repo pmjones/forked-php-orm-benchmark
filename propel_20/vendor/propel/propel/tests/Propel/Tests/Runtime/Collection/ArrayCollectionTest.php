@@ -13,7 +13,7 @@ namespace Propel\Tests\Runtime\Collection;
 use Propel\Tests\Bookstore\Author;
 use Propel\Tests\Bookstore\Book;
 use Propel\Tests\Bookstore\Map\BookTableMap;
-use Propel\Tests\Bookstore\ContestView;
+use Propel\Tests\Bookstore\Country;
 use Propel\Tests\Helpers\Bookstore\BookstoreEmptyTestBase;
 use Propel\Tests\Helpers\Bookstore\BookstoreDataPopulator;
 use Propel\Runtime\Collection\ObjectCollection;
@@ -59,8 +59,8 @@ class ArrayCollectionTest extends BookstoreEmptyTestBase
     public function testSaveOnReadOnlyEntityThrowsException()
     {
         $col = new ArrayCollection();
-        $col->setModel('ContestView');
-        $cv = new ContestView();
+        $col->setModel('Country');
+        $cv = new Country();
         $col []= $cv;
         $col->save();
     }
@@ -81,8 +81,8 @@ class ArrayCollectionTest extends BookstoreEmptyTestBase
     public function testDeleteOnReadOnlyEntityThrowsException()
     {
         $col = new ArrayCollection();
-        $col->setModel('ContestView');
-        $cv = new ContestView();
+        $col->setModel('Country');
+        $cv = new Country();
         $cv->setNew(false);
         $col []= $cv;
         $col->delete();
@@ -94,16 +94,16 @@ class ArrayCollectionTest extends BookstoreEmptyTestBase
         $pks = $books->getPrimaryKeys();
         $this->assertEquals(4, count($pks));
 
-        $keys = array(
+        $keys = [
             'Book_0',
             'Book_1',
             'Book_2',
             'Book_3'
-        );
+        ];
         $this->assertEquals($keys, array_keys($pks));
 
         $pks = $books->getPrimaryKeys(false);
-        $keys = array(0, 1, 2, 3);
+        $keys = [0, 1, 2, 3];
         $this->assertEquals($keys, array_keys($pks));
 
         $bookObjects = PropelQuery::from('Propel\Tests\Bookstore\Book')->find();
@@ -118,10 +118,10 @@ class ArrayCollectionTest extends BookstoreEmptyTestBase
         $author->setFirstName('Jane');
         $author->setLastName('Austen');
         $author->save();
-        $books = array(
-            array('Title' => 'Mansfield Park', 'ISBN' => 'FA404-A', 'AuthorId' => $author->getId()),
-            array('Title' => 'Pride And Prejudice', 'ISBN' => 'FA404-B', 'AuthorId' => $author->getId())
-        );
+        $books = [
+            ['Title' => 'Mansfield Park', 'ISBN' => 'FA404-A', 'AuthorId' => $author->getId()],
+            ['Title' => 'Pride And Prejudice', 'ISBN' => 'FA404-B', 'AuthorId' => $author->getId()]
+        ];
         $col = new ArrayCollection();
         $col->setModel('Propel\Tests\Bookstore\Book');
         $col->fromArray($books);
@@ -149,29 +149,29 @@ class ArrayCollectionTest extends BookstoreEmptyTestBase
         }
 
         $booksArray = $books->toArray();
-        $keys = array(0, 1, 2, 3);
+        $keys = [0, 1, 2, 3];
         $this->assertEquals($keys, array_keys($booksArray));
 
         $booksArray = $books->toArray(null, true);
-        $keys = array(
+        $keys = [
             'Book_0',
             'Book_1',
             'Book_2',
             'Book_3'
-        );
+        ];
         $this->assertEquals($keys, array_keys($booksArray));
 
         $booksArray = $books->toArray('Title');
-        $keys = array('Harry Potter and the Order of the Phoenix', 'Quicksilver', 'Don Juan', 'The Tin Drum');
+        $keys = ['Harry Potter and the Order of the Phoenix', 'Quicksilver', 'Don Juan', 'The Tin Drum'];
         $this->assertEquals($keys, array_keys($booksArray));
 
         $booksArray = $books->toArray('Title', true);
-        $keys = array(
+        $keys = [
             'Book_Harry Potter and the Order of the Phoenix',
             'Book_Quicksilver',
             'Book_Don Juan',
             'Book_The Tin Drum'
-        );
+        ];
         $this->assertEquals($keys, array_keys($booksArray));
     }
 
@@ -190,25 +190,25 @@ class ArrayCollectionTest extends BookstoreEmptyTestBase
 
         $coll = new ArrayCollection();
         $coll->setModel('Propel\Tests\Bookstore\Book');
-        $coll[]= $book->toArray(TableMap::TYPE_PHPNAME, true, array(), true);
-        $expected = array(array(
+        $coll[]= $book->toArray(TableMap::TYPE_PHPNAME, true, [], true);
+        $expected = [[
             'Id' => 9012,
             'Title' => 'Don Juan',
             'ISBN' => '0140422161',
             'Price' => 12.99,
             'PublisherId' => null,
             'AuthorId' => 5678,
-            'Author' => array(
+            'Author' => [
                 'Id' => 5678,
                 'FirstName' => 'George',
                 'LastName' => 'Byron',
                 'Email' => null,
                 'Age' => null,
-                'Books' => array(
+                'Books' => [
                     0 => '*RECURSION*',
-                )
-            ),
-        ));
+                ]
+            ],
+        ]];
         $this->assertEquals($expected, $coll->toArray());
     }
 

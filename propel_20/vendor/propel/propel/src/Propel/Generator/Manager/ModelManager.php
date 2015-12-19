@@ -51,10 +51,6 @@ class ModelManager extends AbstractManager
             $this->log('Datamodel: ' . $dataModel->getName());
 
             foreach ($dataModel->getDatabases() as $database) {
-                if ($generatorConfig->get()['generator']['objectModel']['disableIdentifierQuoting']) {
-                    $database->getPlatform()->setIdentifierQuoting(false);
-                }
-
                 $this->log(' - Database: ' . $database->getName());
 
                 foreach ($database->getTables() as $table) {
@@ -67,7 +63,7 @@ class ModelManager extends AbstractManager
                         // -----------------------------------------------------------------------------------------
 
                         // these files are always created / overwrite any existing files
-                        foreach (array('object', 'tablemap', 'query') as $target) {
+                        foreach (['object', 'tablemap', 'query'] as $target) {
                             $builder = $generatorConfig->getConfiguredBuilder($table, $target);
                             $nbWrittenFiles += $this->doBuild($builder);
                         }
@@ -78,7 +74,7 @@ class ModelManager extends AbstractManager
 
                         // these classes are only generated if they don't already exist
                         $overwrite = false;
-                        foreach (array('objectstub', 'querystub') as $target) {
+                        foreach (['objectstub', 'querystub'] as $target) {
                             $builder = $generatorConfig->getConfiguredBuilder($table, $target);
                             $nbWrittenFiles += $this->doBuild($builder, $overwrite);
                         }
@@ -88,12 +84,13 @@ class ModelManager extends AbstractManager
                         // -----------------------------------------------------------------------------------------
 
                         // If table has enumerated children (uses inheritance) then create the empty child stub classes if they don't already exist.
-                        if ($col = $table->getChildrenColumn()) {
+                        $col = $table->getChildrenColumn();
+                        if ($col) {
                             if ($col->isEnumeratedClasses()) {
                                 foreach ($col->getChildren() as $child) {
                                     $overwrite = true;
-                                    foreach (array('queryinheritance') as $target) {
-                                        if (!$child->getAncestor() && $child->getClassName() == $table->getPhpName()) {
+                                    foreach (['queryinheritance'] as $target) {
+                                        if (!$child->getAncestor() && $child->getClassName() === $table->getPhpName()) {
                                             continue;
                                         }
                                         $builder = $generatorConfig->getConfiguredBuilder($table, $target);
@@ -101,7 +98,7 @@ class ModelManager extends AbstractManager
                                         $nbWrittenFiles += $this->doBuild($builder, $overwrite);
                                     }
                                     $overwrite = false;
-                                    foreach (array('objectmultiextend', 'queryinheritancestub') as $target) {
+                                    foreach (['objectmultiextend', 'queryinheritancestub'] as $target) {
                                         $builder = $generatorConfig->getConfiguredBuilder($table, $target);
                                         $builder->setChild($child);
                                         $nbWrittenFiles += $this->doBuild($builder, $overwrite);

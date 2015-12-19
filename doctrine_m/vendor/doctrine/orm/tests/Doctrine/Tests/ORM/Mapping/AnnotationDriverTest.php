@@ -4,6 +4,8 @@ namespace Doctrine\Tests\ORM\Mapping;
 
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Events;
+use Doctrine\Tests\Models\DDC2825\ExplicitSchemaAndTable;
+use Doctrine\Tests\Models\DDC2825\SchemaAndTableInTableName;
 
 class AnnotationDriverTest extends AbstractMappingDriverTest
 {
@@ -19,6 +21,19 @@ class AnnotationDriverTest extends AbstractMappingDriverTest
 
         $this->setExpectedException('Doctrine\ORM\Mapping\MappingException');
         $annotationDriver->loadMetadataForClass('stdClass', $cm);
+    }
+
+    /**
+     * @expectedException Doctrine\ORM\Cache\CacheException
+     * @expectedExceptionMessage Entity association field "Doctrine\Tests\ORM\Mapping\AnnotationSLC#foo" not configured as part of the second-level cache.
+     */
+    public function testFailingSecondLevelCacheAssociation()
+    {
+        $className = 'Doctrine\Tests\ORM\Mapping\AnnotationSLC';
+        $mappingDriver = $this->_loadDriver();
+
+        $class = new ClassMetadata($className);
+        $mappingDriver->loadMetadataForClass($className, $class);
     }
 
     /**
@@ -211,15 +226,11 @@ class AnnotationDriverTest extends AbstractMappingDriverTest
 
         $this->setExpectedException('Doctrine\Common\Annotations\AnnotationException',
             '[Enum Error] Attribute "fetch" of @Doctrine\ORM\Mapping\OneToMany declared on property Doctrine\Tests\ORM\Mapping\InvalidFetchOption::$collection accept only [LAZY, EAGER, EXTRA_LAZY], but got eager.');
-        $cm = $factory->getMetadataFor('Doctrine\Tests\ORM\Mapping\InvalidFetchOption');
+        $factory->getMetadataFor('Doctrine\Tests\ORM\Mapping\InvalidFetchOption');
     }
 
     public function testAttributeOverridesMappingWithTrait()
     {
-        if (!version_compare(PHP_VERSION, '5.4.0', '>=')) {
-            $this->markTestSkipped('This test is only for 5.4+.');
-        }
-
         $factory       = $this->createClassMetadataFactory();
 
         $metadataWithoutOverride = $factory->getMetadataFor('Doctrine\Tests\Models\DDC1872\DDC1872ExampleEntityWithoutOverride');
@@ -352,4 +363,27 @@ class InvalidFetchOption
      * @OneToMany(targetEntity="Doctrine\Tests\Models\CMS\CmsUser", fetch="eager")
      */
     private $collection;
+}
+
+/**
+ * @Entity
+ * @Cache
+ */
+class AnnotationSLC
+{
+    /**
+     * @Id
+     * @ManyToOne(targetEntity="AnnotationSLCFoo")
+     */
+    public $foo;
+}
+/**
+ * @Entity
+ */
+class AnnotationSLCFoo
+{
+    /**
+     * @Column(type="string")
+     */
+    public $id;
 }

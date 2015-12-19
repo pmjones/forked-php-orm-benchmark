@@ -10,6 +10,7 @@
 
 namespace Propel\Runtime\ActiveQuery;
 
+use Propel\Runtime\Adapter\Pdo\PdoAdapter;
 use Propel\Runtime\Connection\ConnectionInterface;
 use Propel\Runtime\Exception\PropelException;
 use Propel\Runtime\DataFetcher\DataFetcherInterface;
@@ -154,37 +155,37 @@ class Criteria
      * Storage of select data. Collection of column names.
      * @var array
      */
-    protected $selectColumns = array();
+    protected $selectColumns = [];
 
     /**
      * Storage of aliased select data. Collection of column names.
      * @var string[]
      */
-    protected $asColumns = array();
+    protected $asColumns = [];
 
     /**
      * Storage of select modifiers data. Collection of modifier names.
      * @var string[]
      */
-    protected $selectModifiers = array();
+    protected $selectModifiers = [];
 
     /**
      * Storage of conditions data. Collection of Criterion objects.
      * @var AbstractCriterion[]
      */
-    protected $map = array();
+    protected $map = [];
 
     /**
      * Storage of ordering data. Collection of column names.
      * @var array
      */
-    protected $orderByColumns = array();
+    protected $orderByColumns = [];
 
     /**
      * Storage of grouping data. Collection of column names.
      * @var array
      */
-    protected $groupByColumns = array();
+    protected $groupByColumns = [];
 
     /**
      * Storage of having data.
@@ -196,9 +197,9 @@ class Criteria
      * Storage of join data. collection of Join objects.
      * @var Join[]
      */
-    protected $joins = array();
+    protected $joins = [];
 
-    protected $selectQueries = array();
+    protected $selectQueries = [];
 
     /**
      * The name of the database.
@@ -232,7 +233,7 @@ class Criteria
      */
     protected $queryComment;
 
-    protected $aliases = array();
+    protected $aliases = [];
 
     protected $useTransaction = false;
 
@@ -240,7 +241,7 @@ class Criteria
      * Storage for Criterions expected to be combined
      * @var array
      */
-    protected $namedCriterions = array();
+    protected $namedCriterions = [];
 
     /**
      * Default operator for combination of criterions
@@ -253,6 +254,18 @@ class Criteria
      * @var PropelConditionalProxy
      */
     protected $conditionalProxy = null;
+
+    /**
+     * Whether identifier should be quoted.
+     *
+     * @var boolean
+     */
+    protected $identifierQuoting = null;
+
+    /**
+     * @var array
+     */
+    public $replacedColumns = [];
 
     /**
      * Creates a new instance with the default capacity which corresponds to
@@ -283,22 +296,22 @@ class Criteria
      */
     public function clear()
     {
-        $this->map = array();
-        $this->namedCriterions = array();
+        $this->map = [];
+        $this->namedCriterions = [];
         $this->ignoreCase = false;
         $this->singleRecord = false;
-        $this->selectModifiers = array();
-        $this->selectColumns = array();
-        $this->orderByColumns = array();
-        $this->groupByColumns = array();
+        $this->selectModifiers = [];
+        $this->selectColumns = [];
+        $this->orderByColumns = [];
+        $this->groupByColumns = [];
         $this->having = null;
-        $this->asColumns = array();
-        $this->joins = array();
-        $this->selectQueries = array();
+        $this->asColumns = [];
+        $this->joins = [];
+        $this->selectQueries = [];
         $this->dbName = $this->originalDbName;
         $this->offset = 0;
-        $this->limit = 0;
-        $this->aliases = array();
+        $this->limit = -1;
+        $this->aliases = [];
         $this->useTransaction = false;
         $this->ifLvlCount = false;
         $this->wasTrue = false;
@@ -414,10 +427,10 @@ class Criteria
     public function getTableNameAndAlias($tableAliasOrName)
     {
         if (isset($this->aliases[$tableAliasOrName])) {
-            return array($this->aliases[$tableAliasOrName], $tableAliasOrName);
+            return [$this->aliases[$tableAliasOrName], $tableAliasOrName];
         }
 
-        return array($tableAliasOrName, null);
+        return [$tableAliasOrName, null];
     }
 
     /**
@@ -517,10 +530,11 @@ class Criteria
      */
     public function getLastCriterion()
     {
-        if ($cnt = count($this->map)) {
+        $count = count($this->map);
+        if ($count) {
             $map = array_values($this->map);
 
-            return $map[$cnt - 1];
+            return $map[$count - 1];
         }
 
         return null;
@@ -597,7 +611,7 @@ class Criteria
      */
     public function getTablesColumns()
     {
-        $tables = array();
+        $tables = [];
         foreach ($this->keys() as $key) {
             $tableName = substr($key, 0, strrpos($key, '.'));
             $tables[$tableName][] = $key;
@@ -834,10 +848,10 @@ class Criteria
      * @param  string         $name       optional name to combine the criterion later
      * @return $this|Criteria
      */
-    public function combine($criterions = array(), $operator = self::LOGICAL_AND, $name = null)
+    public function combine($criterions = [], $operator = self::LOGICAL_AND, $name = null)
     {
         $operatorMethod = (self::LOGICAL_AND === strtoupper($operator)) ? 'addAnd' : 'addOr';
-        $namedCriterions = array();
+        $namedCriterions = [];
         foreach ($criterions as $key) {
             if (array_key_exists($key, $this->namedCriterions)) {
                 $namedCriterions[]= $this->namedCriterions[$key];
@@ -878,9 +892,9 @@ class Criteria
     public function addJoin($left, $right, $joinType = null)
     {
         if (is_array($left)) {
-            $conditions = array();
+            $conditions = [];
             foreach ($left as $key => $value) {
-                $condition = array($value, $right[$key]);
+                $condition = [$value, $right[$key]];
                 $conditions[] = $condition;
             }
 
@@ -888,6 +902,7 @@ class Criteria
         }
 
         $join = new Join();
+        $join->setIdentifierQuoting($this->isIdentifierQuotingEnabled());
 
         // is the left table an alias ?
         $dotpos = strrpos($left, '.');
@@ -935,25 +950,28 @@ class Criteria
     public function addMultipleJoin($conditions, $joinType = null)
     {
         $join = new Join();
+        $join->setIdentifierQuoting($this->isIdentifierQuotingEnabled());
         $joinCondition = null;
         foreach ($conditions as $condition) {
             $left = $condition[0];
             $right = $condition[1];
-            if ($pos = strrpos($left, '.')) {
+            $pos = strrpos($left, '.');
+            if ($pos) {
                 $leftTableAlias = substr($left, 0, $pos);
                 $leftColumnName = substr($left, $pos + 1);
                 list($leftTableName, $leftTableAlias) = $this->getTableNameAndAlias($leftTableAlias);
             } else {
-                list($leftTableName, $leftTableAlias) = array(null, null);
+                list($leftTableName, $leftTableAlias) = [null, null];
                 $leftColumnName = $left;
             }
 
-            if ($pos = strrpos($right, '.')) {
+            $pos = strrpos($right, '.');
+            if ($pos) {
                 $rightTableAlias = substr($right, 0, $pos);
                 $rightColumnName = substr($right, $pos + 1);
                 list($rightTableName, $rightTableAlias) = $this->getTableNameAndAlias($rightTableAlias);
             } else {
-                list($rightTableName, $rightTableAlias) = array(null, null);
+                list($rightTableName, $rightTableAlias) = [null, null];
                 $rightColumnName = $right;
             }
 
@@ -967,7 +985,7 @@ class Criteria
 
             $conditionClause = $leftTableAlias ? $leftTableAlias . '.' : ($leftTableName ? $leftTableName . '.' : '');
             $conditionClause .= $leftColumnName;
-            $conditionClause .= isset($condition[2]) ? $condition[2] : JOIN::EQUAL;
+            $conditionClause .= isset($condition[2]) ? $condition[2] : Join::EQUAL;
             $conditionClause .= $rightTableAlias ? $rightTableAlias . '.' : ($rightTableName ? $rightTableName . '.' : '');
             $conditionClause .= $rightColumnName;
             $criterion = $this->getNewCriterion($leftTableName.'.'.$leftColumnName, $conditionClause, Criteria::CUSTOM);
@@ -1007,6 +1025,28 @@ class Criteria
     public function getJoins()
     {
         return $this->joins;
+    }
+
+    /**
+     * This method returns an already defined join clause from the query
+     *
+     * @param string $name The name of the join clause
+     *
+     * @return Join A join object
+     */
+    public function getJoin($name)
+    {
+        return $this->joins[$name];
+    }
+
+    /**
+     * @param string $name The name of the join clause
+     *
+     * @return Join A join object
+     */
+    public function hasJoin($name)
+    {
+        return isset($this->joins[$name]);
     }
 
     /**
@@ -1131,7 +1171,7 @@ class Criteria
      */
     public function removeSelectModifier($modifier)
     {
-        $this->selectModifiers = array_values(array_diff($this->selectModifiers, array($modifier)));
+        $this->selectModifiers = array_values(array_diff($this->selectModifiers, [$modifier]));
 
         return $this;
     }
@@ -1315,7 +1355,7 @@ class Criteria
      */
     public function clearSelectColumns()
     {
-        $this->selectColumns = $this->asColumns = array();
+        $this->selectColumns = $this->asColumns = [];
 
         return $this;
     }
@@ -1386,7 +1426,7 @@ class Criteria
      */
     public function clearOrderByColumns()
     {
-        $this->orderByColumns = array();
+        $this->orderByColumns = [];
 
         return $this;
     }
@@ -1398,7 +1438,7 @@ class Criteria
      */
     public function clearGroupByColumns()
     {
-        $this->groupByColumns = array();
+        $this->groupByColumns = [];
 
         return $this;
     }
@@ -1431,15 +1471,17 @@ class Criteria
      */
     public function remove($key)
     {
-        if (isset($this->map[$key])) {
-            $removed = $this->map[$key];
-            unset($this->map[$key]);
-            if ($removed instanceof AbstractCriterion) {
-                return $removed->getValue();
-            }
-
-            return $removed;
+        if (!isset($this->map[$key])) {
+            return null;
         }
+
+        $removed = $this->map[$key];
+        unset($this->map[$key]);
+        if ($removed instanceof AbstractCriterion) {
+            return $removed->getValue();
+        }
+
+        return $removed;
     }
 
     /**
@@ -1449,15 +1491,14 @@ class Criteria
      */
     public function toString()
     {
-
         $sb = 'Criteria:';
         try {
 
-            $params = array();
+            $params = [];
             $sb .= "\nSQL (may not be complete): ".$this->createSelectSql($params);
 
             $sb .= "\nParams: ";
-            $paramstr = array();
+            $paramstr = [];
             foreach ($params as $param) {
                 $paramstr[] = $param['table'] . '.' . $param['column'] . ' => ' . var_export($param['value'], true);
             }
@@ -1612,7 +1653,8 @@ class Criteria
         }
 
         // merge having
-        if ($having = $criteria->getHaving()) {
+        $having = $criteria->getHaving();
+        if ($having) {
             if ($this->getHaving()) {
                 $this->addHaving($this->getHaving()->addAnd($having));
             } else {
@@ -1733,6 +1775,10 @@ class Criteria
      *  - addOr(column, value)
      *  - addOr(Criterion)
      *
+     * @param mixed $p1
+     * @param mixed $p2
+     * @param mixed $p3
+     * @param bool $preferColumnCondition
      * @return $this|Criteria A modified Criteria object.
      */
     public function addOr($p1, $p2 = null, $p3 = null, $preferColumnCondition = true)
@@ -1791,32 +1837,35 @@ class Criteria
      */
     public function createSelectSql(&$params)
     {
-        $db = Propel::getServiceContainer()->getAdapter($this->getDbName());
+        $adapter = Propel::getServiceContainer()->getAdapter($this->getDbName());
         $dbMap = Propel::getServiceContainer()->getDatabaseMap($this->getDbName());
 
-        $fromClause = array();
-        $joinClause = array();
-        $joinTables = array();
-        $whereClause = array();
-        $orderByClause = array();
+        $fromClause = [];
+        $joinClause = [];
+        $joinTables = [];
+        $whereClause = [];
+        $orderByClause = [];
 
         $orderBy = $this->getOrderByColumns();
 
         // get the first part of the SQL statement, the SELECT part
-        $selectSql = $db->createSelectSqlPart($this, $fromClause);
+        $selectSql = $adapter->createSelectSqlPart($this, $fromClause);
+        $this->replaceNames($selectSql);
 
         // Handle joins
         // joins with a null join type will be added to the FROM clause and the condition added to the WHERE clause.
         // joins of a specified type: the LEFT side will be added to the fromClause and the RIGHT to the joinClause
         foreach ($this->getJoins() as $join) {
-            $join->setAdapter($db);
+            $join->setAdapter($adapter);
 
             // add 'em to the queues..
             if (!$fromClause) {
                 $fromClause[] = $join->getLeftTableWithAlias();
             }
             $joinTables[] = $join->getRightTableWithAlias();
-            $joinClause[] = $join->getClause($params);
+            $joinClauseString = $join->getClause($params);
+            $this->replaceNames($joinClauseString);
+            $joinClause[] = $joinClauseString;
         }
 
         // add the criteria to WHERE clause
@@ -1842,16 +1891,17 @@ class Criteria
                 }
             }
 
-            $criterion->setAdapter($db);
+            $criterion->setAdapter($adapter);
 
             $sb = '';
             $criterion->appendPsTo($sb, $params);
+            $this->replaceNames($sb);
             $whereClause[] = $sb;
         }
 
         // Unique from clause elements
         $fromClause = array_unique($fromClause);
-        $fromClause = array_diff($fromClause, array(''));
+        $fromClause = array_diff($fromClause, ['']);
 
         // tables should not exist in both the from and join clauses
         if ($joinTables && $fromClause) {
@@ -1867,6 +1917,7 @@ class Criteria
         if (null !== $having) {
             $sb = '';
             $having->appendPsTo($sb, $params);
+            $this->replaceNames($sb);
             $havingString = $sb;
         }
 
@@ -1901,22 +1952,26 @@ class Criteria
                 }
 
                 $tableAlias = $tableName;
-                if ($aliasTableName = $this->getTableForAlias($tableName)) {
+                $aliasTableName = $this->getTableForAlias($tableName);
+                if ($aliasTableName) {
                     $tableName = $aliasTableName;
                 }
 
                 $columnAlias = $columnName;
-                if ($asColumnName = $this->getColumnForAs($columnName)) {
+                $asColumnName = $this->getColumnForAs($columnName);
+                if ($asColumnName) {
                     $columnName = $asColumnName;
                 }
 
                 $column = $tableName ? $dbMap->getTable($tableName)->getColumn($columnName) : null;
 
                 if ($this->isIgnoreCase() && $column && $column->isText()) {
-                    $ignoreCaseColumn = $db->ignoreCaseInOrderBy("$tableAlias.$columnAlias");
+                    $ignoreCaseColumn = $adapter->ignoreCaseInOrderBy("$tableAlias.$columnAlias");
+                    $this->replaceNames($ignoreCaseColumn);
                     $orderByClause[] =  $ignoreCaseColumn . $direction;
                     $selectSql .= ', ' . $ignoreCaseColumn;
                 } else {
+                    $this->replaceNames($orderByColumn);
                     $orderByClause[] = $orderByColumn;
                 }
             }
@@ -1941,10 +1996,8 @@ class Criteria
         }
 
         // from / join tables quoted if it is necessary
-        if ($db->useQuoteIdentifier()) {
-            $fromClause = array_map(array($db, 'quoteIdentifierTable'), $fromClause);
-            $joinClause = $joinClause ? $joinClause : array_map(array($db, 'quoteIdentifierTable'), $joinClause);
-        }
+        $fromClause = array_map([$this, 'quoteIdentifierTable'], $fromClause);
+        $joinClause = $joinClause ? $joinClause : array_map([$this, 'quoteIdentifierTable'], $joinClause);
 
         // add subQuery to From after adding quotes
         foreach ($this->getSelectQueries() as $subQueryAlias => $subQueryCriteria) {
@@ -1966,16 +2019,162 @@ class Criteria
             .' FROM '  . $from
             .($whereClause ? ' WHERE '.implode(' AND ', $whereClause) : '');
 
-        $db->applyGroupBy($sql, $this);
+        $groupBy = $adapter->getGroupBy($this);
+        if ($groupBy) {
+            $this->replaceNames($groupBy);
+            $sql .= $groupBy;
+        }
 
         $sql .= ($havingString ? ' HAVING '.$havingString : '')
              .($orderByClause ? ' ORDER BY '.implode(',', $orderByClause) : '');
 
         if ($this->getLimit() >= 0 || $this->getOffset()) {
-            $db->applyLimit($sql, $this->getOffset(), $this->getLimit(), $this);
+            $adapter->applyLimit($sql, $this->getOffset(), $this->getLimit(), $this);
         }
 
         return $sql;
+    }
+
+    /**
+     * This method does only quote identifier, the method doReplaceNameInExpression of child ModelCriteria class does more.
+     *
+     * @param array $matches Matches found by preg_replace_callback
+     *
+     * @return string the column name replacement
+     */
+    protected function doReplaceNameInExpression($matches)
+    {
+        return $this->quoteIdentifier($matches[0]);
+    }
+
+    /**
+     * Quotes identifier based on $this->isIdentifierQuotingEnabled() and $tableMap->isIdentifierQuotingEnabled.
+     *
+     * @param string $string
+     * @return string
+     */
+    public function quoteIdentifier($string, $tableName = '')
+    {
+        if ($this->isIdentifierQuotingEnabled()) {
+            $adapter = Propel::getServiceContainer()->getAdapter($this->getDbName());
+
+            return $adapter->quote($string);
+        }
+
+        //find table name and ask tableMap if quoting is enabled
+        if (!$tableName && false !== ($pos = strrpos($string, '.'))) {
+            $tableName = substr($string, 0, $pos);
+        }
+
+        $tableMapName = $this->getTableForAlias($tableName) ?: $tableName;
+
+        if ($tableMapName) {
+            $dbMap = Propel::getServiceContainer()->getDatabaseMap($this->getDbName());
+            if ($dbMap->hasTable($tableMapName)) {
+                $tableMap = $dbMap->getTable($tableMapName);
+                if ($tableMap->isIdentifierQuotingEnabled()) {
+                    $adapter = Propel::getServiceContainer()->getAdapter($this->getDbName());
+
+                    return $adapter->quote($string);
+                }
+            }
+        }
+
+        return $string;
+    }
+
+    public function quoteIdentifierTable($string)
+    {
+        $realTableName = $string;
+        if (false !== ($pos = strrpos($string, ' '))) {
+            $realTableName = substr($string, 0, $pos);
+        }
+
+        $dbMap = Propel::getServiceContainer()->getDatabaseMap($this->getDbName());
+
+        if ($this->isIdentifierQuotingEnabled()) {
+            $adapter = Propel::getServiceContainer()->getAdapter($this->getDbName());
+
+            return $adapter->quoteIdentifierTable($string);
+        }
+
+        if ($dbMap->hasTable($realTableName)) {
+            $tableMap = $dbMap->getTable($realTableName);
+            if ($tableMap->isIdentifierQuotingEnabled()) {
+                $adapter = Propel::getServiceContainer()->getAdapter($this->getDbName());
+
+                return $adapter->quoteIdentifierTable($string);
+            }
+        }
+
+        return $string;
+    }
+
+    /**
+     * Replaces complete column names (like Article.AuthorId) in an SQL clause
+     * by their exact Propel column fully qualified name (e.g. article.author_id)
+     * but ignores the column names inside quotes
+     * e.g. 'CONCAT(Book.AuthorID, "Book.AuthorID") = ?'
+     *   => 'CONCAT(book.author_id, "Book.AuthorID") = ?'
+     *
+     * @param string $sql SQL clause to inspect (modified by the method)
+     *
+     * @return boolean Whether the method managed to find and replace at least one column name
+     */
+    public function replaceNames(&$sql)
+    {
+        $this->replacedColumns = [];
+        $this->currentAlias = '';
+        $this->foundMatch = false;
+        $isAfterBackslash = false;
+        $isInString = false;
+        $stringQuotes = '';
+        $parsedString = '';
+        $stringToTransform = '';
+        $len = strlen($sql);
+        $pos = 0;
+        while ($pos < $len) {
+            $char = $sql[$pos];
+            // check flags for strings or escaper
+            switch ($char) {
+                case '\\':
+                    $isAfterBackslash = true;
+                    break;
+                case "'":
+                case '"':
+                    if ($isInString && $stringQuotes == $char) {
+                        if (!$isAfterBackslash) {
+                            $isInString = false;
+                        }
+                    } elseif (!$isInString) {
+                        $parsedString .= preg_replace_callback("/[\w\\\]+\.\w+/", [$this, 'doReplaceNameInExpression'], $stringToTransform);
+                        $stringToTransform = '';
+                        $stringQuotes = $char;
+                        $isInString = true;
+                    }
+                    break;
+            }
+
+            if ('\\' !== $char) {
+                $isAfterBackslash = false;
+            }
+
+            if ($isInString) {
+                $parsedString .= $char;
+            } else {
+                $stringToTransform .= $char;
+            }
+
+            $pos++;
+        }
+
+        if ($stringToTransform) {
+            $parsedString .= preg_replace_callback("/[\w\\\]+\.\w+/", [$this, 'doReplaceNameInExpression'], $stringToTransform);
+        }
+
+        $sql = $parsedString;
+
+        return $this->foundMatch;
     }
 
     /**
@@ -2045,19 +2244,15 @@ class Criteria
         }
 
         try {
-            $adapter = Propel::getServiceContainer()->getAdapter($this->getDBName());
-
             $qualifiedCols = $this->keys(); // we need table.column cols when populating values
-            $columns = array(); // but just 'column' cols for the SQL
+            $columns = []; // but just 'column' cols for the SQL
             foreach ($qualifiedCols as $qualifiedCol) {
                 $columns[] = substr($qualifiedCol, strrpos($qualifiedCol, '.') + 1);
             }
 
             // add identifiers
-            if ($adapter->useQuoteIdentifier()) {
-                $columns = array_map(array($adapter, 'quoteIdentifier'), $columns);
-                $tableName = $adapter->quoteIdentifierTable($tableName);
-            }
+            $columns = array_map([$this, 'quoteIdentifier'], $columns);
+            $tableName = $this->quoteIdentifierTable($tableName);
 
             $sql = 'INSERT INTO ' . $tableName
                 . ' (' . implode(',', $columns) . ')'
@@ -2142,13 +2337,14 @@ class Criteria
      */
     public function doUpdate($updateValues, ConnectionInterface $con)
     {
+        /** @var PdoAdapter $db */
         $db = Propel::getServiceContainer()->getAdapter($this->getDbName());
         $dbMap = Propel::getServiceContainer()->getDatabaseMap($this->getDbName());
 
         // Get list of required tables, containing all columns
         $tablesColumns = $this->getTablesColumns();
         if (empty($tablesColumns) && ($table = $this->getPrimaryTableName())) {
-            $tablesColumns = array($table => array());
+            $tablesColumns = [$table => []];
         }
 
         // we also need the columns for the update SQL
@@ -2168,34 +2364,30 @@ class Criteria
 
         foreach ($tablesColumns as $tableName => $columns) {
 
-            $whereClause = array();
-            $params = array();
+            $whereClause = [];
+            $params = [];
             $stmt = null;
             try {
                 $sql = 'UPDATE ';
-                if ($queryComment = $this->getComment()) {
+                $queryComment = $this->getComment();
+                if ($queryComment) {
                     $sql .= '/* ' . $queryComment . ' */ ';
                 }
                 // is it a table alias?
-                if ($tableName2 = $this->getTableForAlias($tableName)) {
-                    $updateTable = $tableName2 . ' ' . $tableName;
-                    $tableName = $tableName2;
+                $realTableName = $this->getTableForAlias($tableName);
+                if ($realTableName) {
+                    $updateTable = $realTableName . ' ' . $tableName;
+                    $tableName = $realTableName;
                 } else {
                     $updateTable = $tableName;
                 }
-                if ($db->useQuoteIdentifier()) {
-                    $sql .= $db->quoteIdentifierTable($updateTable);
-                } else {
-                    $sql .= $updateTable;
-                }
+                $sql .= $this->quoteIdentifierTable($updateTable);
                 $sql .= " SET ";
                 $p = 1;
                 foreach ($updateTablesColumns[$tableName] as $col) {
                     $updateColumnName = substr($col, strrpos($col, '.') + 1);
                     // add identifiers for the actual database?
-                    if ($db->useQuoteIdentifier()) {
-                        $updateColumnName = $db->quoteIdentifier($updateColumnName);
-                    }
+                    $updateColumnName = $this->quoteIdentifier($updateColumnName, $tableName);
                     if ($updateValues->getComparison($col) != Criteria::CUSTOM_EQUAL) {
                         $sql .= $updateColumnName . '=:p'.$p++.', ';
                     } else {
@@ -2234,6 +2426,7 @@ class Criteria
                     foreach ($columns as $colName) {
                         $sb = '';
                         $this->getCriterion($colName)->appendPsTo($sb, $params);
+                        $this->replaceNames($sb);
                         $whereClause[] = $sb;
                     }
                     $sql .= ' WHERE ' .  implode(' AND ', $whereClause);
@@ -2270,15 +2463,15 @@ class Criteria
         if (!$values) {
             $values = $this;
         }
-        $params = array();
+        $params = [];
         foreach ($columns as $key) {
             if ($values->containsKey($key)) {
                 $crit = $values->getCriterion($key);
-                $params[] = array(
+                $params[] = [
                     'column' => $crit->getColumn(),
                     'table' => $crit->getTable(),
                     'value' => $crit->getValue()
-                );
+                ];
             }
         }
 
@@ -2302,7 +2495,7 @@ class Criteria
             || count($this->selectQueries) > 0
         ;
 
-        $params = array();
+        $params = [];
         if ($needsComplexCount) {
             if ($this->needsSelectAliases()) {
                 if ($this->getHaving()) {
@@ -2336,9 +2529,10 @@ class Criteria
      */
     public function needsSelectAliases()
     {
-        $columnNames = array();
+        $columnNames = [];
         foreach ($this->getSelectColumns() as $fullyQualifiedColumnName) {
-            if ($pos = strrpos($fullyQualifiedColumnName, '.')) {
+            $pos = strrpos($fullyQualifiedColumnName, '.');
+            if ($pos) {
                 $columnName = substr($fullyQualifiedColumnName, $pos);
                 if (isset($columnNames[$columnName])) {
                     // more than one column with the same name, so aliasing is required
@@ -2366,7 +2560,7 @@ class Criteria
             $con = Propel::getServiceContainer()->getWriteConnection($this->getDbName());
         }
 
-        $db = Propel::getServiceContainer()->getAdapter($this->getDbName());
+        $adapter = Propel::getServiceContainer()->getAdapter($this->getDbName());
         $dbMap = Propel::getServiceContainer()->getDatabaseMap($this->getDbName());
 
         // join are not supported with DELETE statement
@@ -2385,27 +2579,28 @@ class Criteria
 
         foreach ($tables as $tableName => $columns) {
 
-            $whereClause = array();
-            $params = array();
+            $whereClause = [];
+            $params = [];
             $stmt = null;
             try {
-                $sql = $db->getDeleteFromClause($this, $tableName);
+                $sql = $adapter->getDeleteFromClause($this, $tableName);
 
                 foreach ($columns as $colName) {
                     $sb = '';
                     $this->getCriterion($colName)->appendPsTo($sb, $params);
+                    $this->replaceNames($sb);
                     $whereClause[] = $sb;
                 }
                 $sql .= ' WHERE ' .  implode(' AND ', $whereClause);
 
                 $stmt = $con->prepare($sql);
 
-                $db->bindValues($stmt, $params, $dbMap);
+                $adapter->bindValues($stmt, $params, $dbMap);
                 $stmt->execute();
                 $affectedRows = $stmt->rowCount();
             } catch (\Exception $e) {
                 Propel::log($e->getMessage(), Propel::LOG_ERR);
-                throw new PropelException(sprintf('Unable to execute DELETE statement [%s]', $sql));
+                throw new PropelException(sprintf('Unable to execute DELETE statement [%s]', $sql), 0, $e);
             }
 
         } // for each table
@@ -2430,7 +2625,7 @@ class Criteria
         $dbMap = Propel::getServiceContainer()->getDatabaseMap($this->getDbName());
         $db = Propel::getServiceContainer()->getAdapter($this->getDbName());
 
-        $params = array();
+        $params = [];
         $sql = $this->createSelectSql($params);
         try {
             $stmt = $con->prepare($sql);
@@ -2552,4 +2747,21 @@ class Criteria
             $this->having = clone $this->having;
         }
     }
+
+    /**
+     * @return boolean
+     */
+    public function isIdentifierQuotingEnabled()
+    {
+        return $this->identifierQuoting;
+    }
+
+    /**
+     * @param boolean $identifierQuoting
+     */
+    public function setIdentifierQuoting($identifierQuoting)
+    {
+        $this->identifierQuoting = $identifierQuoting;
+    }
+
 }

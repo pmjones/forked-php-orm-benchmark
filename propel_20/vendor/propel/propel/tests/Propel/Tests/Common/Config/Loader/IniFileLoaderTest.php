@@ -79,7 +79,7 @@ EOF;
 
         $actual = $this->loader->load('empty.ini');
 
-        $this->assertEquals(array(), $actual);
+        $this->assertEquals([], $actual);
     }
 
     public function testWithSections()
@@ -138,8 +138,64 @@ EOF;
     }
 
     /**
+     * @expectedException \Propel\Common\Config\Exception\IniParseException
+     * @expectedExceptionMessage Invalid key ".foo"
+     */
+    public function testInvalidSectionThrowsException()
+    {
+        $content = <<<EOF
+.foo = bar
+bar = baz
+EOF;
+        $this->dumpTempFile('parameters.ini', $content);
+
+        $test = $this->loader->load('parameters.ini');
+    }
+
+    /**
+     * @expectedException \Propel\Common\Config\Exception\IniParseException
+     * @expectedExceptionMessage Invalid key "foo."
+     */
+    public function testInvalidParamThrowsException()
+    {
+        $content = <<<EOF
+foo. = bar
+bar = baz
+EOF;
+        $this->dumpTempFile('parameters.ini', $content);
+
+        $test = $this->loader->load('parameters.ini');
+    }
+
+    /**
+     * @expectedException \Propel\Common\Config\Exception\IniParseException
+     * @expectedExceptionMessage Cannot create sub-key for "foo", as key already exists
+     */
+    public function testAlreadyExistentParamThrowsException()
+    {
+        $content = <<<EOF
+foo = bar
+foo.babar = baz
+EOF;
+        $this->dumpTempFile('parameters.ini', $content);
+
+        $test = $this->loader->load('parameters.ini');
+    }
+
+    public function testSectionZero()
+    {
+        $content = <<<EOF
+foo = bar
+0.babar = baz
+EOF;
+        $this->dumpTempFile('parameters.ini', $content);
+
+        $this->assertEquals(['0' => ['foo' => 'bar', 'babar' => 'baz']], $this->loader->load('parameters.ini'));
+    }
+
+    /**
      * @expectedException Propel\Common\Config\Exception\InputOutputException
-     * @expectedMessage You don't have permissions to access configuration file notreadable.ini.
+     * @expectedExceptionMessage You don't have permissions to access configuration file notreadable.ini.
      */
     public function testIniFileNotReadableThrowsException()
     {
@@ -157,3 +213,4 @@ EOF;
 
     }
 }
+

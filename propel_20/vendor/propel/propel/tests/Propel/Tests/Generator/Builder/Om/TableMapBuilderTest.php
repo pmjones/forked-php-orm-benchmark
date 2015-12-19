@@ -64,7 +64,7 @@ class TableMapBuilderTest extends BookstoreTestBase
     {
         $bookTable = $this->databaseMap->getTableByPhpName('Propel\Tests\Bookstore\Book');
         $this->assertEquals(
-            12,
+            13,
             count($bookTable->getRelations()),
             'The map builder creates relations for both incoming and outgoing keys'
         );
@@ -100,11 +100,11 @@ class TableMapBuilderTest extends BookstoreTestBase
     {
         $essayTable = $this->databaseMap->getTableByPhpName('Propel\Tests\Bookstore\Essay');
         $this->assertTrue(
-            $essayTable->hasRelation('AuthorRelatedByFirstAuthor'),
+            $essayTable->hasRelation('FirstAuthor'),
             'The map builder creates relations based on the foreign table name and the foreign key'
         );
         $this->assertTrue(
-            $essayTable->hasRelation('AuthorRelatedBySecondAuthor'),
+            $essayTable->hasRelation('SecondAuthor'),
             'The map builder creates relations based on the foreign table name and the foreign key'
         );
     }
@@ -182,36 +182,36 @@ class TableMapBuilderTest extends BookstoreTestBase
     public function testRelationsColumns()
     {
         $bookTable = $this->databaseMap->getTableByPhpName('Propel\Tests\Bookstore\Book');
-        $expectedMapping = array('book.PUBLISHER_ID' => 'publisher.ID');
+        $expectedMapping = ['book.publisher_id' => 'publisher.id'];
         $this->assertEquals(
             $expectedMapping,
             $bookTable->getRelation('Publisher')->getColumnMappings(),
             'The map builder adds columns in the correct order for foreign keys'
         );
-        $expectedMapping = array('review.BOOK_ID' => 'book.ID');
+        $expectedMapping = ['review.book_id' => 'book.id'];
         $this->assertEquals(
             $expectedMapping,
             $bookTable->getRelation('Review')->getColumnMappings(),
             'The map builder adds columns in the correct order for incoming foreign keys'
         );
         $publisherTable = $this->databaseMap->getTableByPhpName('Propel\Tests\Bookstore\Publisher');
-        $expectedMapping = array('book.PUBLISHER_ID' => 'publisher.ID');
+        $expectedMapping = ['book.publisher_id' => 'publisher.id'];
         $this->assertEquals(
             $expectedMapping,
             $publisherTable->getRelation('Book')->getColumnMappings(),
             'The map builder adds local columns where the foreign key lies'
         );
         $rfTable = $this->databaseMap->getTableByPhpName('Propel\Tests\Bookstore\ReaderFavorite');
-        $expectedMapping = array(
-            'reader_favorite.BOOK_ID' => 'book_opinion.BOOK_ID',
-            'reader_favorite.READER_ID' => 'book_opinion.READER_ID'
-        );
+        $expectedMapping = [
+            'reader_favorite.book_id' => 'book_opinion.book_id',
+            'reader_favorite.reader_id' => 'book_opinion.reader_id'
+        ];
         $this->assertEquals(
             $expectedMapping,
             $rfTable->getRelation('BookOpinion')->getColumnMappings(),
             'The map builder adds all columns for composite foreign keys'
         );
-        $expectedMapping = array();
+        $expectedMapping = [];
         $this->assertEquals(
             $expectedMapping,
             $bookTable->getRelation('BookClubList')->getColumnMappings(),
@@ -248,7 +248,7 @@ class TableMapBuilderTest extends BookstoreTestBase
         $bookTable = $this->databaseMap->getTableByPhpName('Propel\Tests\Bookstore\Book');
         $this->assertEquals(
             $bookTable->getBehaviors(),
-            array(),
+            [],
             'getBehaviors() returns an empty array when no behaviors are registered'
         );
 
@@ -260,14 +260,14 @@ class TableMapBuilderTest extends BookstoreTestBase
         $tmap = Propel::getServiceContainer()->getDatabaseMap(Table1TableMap::DATABASE_NAME)->getTable(
             Table1TableMap::TABLE_NAME
         );
-        $expectedBehaviorParams = array(
-            'timestampable' => array(
+        $expectedBehaviorParams = [
+            'timestampable' => [
                 'create_column' => 'created_on',
                 'update_column' => 'updated_on',
                 'disable_created_at' => 'false',
                 'disable_updated_at' => 'false'
-            )
-        );
+            ]
+        ];
         $this->assertEquals(
             $tmap->getBehaviors(),
             $expectedBehaviorParams,

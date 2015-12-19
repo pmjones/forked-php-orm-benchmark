@@ -109,6 +109,25 @@ class QueryBuilderTest extends \Doctrine\Tests\OrmTestCase
         $this->assertValidQueryBuilder($qb, 'DELETE Doctrine\Tests\Models\CMS\CmsUser u');
     }
 
+    public function testSimpleSelectWithFromIndexBy()
+    {
+        $qb = $this->_em->createQueryBuilder()
+            ->from('Doctrine\Tests\Models\CMS\CmsUser', 'u', 'u.id')
+            ->select('u.id', 'u.username');
+
+        $this->assertValidQueryBuilder($qb, 'SELECT u.id, u.username FROM Doctrine\Tests\Models\CMS\CmsUser u INDEX BY u.id');
+    }
+
+    public function testSimpleSelectWithIndexBy()
+    {
+        $qb = $this->_em->createQueryBuilder()
+            ->from('Doctrine\Tests\Models\CMS\CmsUser', 'u')
+            ->indexBy('u', 'u.id')
+            ->select('u.id', 'u.username');
+
+        $this->assertValidQueryBuilder($qb, 'SELECT u.id, u.username FROM Doctrine\Tests\Models\CMS\CmsUser u INDEX BY u.id');
+    }
+
     public function testSimpleUpdate()
     {
         $qb = $this->_em->createQueryBuilder()
@@ -182,6 +201,17 @@ class QueryBuilderTest extends \Doctrine\Tests\OrmTestCase
             ->from('Doctrine\Tests\Models\CMS\CmsGroup', 'g');
 
         $this->assertValidQueryBuilder($qb, 'SELECT u, g FROM Doctrine\Tests\Models\CMS\CmsUser u, Doctrine\Tests\Models\CMS\CmsGroup g');
+    }
+
+    public function testMultipleFromWithIndexBy()
+    {
+        $qb = $this->_em->createQueryBuilder()
+            ->select('u', 'g')
+            ->from('Doctrine\Tests\Models\CMS\CmsUser', 'u')
+            ->from('Doctrine\Tests\Models\CMS\CmsGroup', 'g')
+            ->indexBy('g', 'g.id');
+
+        $this->assertValidQueryBuilder($qb, 'SELECT u, g FROM Doctrine\Tests\Models\CMS\CmsUser u, Doctrine\Tests\Models\CMS\CmsGroup g INDEX BY g.id');
     }
 
     public function testMultipleFromWithJoin()
@@ -522,6 +552,25 @@ class QueryBuilderTest extends \Doctrine\Tests\OrmTestCase
         $this->assertEquals('u.field DESC', (string) $orderBy[0]);
     }
 
+    /**
+     * @group DDC-3108
+     */
+    public function testAddCriteriaOrderOnJoinAlias()
+    {
+        $qb = $this->_em->createQueryBuilder();
+        $qb->select('u')
+            ->from('Doctrine\Tests\Models\CMS\CmsUser', 'u')
+            ->join('u.article','a');
+
+        $criteria = new Criteria();
+        $criteria->orderBy(array('a.field' => Criteria::DESC));
+
+        $qb->addCriteria($criteria);
+
+        $this->assertCount(1, $orderBy = $qb->getDQLPart('orderBy'));
+        $this->assertEquals('a.field DESC', (string) $orderBy[0]);
+    }
+
     public function testAddCriteriaLimit()
     {
         $qb = $this->_em->createQueryBuilder();
@@ -848,6 +897,69 @@ class QueryBuilderTest extends \Doctrine\Tests\OrmTestCase
     }
 
     /**
+     * @group DDC-3108
+     */
+    public function testAddCriteriaWhereWithJoinAlias()
+    {
+        $qb = $this->_em->createQueryBuilder();
+        $qb->select('alias1')->from('Doctrine\Tests\Models\CMS\CmsUser', 'alias1');
+        $qb->join('alias1.articles','alias2');
+
+        $criteria = new Criteria();
+        $criteria->where($criteria->expr()->eq('field', 'value1'));
+        $criteria->andWhere($criteria->expr()->gt('alias2.field', 'value2'));
+
+        $qb->addCriteria($criteria);
+
+        $this->assertEquals('alias1.field = :field AND alias2.field > :alias2_field', (string) $qb->getDQLPart('where'));
+        $this->assertSame('value1', $qb->getParameter('field')->getValue());
+        $this->assertSame('value2', $qb->getParameter('alias2_field')->getValue());
+    }
+
+    /**
+     * @group DDC-3108
+     */
+    public function testAddCriteriaWhereWithDefaultAndJoinAlias()
+    {
+        $qb = $this->_em->createQueryBuilder();
+        $qb->select('alias1')->from('Doctrine\Tests\Models\CMS\CmsUser', 'alias1');
+        $qb->join('alias1.articles','alias2');
+
+        $criteria = new Criteria();
+        $criteria->where($criteria->expr()->eq('alias1.field', 'value1'));
+        $criteria->andWhere($criteria->expr()->gt('alias2.field', 'value2'));
+
+        $qb->addCriteria($criteria);
+
+        $this->assertEquals('alias1.field = :alias1_field AND alias2.field > :alias2_field', (string) $qb->getDQLPart('where'));
+        $this->assertSame('value1', $qb->getParameter('alias1_field')->getValue());
+        $this->assertSame('value2', $qb->getParameter('alias2_field')->getValue());
+    }
+
+    /**
+     * @group DDC-3108
+     */
+    public function testAddCriteriaWhereOnJoinAliasWithDuplicateFields()
+    {
+        $qb = $this->_em->createQueryBuilder();
+        $qb->select('alias1')->from('Doctrine\Tests\Models\CMS\CmsUser', 'alias1');
+        $qb->join('alias1.articles','alias2');
+
+        $criteria = new Criteria();
+        $criteria->where($criteria->expr()->eq('alias1.field', 'value1'));
+        $criteria->andWhere($criteria->expr()->gt('alias2.field', 'value2'));
+        $criteria->andWhere($criteria->expr()->lt('alias2.field', 'value3'));
+
+        $qb->addCriteria($criteria);
+
+        $this->assertEquals('(alias1.field = :alias1_field AND alias2.field > :alias2_field) AND alias2.field < :alias2_field_2', (string) $qb->getDQLPart('where'));
+        $this->assertSame('value1', $qb->getParameter('alias1_field')->getValue());
+        $this->assertSame('value2', $qb->getParameter('alias2_field')->getValue());
+        $this->assertSame('value3', $qb->getParameter('alias2_field_2')->getValue());
+    }
+
+
+    /**
      * @group DDC-1933
      */
     public function testParametersAreCloned()
@@ -1015,5 +1127,49 @@ class QueryBuilderTest extends \Doctrine\Tests\OrmTestCase
         $this->assertEquals(123, $query->getLifetime());
         $this->assertEquals('foo_reg', $query->getCacheRegion());
         $this->assertEquals(Cache::MODE_REFRESH, $query->getCacheMode());
+    }
+
+    /**
+     * @group DDC-2253
+     */
+    public function testRebuildsFromParts()
+    {
+        $qb = $this->_em->createQueryBuilder()
+          ->select('u')
+          ->from('Doctrine\Tests\Models\CMS\CmsUser', 'u')
+          ->join('u.article', 'a');
+
+        $dqlParts = $qb->getDQLParts();
+        $dql = $qb->getDQL();
+
+        $qb2 = $this->_em->createQueryBuilder();
+        foreach (array_filter($dqlParts) as $name => $part) {
+            $qb2->add($name, $part);
+        }
+        $dql2 = $qb2->getDQL();
+
+        $this->assertEquals($dql, $dql2);
+    }
+
+    public function testGetAllAliasesWithNoJoins()
+    {
+        $qb = $this->_em->createQueryBuilder();
+        $qb->select('u')->from('Doctrine\Tests\Models\CMS\CmsUser', 'u');
+
+        $aliases = $qb->getAllAliases();
+
+        $this->assertEquals(['u'], $aliases);
+    }
+
+    public function testGetAllAliasesWithJoins()
+    {
+        $qb = $this->_em->createQueryBuilder()
+            ->select('u')
+            ->from('Doctrine\Tests\Models\CMS\CmsUser', 'u')
+            ->join('u.groups', 'g');
+
+        $aliases = $qb->getAllAliases();
+
+        $this->assertEquals(['u', 'g'], $aliases);
     }
 }

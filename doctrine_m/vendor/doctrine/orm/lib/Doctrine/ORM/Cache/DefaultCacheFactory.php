@@ -20,23 +20,25 @@
 
 namespace Doctrine\ORM\Cache;
 
+use Doctrine\Common\Cache\Cache as CacheAdapter;
 use Doctrine\Common\Cache\CacheProvider;
-
+use Doctrine\Common\Cache\MultiGetCache;
 use Doctrine\ORM\Cache;
+use Doctrine\ORM\Cache\Persister\Collection\NonStrictReadWriteCachedCollectionPersister;
+use Doctrine\ORM\Cache\Persister\Collection\ReadOnlyCachedCollectionPersister;
+use Doctrine\ORM\Cache\Persister\Collection\ReadWriteCachedCollectionPersister;
+use Doctrine\ORM\Cache\Persister\Entity\NonStrictReadWriteCachedEntityPersister;
+use Doctrine\ORM\Cache\Persister\Entity\ReadOnlyCachedEntityPersister;
+use Doctrine\ORM\Cache\Persister\Entity\ReadWriteCachedEntityPersister;
 use Doctrine\ORM\Cache\Region;
-use Doctrine\ORM\Mapping\ClassMetadata;
-use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Cache\Region\DefaultMultiGetRegion;
 use Doctrine\ORM\Cache\Region\DefaultRegion;
 use Doctrine\ORM\Cache\Region\FileLockRegion;
 use Doctrine\ORM\Cache\Region\UpdateTimestampCache;
-use Doctrine\ORM\Persisters\EntityPersister;
-use Doctrine\ORM\Persisters\CollectionPersister;
-use Doctrine\ORM\Cache\Persister\ReadOnlyCachedEntityPersister;
-use Doctrine\ORM\Cache\Persister\ReadWriteCachedEntityPersister;
-use Doctrine\ORM\Cache\Persister\ReadOnlyCachedCollectionPersister;
-use Doctrine\ORM\Cache\Persister\ReadWriteCachedCollectionPersister;
-use Doctrine\ORM\Cache\Persister\NonStrictReadWriteCachedEntityPersister;
-use Doctrine\ORM\Cache\Persister\NonStrictReadWriteCachedCollectionPersister;
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Mapping\ClassMetadata;
+use Doctrine\ORM\Persisters\Collection\CollectionPersister;
+use Doctrine\ORM\Persisters\Entity\EntityPersister;
 
 /**
  * @since   2.5
@@ -45,7 +47,7 @@ use Doctrine\ORM\Cache\Persister\NonStrictReadWriteCachedCollectionPersister;
 class DefaultCacheFactory implements CacheFactory
 {
     /**
-     * @var \Doctrine\Common\Cache\CacheProvider
+     * @var CacheAdapter
      */
     private $cache;
 
@@ -70,10 +72,10 @@ class DefaultCacheFactory implements CacheFactory
     private $fileLockRegionDirectory;
 
     /**
-     * @param \Doctrine\ORM\Cache\RegionsConfiguration  $cacheConfig
-     * @param \Doctrine\Common\Cache\CacheProvider      $cache
+     * @param RegionsConfiguration $cacheConfig
+     * @param CacheAdapter         $cache
      */
-    public function __construct(RegionsConfiguration $cacheConfig, CacheProvider $cache)
+    public function __construct(RegionsConfiguration $cacheConfig, CacheAdapter $cache)
     {
         $this->cache         = $cache;
         $this->regionsConfig = $cacheConfig;
@@ -198,7 +200,18 @@ class DefaultCacheFactory implements CacheFactory
             return $this->regions[$cache['region']];
         }
 
-        $region = new DefaultRegion($cache['region'], clone $this->cache, $this->regionsConfig->getLifetime($cache['region']));
+        $cacheAdapter = clone $this->cache;
+
+        if ($cacheAdapter instanceof CacheProvider) {
+            $cacheAdapter->setNamespace($cache['region']);
+        }
+
+        $name     = $cache['region'];
+        $lifetime = $this->regionsConfig->getLifetime($cache['region']);
+
+        $region = ($cacheAdapter instanceof MultiGetCache)
+            ? new DefaultMultiGetRegion($name, $cacheAdapter, $lifetime)
+            : new DefaultRegion($name, $cacheAdapter, $lifetime);
 
         if ($cache['usage'] === ClassMetadata::CACHE_USAGE_READ_WRITE) {
 

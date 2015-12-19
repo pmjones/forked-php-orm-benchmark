@@ -45,21 +45,21 @@ class AbstractCommandTest extends TestCase
         $tester = new CommandTester($app->find('testable-command'));
 
         $tester->execute(
-            array(
+            [
                 'command' => 'testable-command',
-                '--input-dir' =>  realpath(__DIR__ . '/../../../../Fixtures/recursive'),
+                '--config-dir' =>  realpath(__DIR__ . '/../../../../Fixtures/recursive'),
                 '--recursive' => true
-            )
+            ]
         );
 
         $this->assertEquals('3', $tester->getDisplay());
 
         $tester->execute(
-            array(
+            [
                 'command' => 'testable-command',
-                '--input-dir' =>  realpath(__DIR__ . '/../../../../Fixtures/recursive'),
+                '--config-dir' =>  realpath(__DIR__ . '/../../../../Fixtures/recursive'),
                 '--recursive' => false
-            )
+            ]
         );
 
         $this->assertEquals('1', $tester->getDisplay());
@@ -81,7 +81,7 @@ class TestableAbstractCommand extends AbstractCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $result = $this->getSchemas($input->getOption('input-dir'), $input->getOption('recursive'));
+        $result = $this->getSchemas($input->getOption('config-dir'), $input->getOption('recursive'));
 
         $output->write(count($result));
     }

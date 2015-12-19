@@ -73,10 +73,14 @@ class YamlDriver extends FileDriver
         }
 
         // Evaluate root level properties
-        $table = array();
+        $primaryTable = array();
 
         if (isset($element['table'])) {
-            $table['name'] = $element['table'];
+            $primaryTable['name'] = $element['table'];
+        }
+
+        if (isset($element['schema'])) {
+            $primaryTable['schema'] = $element['schema'];
         }
 
         // Evaluate second level cache
@@ -84,7 +88,7 @@ class YamlDriver extends FileDriver
             $metadata->enableCache($this->cacheToArray($element['cache']));
         }
 
-        $metadata->setPrimaryTable($table);
+        $metadata->setPrimaryTable($primaryTable);
 
         // Evaluate named queries
         if (isset($element['namedQueries'])) {
@@ -162,11 +166,6 @@ class YamlDriver extends FileDriver
                 ));
             }
         }
-
-        /* not implemented specially anyway. use table = schema.table
-        if (isset($element['schema'])) {
-            $metadata->table['schema'] = $element['schema'];
-        }*/
 
         if (isset($element['inheritanceType'])) {
             $metadata->setInheritanceType(constant('Doctrine\ORM\Mapping\ClassMetadata::INHERITANCE_TYPE_' . strtoupper($element['inheritanceType'])));
@@ -389,12 +388,12 @@ class YamlDriver extends FileDriver
                     $mapping['orphanRemoval'] = (bool)$oneToOneElement['orphanRemoval'];
                 }
 
-                $metadata->mapOneToOne($mapping);
-
                 // Evaluate second level cache
                 if (isset($oneToOneElement['cache'])) {
-                    $metadata->enableAssociationCache($mapping['fieldName'], $this->cacheToArray($oneToOneElement['cache']));
+                    $mapping['cache'] = $metadata->getAssociationCacheDefaults($mapping['fieldName'], $this->cacheToArray($oneToOneElement['cache']));
                 }
+
+                $metadata->mapOneToOne($mapping);
             }
         }
 
@@ -427,12 +426,13 @@ class YamlDriver extends FileDriver
                     $mapping['indexBy'] = $oneToManyElement['indexBy'];
                 }
 
-                $metadata->mapOneToMany($mapping);
 
                 // Evaluate second level cache
                 if (isset($oneToManyElement['cache'])) {
-                    $metadata->enableAssociationCache($mapping['fieldName'], $this->cacheToArray($oneToManyElement['cache']));
+                    $mapping['cache'] = $metadata->getAssociationCacheDefaults($mapping['fieldName'], $this->cacheToArray($oneToManyElement['cache']));
                 }
+
+                $metadata->mapOneToMany($mapping);
             }
         }
 
@@ -476,12 +476,12 @@ class YamlDriver extends FileDriver
                     $mapping['cascade'] = $manyToOneElement['cascade'];
                 }
 
-                $metadata->mapManyToOne($mapping);
-
                 // Evaluate second level cache
                 if (isset($manyToOneElement['cache'])) {
-                    $metadata->enableAssociationCache($mapping['fieldName'], $this->cacheToArray($manyToOneElement['cache']));
+                    $mapping['cache'] = $metadata->getAssociationCacheDefaults($mapping['fieldName'], $this->cacheToArray($manyToOneElement['cache']));
                 }
+
+                $metadata->mapManyToOne($mapping);
             }
         }
 
@@ -515,9 +515,8 @@ class YamlDriver extends FileDriver
                             if ( ! isset($joinColumnElement['name'])) {
                                 $joinColumnElement['name'] = $joinColumnName;
                             }
+                            $joinTable['joinColumns'][] = $this->joinColumnToArray($joinColumnElement);
                         }
-
-                        $joinTable['joinColumns'][] = $this->joinColumnToArray($joinColumnElement);
                     }
 
                     if (isset($joinTableElement['inverseJoinColumns'])) {
@@ -525,9 +524,8 @@ class YamlDriver extends FileDriver
                             if ( ! isset($joinColumnElement['name'])) {
                                 $joinColumnElement['name'] = $joinColumnName;
                             }
+                            $joinTable['inverseJoinColumns'][] = $this->joinColumnToArray($joinColumnElement);
                         }
-
-                        $joinTable['inverseJoinColumns'][] = $this->joinColumnToArray($joinColumnElement);
                     }
 
                     $mapping['joinTable'] = $joinTable;
@@ -553,12 +551,12 @@ class YamlDriver extends FileDriver
                     $mapping['orphanRemoval'] = (bool)$manyToManyElement['orphanRemoval'];
                 }
 
-                $metadata->mapManyToMany($mapping);
-
                 // Evaluate second level cache
                 if (isset($manyToManyElement['cache'])) {
-                    $metadata->enableAssociationCache($mapping['fieldName'], $this->cacheToArray($manyToManyElement['cache']));
+                    $mapping['cache'] = $metadata->getAssociationCacheDefaults($mapping['fieldName'], $this->cacheToArray($manyToManyElement['cache']));
                 }
+
+                $metadata->mapManyToMany($mapping);
             }
         }
 
@@ -609,6 +607,11 @@ class YamlDriver extends FileDriver
                     }
 
                     $override['joinTable'] = $joinTable;
+                }
+
+                // Check for inversedBy
+                if (isset($associationOverrideElement['inversedBy'])) {
+                    $override['inversedBy'] = (string) $associationOverrideElement['inversedBy'];
                 }
 
                 $metadata->setAssociationOverride($fieldName, $override);
@@ -710,6 +713,7 @@ class YamlDriver extends FileDriver
 
         if (isset($column['type'])) {
             $params = explode('(', $column['type']);
+
             $column['type']  = $params[0];
             $mapping['type'] = $column['type'];
 
@@ -788,6 +792,6 @@ class YamlDriver extends FileDriver
      */
     protected function loadMappingFile($file)
     {
-        return Yaml::parse($file);
+        return Yaml::parse(file_get_contents($file));
     }
 }

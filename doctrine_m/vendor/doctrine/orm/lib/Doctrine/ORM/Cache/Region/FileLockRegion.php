@@ -20,6 +20,7 @@
 
 namespace Doctrine\ORM\Cache\Region;
 
+use Doctrine\ORM\Cache\CollectionCacheEntry;
 use Doctrine\ORM\Cache\Lock;
 use Doctrine\ORM\Cache\Region;
 use Doctrine\ORM\Cache\CacheKey;
@@ -60,7 +61,7 @@ class FileLockRegion implements ConcurrentRegion
      */
     public function __construct(Region $region, $directory, $lockLifetime)
     {
-        if ( ! is_dir($directory) && ! @mkdir($directory, 0777, true)) {
+        if ( ! is_dir($directory) && ! @mkdir($directory, 0775, true)) {
             throw new \InvalidArgumentException(sprintf('The directory "%s" does not exist and could not be created.', $directory));
         }
 
@@ -173,6 +174,18 @@ class FileLockRegion implements ConcurrentRegion
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function getMultiple(CollectionCacheEntry $collection)
+    {
+        if (array_filter(array_map([$this, 'isLocked'], $collection->identifiers))) {
+            return null;
+        }
+
+        return $this->region->getMultiple($collection);
+    }
+
+    /**
      * {inheritdoc}
      */
     public function put(CacheKey $key, CacheEntry $entry, Lock $lock = null)
@@ -201,8 +214,14 @@ class FileLockRegion implements ConcurrentRegion
      */
     public function evictAll()
     {
-        foreach (glob(sprintf("%s/*.%s" , $this->directory, self::LOCK_EXTENSION)) as $filename) {
-            @unlink($filename);
+        // The check below is necessary because on some platforms glob returns false
+        // when nothing matched (even though no errors occurred)
+        $filenames = glob(sprintf("%s/*.%s" , $this->directory, self::LOCK_EXTENSION));
+
+        if ($filenames) {
+            foreach ($filenames as $filename) {
+                @unlink($filename);
+            }
         }
 
         return $this->region->evictAll();
@@ -223,6 +242,7 @@ class FileLockRegion implements ConcurrentRegion
         if ( ! @file_put_contents($filename, $lock->value, LOCK_EX)) {
             return null;
         }
+        chmod($filename, 0664);
 
         return $lock;
     }

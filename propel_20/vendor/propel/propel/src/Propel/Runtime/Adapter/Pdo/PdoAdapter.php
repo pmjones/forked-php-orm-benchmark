@@ -27,6 +27,7 @@ use Propel\Generator\Model\PropelTypes;
  */
 abstract class PdoAdapter
 {
+
     /**
      * Build database connection
      *
@@ -51,7 +52,7 @@ abstract class PdoAdapter
 
         // load any driver options from the config file
         // driver options are those PDO settings that have to be passed during the connection construction
-        $driver_options = array();
+        $driver_options = [];
         if (isset($conparams['options']) && is_array($conparams['options'])) {
             foreach ($conparams['options'] as $option => $optiondata) {
                 $value = $optiondata;
@@ -67,7 +68,7 @@ abstract class PdoAdapter
 
         try {
             $con = new PdoConnection($dsn, $user, $password, $driver_options);
-            $this->initConnection($con, isset($conparams['settings']) && is_array($conparams['settings']) ? $conparams['settings'] : array());
+            $this->initConnection($con, isset($conparams['settings']) && is_array($conparams['settings']) ? $conparams['settings'] : []);
         } catch (\PDOException $e) {
             throw new AdapterException("Unable to open PDO connection", 0, $e);
         }
@@ -208,6 +209,32 @@ abstract class PdoAdapter
     }
 
     /**
+     * Quotes full qualified column names and table names.
+     *
+     * book.author_id => `book`.`author_id`
+     * author_id => `author_id`
+     *
+     * @param string $text
+     * @return string
+     */
+    public function quote($text)
+    {
+        if (false !== ($pos = strrpos($text, '.'))) {
+            $table = substr($text, 0, $pos);
+            $column = substr($text, $pos + 1);
+        } else {
+            $table = '';
+            $column = $text;
+        }
+
+        if ($table) {
+            return $this->quoteIdentifierTable($table) . '.' . $this->quoteIdentifier($column);
+        } else {
+            return $this->quoteIdentifier($column);
+        }
+    }
+
+    /**
      * Quotes a database table which could have space separating it from an alias,
      * both should be identified separately. This doesn't take care of dots which
      * separate schema names from table names. Adapters for RDBMs which support
@@ -218,7 +245,7 @@ abstract class PdoAdapter
      **/
     public function quoteIdentifierTable($table)
     {
-        return implode(' ', array_map(array($this, 'quoteIdentifier'), explode(' ', $table)));
+        return implode(' ', array_map([$this, 'quoteIdentifier'], explode(' ', $table)));
     }
 
     /**
@@ -305,14 +332,15 @@ abstract class PdoAdapter
     }
 
     /**
-     * @param string   $sql
      * @param Criteria $criteria
+     *
+     * @return string
      */
-    public function applyGroupBy(&$sql, Criteria $criteria)
+    public function getGroupBy(Criteria $criteria)
     {
         $groupBy = $criteria->getGroupByColumns();
         if ($groupBy) {
-            $sql .= ' GROUP BY ' . implode(',', $groupBy);
+            return ' GROUP BY ' . implode(',', $groupBy);
         }
     }
 
@@ -334,21 +362,6 @@ abstract class PdoAdapter
     public function getTimeFormatter()
     {
         return 'H:i:s';
-    }
-
-    /**
-     * Should Column-Names get identifiers for inserts or updates.
-     * By default false is returned -> backwards compatibility.
-     *
-     * it`s a workaround...!!!
-     *
-     * @deprecated
-     *
-     * @return boolean
-     */
-    public function useQuoteIdentifier()
-    {
-        return false;
     }
 
     /**
@@ -379,14 +392,10 @@ abstract class PdoAdapter
         }
 
         if ($realTableName = $criteria->getTableForAlias($tableName)) {
-            if ($this->useQuoteIdentifier()) {
-                $realTableName = $this->quoteIdentifierTable($realTableName);
-            }
+            $realTableName = $criteria->quoteIdentifierTable($realTableName);
             $sql .= $tableName . ' FROM ' . $realTableName . ' AS ' . $tableName;
         } else {
-            if ($this->useQuoteIdentifier()) {
-                $tableName = $this->quoteIdentifierTable($tableName);
-            }
+            $tableName = $criteria->quoteIdentifierTable($tableName);
             $sql .= 'FROM ' . $tableName;
         }
 
@@ -405,7 +414,7 @@ abstract class PdoAdapter
      */
     public function createSelectSqlPart(Criteria $criteria, &$fromClause, $aliasAll = false)
     {
-        $selectClause = array();
+        $selectClause = [];
 
         if ($aliasAll) {
             $this->turnSelectColumnsToAliases($criteria);
@@ -593,4 +602,5 @@ abstract class PdoAdapter
 
         return $stmt->bindValue($parameter, $value, $cMap->getPdoType());
     }
+
 }

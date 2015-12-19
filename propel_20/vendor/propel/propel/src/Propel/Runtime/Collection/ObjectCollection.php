@@ -28,6 +28,25 @@ use Propel\Runtime\ActiveRecord\ActiveRecordInterface;
  */
 class ObjectCollection extends Collection
 {
+
+    protected $index;
+    protected $indexSplHash;
+
+    public function __construct($data = [])
+    {
+        parent::__construct($data);
+        $this->rebuildIndex();
+    }
+
+    /**
+     * @param array $input
+     */
+    public function exchangeArray($input)
+    {
+        $this->data = $input;
+        $this->rebuildIndex();
+    }
+
     /**
      * Save all the elements in the collection
      *
@@ -78,7 +97,7 @@ class ObjectCollection extends Collection
      */
     public function getPrimaryKeys($usePrefix = true)
     {
-        $ret = array();
+        $ret = [];
 
         /** @var $obj ActiveRecordInterface */
         foreach ($this as $key => $obj) {
@@ -116,7 +135,7 @@ class ObjectCollection extends Collection
      * @param boolean $usePrefix              If true, the returned array prefixes keys
      *                                        with the model class name ('Article_0', 'Article_1', etc).
      * @param string  $keyType                (optional) One of the class type constants TableMap::TYPE_PHPNAME,
-     *                                        TableMap::TYPE_STUDLYPHPNAME, TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME,
+     *                                        TableMap::TYPE_CAMELNAME, TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME,
      *                                        TableMap::TYPE_NUM. Defaults to TableMap::TYPE_PHPNAME.
      * @param boolean $includeLazyLoadColumns (optional) Whether to include lazy loaded columns. Defaults to TRUE.
      * @param array   $alreadyDumpedObjects   List of objects to skip to avoid recursion
@@ -141,9 +160,9 @@ class ObjectCollection extends Collection
      *
      * @return array
      */
-    public function toArray($keyColumn = null, $usePrefix = false, $keyType = TableMap::TYPE_PHPNAME, $includeLazyLoadColumns = true, $alreadyDumpedObjects = array())
+    public function toArray($keyColumn = null, $usePrefix = false, $keyType = TableMap::TYPE_PHPNAME, $includeLazyLoadColumns = true, $alreadyDumpedObjects = [])
     {
-        $ret = array();
+        $ret = [];
         $keyGetterMethod = 'get' . $keyColumn;
 
         /** @var $obj ActiveRecordInterface */
@@ -189,7 +208,7 @@ class ObjectCollection extends Collection
         if (null === $keyColumn && false === $usePrefix) {
             return parent::getArrayCopy();
         }
-        $ret = array();
+        $ret = [];
         $keyGetterMethod = 'get' . $keyColumn;
         foreach ($this as $key => $obj) {
             $key = null === $keyColumn ? $key : $obj->$keyGetterMethod();
@@ -216,7 +235,7 @@ class ObjectCollection extends Collection
      */
     public function toKeyValue($keyColumn = 'PrimaryKey', $valueColumn = null)
     {
-        $ret = array();
+        $ret = [];
         $keyGetterMethod = 'get' . $keyColumn;
         $valueGetterMethod = (null === $valueColumn) ? '__toString' : ('get' . $valueColumn);
         foreach ($this as $obj) {
@@ -246,7 +265,7 @@ class ObjectCollection extends Collection
      */
     public function toKeyIndex($keyColumn = 'PrimaryKey')
     {
-        $ret = array();
+        $ret = [];
         $keyGetterMethod = 'get' . ucfirst($keyColumn);
         foreach ($this as $obj) {
             $ret[$obj->$keyGetterMethod()] = $obj;
@@ -319,17 +338,39 @@ class ObjectCollection extends Collection
      */
     public function search($element)
     {
-        if ($element instanceof ActiveRecordInterface) {
-            $hashCode = $element->hashCode();
-            foreach ($this as $pos => $obj) {
-                if ($hashCode === $obj->hashCode()) {
-                    return $pos;
-                }
-            }
+        if (isset($this->indexSplHash[$splHash = spl_object_hash($element)])) {
+            return $this->index[$this->indexSplHash[$splHash]];
+        }
 
-            return false;
-        } else {
-            return parent::search($element);
+        if (isset($this->index[$hashCode = $element->hashCode()])) {
+            return $this->index[$hashCode];
+        }
+
+        return false;
+    }
+
+    protected function rebuildIndex()
+    {
+        $this->index = [];
+        $this->indexSplHash = [];
+        foreach ($this->data as $idx => $value){
+            $hashCode = $value->hashCode();
+            $this->index[$hashCode] = $idx;
+            $this->indexSplHash[spl_object_hash($value)] = $hashCode;
+        }
+    }
+
+    /**
+     * @param mixed $offset
+     */
+    public function offsetUnset($offset)
+    {
+        if (isset($this->data[$offset])) {
+            if (is_object($this->data[$offset])) {
+                unset($this->indexSplHash[spl_object_hash($this->data[$offset])]);
+                unset($this->index[$this->data[$offset]->hashCode()]);
+            }
+            unset($this->data[$offset]);
         }
     }
 
@@ -344,10 +385,59 @@ class ObjectCollection extends Collection
     }
 
     /**
+     * @param mixed $value
+     */
+    public function append($value)
+    {
+        if (!is_object($value)) {
+            parent::append($value);
+            return;
+        }
+
+        $pos = count($this->data);
+        $this->index[$value->hashCode()] = $pos;
+        $this->indexSplHash[spl_object_hash($value)] = $value->hashCode();
+        $this->data[] = $value;
+    }
+
+    /**
+     * @param mixed $offset
+     * @param mixed $value
+     */
+    public function offsetSet($offset, $value)
+    {
+        if (!is_object($value)) {
+            parent::offsetSet($offset, $value);
+            return;
+        }
+
+        $hashCode = $value->hashCode();
+
+        if (is_null($offset)) {
+            $this->index[$hashCode] = count($this->data);
+            $this->indexSplHash[spl_object_hash($value)] = $hashCode;
+            $this->data[] = $value;
+        } else {
+            if (isset($this->data[$offset])) {
+                unset($this->indexSplHash[spl_object_hash($this->data[$offset])]);
+                unset($this->index[$this->data[$offset]->hashCode()]);
+            }
+
+            $this->index[$hashCode] = $offset;
+            $this->indexSplHash[spl_object_hash($value)] = $hashCode;
+            $this->data[$offset] = $value;
+        }
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function contains($element)
     {
-        return false !== $this->search($element);
+        if (!is_object($element)) {
+            return parent::contains($element);
+        }
+
+        return isset($this->indexSplHash[spl_object_hash($element)]) || isset($this->index[$element->hashCode()]);
     }
 }

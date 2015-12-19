@@ -19,11 +19,11 @@
 
 namespace Doctrine\ORM\Internal\Hydration;
 
-use PDO;
 use Doctrine\DBAL\Types\Type;
-use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Events;
 use Doctrine\ORM\Mapping\ClassMetadata;
+use PDO;
 
 /**
  * Base class for all hydrators. A hydrator is a class that provides some form
@@ -46,7 +46,7 @@ abstract class AbstractHydrator
     /**
      * The EntityManager instance.
      *
-     * @var EntityManager
+     * @var EntityManagerInterface
      */
     protected $_em;
 
@@ -95,9 +95,9 @@ abstract class AbstractHydrator
     /**
      * Initializes a new instance of a class derived from <tt>AbstractHydrator</tt>.
      *
-     * @param \Doctrine\ORM\EntityManager $em The EntityManager to use.
+     * @param EntityManagerInterface $em The EntityManager to use.
      */
-    public function __construct(EntityManager $em)
+    public function __construct(EntityManagerInterface $em)
     {
         $this->_em       = $em;
         $this->_platform = $em->getConnection()->getDatabasePlatform();
@@ -120,6 +120,7 @@ abstract class AbstractHydrator
         $this->_hints = $hints;
 
         $evm = $this->_em->getEventManager();
+
         $evm->addEventListener(array(Events::onClear), $this);
 
         $this->prepare();
@@ -272,8 +273,6 @@ abstract class AbstractHydrator
 
                     $rowData['newObjects'][$objIndex]['class']           = $cacheKeyInfo['class'];
                     $rowData['newObjects'][$objIndex]['args'][$argIndex] = $value;
-
-                    $rowData['scalars'][$fieldName] = $value;
                     break;
 
                 case (isset($cacheKeyInfo['isScalar'])):
@@ -400,12 +399,14 @@ abstract class AbstractHydrator
 
             case (isset($this->_rsm->metaMappings[$key])):
                 // Meta column (has meaning in relational schema only, i.e. foreign keys or discriminator columns).
-                $fieldName     = $this->_rsm->metaMappings[$key];
-                $dqlAlias      = $this->_rsm->columnOwnerMap[$key];
-                $classMetadata = $this->getClassMetadata($this->_rsm->aliasMap[$dqlAlias]);
-                $type          = isset($this->_rsm->typeMappings[$key])
+                $fieldName = $this->_rsm->metaMappings[$key];
+                $dqlAlias  = $this->_rsm->columnOwnerMap[$key];
+                $type      = isset($this->_rsm->typeMappings[$key])
                     ? Type::getType($this->_rsm->typeMappings[$key])
                     : null;
+
+                // Cache metadata fetch
+                $this->getClassMetadata($this->_rsm->aliasMap[$dqlAlias]);
 
                 return $this->_cache[$key] = array(
                     'isIdentifier' => isset($this->_rsm->isIdentifierColumn[$dqlAlias][$key]),

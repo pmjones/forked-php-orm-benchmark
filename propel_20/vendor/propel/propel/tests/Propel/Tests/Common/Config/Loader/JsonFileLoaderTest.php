@@ -77,12 +77,12 @@ EOF;
 
         $actual = $this->loader->load('empty.json');
 
-        $this->assertEquals(array(), $actual);
+        $this->assertEquals([], $actual);
     }
 
     /**
      * @expectedException Propel\Common\Config\Exception\InputOutputException
-     * @expectedMessage You don't have permissions to access configuration file notreadable.json.
+     * @expectedExceptionMessage You don't have permissions to access configuration file notreadable.json.
      */
     public function testJsonFileNotReadableThrowsException()
     {

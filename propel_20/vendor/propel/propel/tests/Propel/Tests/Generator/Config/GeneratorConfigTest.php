@@ -86,14 +86,14 @@ class GeneratorConfigTest extends ConfigTestCase
 
     public function testGetConfiguredPlatform()
     {
-        $this->setConfig(array('generator' => array('platformClass' => '\\Propel\\Generator\\Platform\\PgsqlPlatform')));
+        $this->setConfig(['generator' => ['platformClass' => '\\Propel\\Generator\\Platform\\PgsqlPlatform']]);
         $actual = $this->generatorConfig->getConfiguredPlatform();
         $this->assertInstanceOf('\\Propel\\Generator\\Platform\\PgsqlPlatform', $actual);
     }
 
     /**
      * @expectedException Propel\Generator\Exception\InvalidArgumentException
-     * @expectedMessage Invalid database name: no configured connection named `badsource`.
+     * @expectedExceptionMessage Invalid database name: no configured connection named `badsource`.
      */
     public function testGetConfiguredPlatformGivenBadDatabaseNameThrowsException()
     {
@@ -102,7 +102,7 @@ class GeneratorConfigTest extends ConfigTestCase
 
     public function testGetConfiguredPlatformGivenPlatform()
     {
-        $this->setConfig(array('generator' => array('platformClass' => '\\Propel\\Generator\\Platform\\PgsqlPlatform')));
+        $this->setConfig(['generator' => ['platformClass' => '\\Propel\\Generator\\Platform\\PgsqlPlatform']]);
         $actual = $this->generatorConfig->getConfiguredPlatform();
 
         $this->assertInstanceOf('\\Propel\\Generator\\Platform\\PgsqlPlatform', $actual);
@@ -121,10 +121,10 @@ class GeneratorConfigTest extends ConfigTestCase
     public function testGetConfiguredSchemaParserGivenClass()
     {
         $this->setConfig(
-            array('migrations' => array(
+            ['migrations' => [
                 'tableName' => 'propel_migration',
                 'parserClass' => '\\Propel\\Generator\\Reverse\\PgsqlSchemaParser'
-            ))
+            ]]
         );
         $stubCon = $this->getMockBuilder('\\Propel\\Runtime\\Connection\\ConnectionWrapper')
             ->disableOriginalConstructor()->getMock();
@@ -136,15 +136,15 @@ class GeneratorConfigTest extends ConfigTestCase
 
     /**
      * @expectedException Propel\Generator\Exception\BuildException
-     * @expectedMessage Specified platform class (\Propel\Generator\Platform\MysqlPlatform) does not implement SchemaParserInterface interface.
+     * @expectedExceptionMessage Specified class (\Propel\Generator\Platform\MysqlPlatform) does not implement \Propel\Generator\Reverse\SchemaParserInterface interface.
      */
     public function testGetConfiguredSchemaParserGivenNonSchemaParserClass()
     {
         $this->setConfig(
-            array('migrations' => array(
+            ['migrations' => [
                 'tableName' => 'propel_migration',
                 'parserClass' => '\\Propel\\Generator\\Platform\\MysqlPlatform'
-            ))
+            ]]
         );
 
         $actual = $this->generatorConfig->getConfiguredSchemaParser();
@@ -154,15 +154,15 @@ class GeneratorConfigTest extends ConfigTestCase
 
     /**
      * @expectedException Propel\Generator\Exception\ClassNotFoundException
-     * @expectedMessage Specified platform class (\Propel\Generator\Reverse\BadSchemaParser) does not exist
+     * @expectedExceptionMessage Reverse SchemaParser class for `\Propel\Generator\Reverse\BadSchemaParser` not found.
      */
     public function testGetConfiguredSchemaParserGivenBadClass()
     {
         $this->setConfig(
-            array('migrations' => array(
+            ['migrations' => [
                 'tableName' => 'propel_migration',
                 'parserClass' => '\\Propel\\Generator\\Reverse\\BadSchemaParser'
-            ))
+            ]]
         );
 
         $actual = $this->generatorConfig->getConfiguredSchemaParser();
@@ -201,7 +201,7 @@ class GeneratorConfigTest extends ConfigTestCase
 
     /**
      * @expectedException Propel\Generator\Exception\ClassNotFoundException
-     * @expectedMessage Class \Propel\Common\Pluralizer\WrongEnglishPluralizer not found.
+     * @expectedExceptionMessage Class \Propel\Common\Pluralizer\WrongEnglishPluralizer not found.
      */
     public function testGetConfiguredPluralizerNonExistentClassThrowsException()
     {
@@ -213,7 +213,7 @@ class GeneratorConfigTest extends ConfigTestCase
 
     /**
      * @expectedException Propel\Generator\Exception\BuildException
-     * @expectedMessage Specified class (\Propel\Common\Config\PropelConfiguration) does not implement
+     * @expectedExceptionMessage Specified class (\Propel\Common\Config\PropelConfiguration) does not implement
      */
     public function testGetConfiguredPluralizerWrongClassThrowsException()
     {
@@ -225,22 +225,22 @@ class GeneratorConfigTest extends ConfigTestCase
 
     public function testGetBuildConnections()
     {
-        $expected = array(
-            'mysource' => array(
+        $expected = [
+            'mysource' => [
                 'adapter' => 'sqlite',
                 'classname' => 'Propel\\Runtime\\Connection\\DebugPDO',
                 'dsn' => 'sqlite:' . sys_get_temp_dir() . '/mydb',
                 'user' => 'root',
                 'password' => ''
-            ),
-            'yoursource' => array(
+            ],
+            'yoursource' => [
                 'adapter' => 'mysql',
                 'classname' => 'Propel\\Runtime\\Connection\\DebugPDO',
                 'dsn' => 'mysql:host=localhost;dbname=yourdb',
                 'user' => 'root',
                 'password' => ''
-            )
-        );
+            ]
+        ];
 
         $actual = $this->generatorConfig->getBuildConnections();
 
@@ -249,13 +249,13 @@ class GeneratorConfigTest extends ConfigTestCase
 
     public function testGetBuildConnection()
     {
-        $expected = array(
+        $expected = [
             'adapter' => 'sqlite',
             'classname' => 'Propel\\Runtime\\Connection\\DebugPDO',
             'dsn' => 'sqlite:' . sys_get_temp_dir() . '/mydb',
             'user' => 'root',
             'password' => ''
-        );
+        ];
 
         $actual = $this->generatorConfig->getBuildConnection();
 
@@ -264,13 +264,13 @@ class GeneratorConfigTest extends ConfigTestCase
 
     public function testGetBuildConnectionGivenDatabase()
     {
-        $expected = array(
+        $expected = [
             'adapter' => 'mysql',
             'classname' => 'Propel\\Runtime\\Connection\\DebugPDO',
             'dsn' => 'mysql:host=localhost;dbname=yourdb',
             'user' => 'root',
             'password' => ''
-        );
+        ];
 
         $actual = $this->generatorConfig->getBuildConnection('yoursource');
 
@@ -279,7 +279,7 @@ class GeneratorConfigTest extends ConfigTestCase
 
     /**
      * @expectedException Propel\Generator\Exception\InvalidArgumentException
-     * @expectedMessage Invalid database name: no configured connection named `wrongsource`.
+     * @expectedExceptionMessage Invalid database name: no configured connection named `wrongsource`.
      */
     public function testGetBuildConnectionGivenWrongDatabaseThrowsException()
     {
@@ -302,7 +302,7 @@ class GeneratorConfigTest extends ConfigTestCase
 
     /**
      * @expectedException Propel\Generator\Exception\InvalidArgumentException
-     * @expectedMessage Invalid database name: no configured connection named `badsource`.
+     * @expectedExceptionMessage Invalid database name: no configured connection named `badsource`.
      */
     public function testGetConnectionWrongDatabaseThrowsException()
     {

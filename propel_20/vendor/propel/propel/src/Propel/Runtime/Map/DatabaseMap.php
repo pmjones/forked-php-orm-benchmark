@@ -41,14 +41,14 @@ class DatabaseMap
      *
      * @var TableMap[]
      */
-    protected $tables = array();
+    protected $tables = [];
 
     /**
      * Tables in the database, using table phpName as key
      *
      * @var TableMap[]
      */
-    protected $tablesByPhpName = array();
+    protected $tablesByPhpName = [];
 
     /**
      * Constructor.
@@ -173,6 +173,11 @@ class DatabaseMap
         return $this->getTable($tableName)->getColumn($columnName, false);
     }
 
+    /**
+     * @param string $phpName
+     *
+     * @return TableMap
+     */
     public function getTableByPhpName($phpName)
     {
         if ('\\' !== $phpName[0]) {

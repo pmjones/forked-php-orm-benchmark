@@ -157,13 +157,15 @@ class EntityGenerator
         Type::DATE          => '\DateTime',
         Type::TIME          => '\DateTime',
         Type::OBJECT        => '\stdClass',
-        Type::BIGINT        => 'integer',
-        Type::SMALLINT      => 'integer',
+        Type::INTEGER       => 'int',
+        Type::BIGINT        => 'int',
+        Type::SMALLINT      => 'int',
         Type::TEXT          => 'string',
         Type::BLOB          => 'string',
         Type::DECIMAL       => 'string',
         Type::JSON_ARRAY    => 'array',
         Type::SIMPLE_ARRAY  => 'array',
+        Type::BOOLEAN       => 'bool',
     );
 
     /**
@@ -277,10 +279,12 @@ public function <methodName>(<methodTypeHint>$<variableName>)
  * <description>
  *
  * @param <variableType> $<variableName>
+ *
+ * @return boolean TRUE if this collection contained the specified element, FALSE otherwise.
  */
 public function <methodName>(<methodTypeHint>$<variableName>)
 {
-<spaces>$this-><fieldName>->removeElement($<variableName>);
+<spaces>return $this-><fieldName>->removeElement($<variableName>);
 }';
 
     /**
@@ -364,7 +368,7 @@ public function __construct(<params>)
         $dir = dirname($path);
 
         if ( ! is_dir($dir)) {
-            mkdir($dir, 0777, true);
+            mkdir($dir, 0775, true);
         }
 
         $this->isNew = !file_exists($path) || (file_exists($path) && $this->regenerateEntityIfExists);
@@ -389,6 +393,7 @@ public function __construct(<params>)
         } elseif ( ! $this->isNew && $this->updateEntityIfExists) {
             file_put_contents($path, $this->generateUpdatedEntityClass($metadata, $path));
         }
+        chmod($path, 0664);
     }
 
     /**
@@ -827,7 +832,7 @@ public function __construct(<params>)
             if ($token[0] == T_NAMESPACE) {
                 $lastSeenNamespace = "";
                 $inNamespace = true;
-            } elseif ($token[0] == T_CLASS) {
+            } elseif ($token[0] == T_CLASS && $tokens[$i-1][0] != T_DOUBLE_COLON) {
                 $inClass = true;
             } elseif ($token[0] == T_FUNCTION) {
                 if ($tokens[$i+2][0] == T_STRING) {
@@ -849,7 +854,7 @@ public function __construct(<params>)
      */
     protected function hasProperty($property, ClassMetadataInfo $metadata)
     {
-        if ($this->extendsClass() || class_exists($metadata->name)) {
+        if ($this->extendsClass() || (!$this->isNew && class_exists($metadata->name))) {
             // don't generate property if its already on the base class.
             $reflClass = new \ReflectionClass($this->getClassToExtend() ?: $metadata->name);
             if ($reflClass->hasProperty($property)) {
@@ -878,7 +883,7 @@ public function __construct(<params>)
      */
     protected function hasMethod($method, ClassMetadataInfo $metadata)
     {
-        if ($this->extendsClass() || class_exists($metadata->name)) {
+        if ($this->extendsClass() || (!$this->isNew && class_exists($metadata->name))) {
             // don't generate method if its already on the base class.
             $reflClass = new \ReflectionClass($this->getClassToExtend() ?: $metadata->name);
 
@@ -907,23 +912,23 @@ public function __construct(<params>)
      */
     protected function getTraits(ClassMetadataInfo $metadata)
     {
-        if (PHP_VERSION_ID >= 50400 && ($metadata->reflClass !== null || class_exists($metadata->name))) {
-            $reflClass = $metadata->reflClass === null
-                ? new \ReflectionClass($metadata->name)
-                : $metadata->reflClass;
-
-            $traits = array();
-
-            while ($reflClass !== false) {
-                $traits = array_merge($traits, $reflClass->getTraits());
-
-                $reflClass = $reflClass->getParentClass();
-            }
-
-            return $traits;
+        if (! ($metadata->reflClass !== null || class_exists($metadata->name))) {
+            return [];
         }
 
-        return array();
+        $reflClass = $metadata->reflClass === null
+            ? new \ReflectionClass($metadata->name)
+            : $metadata->reflClass;
+
+        $traits = array();
+
+        while ($reflClass !== false) {
+            $traits = array_merge($traits, $reflClass->getTraits());
+
+            $reflClass = $reflClass->getParentClass();
+        }
+
+        return $traits;
     }
 
     /**
@@ -1312,7 +1317,7 @@ public function __construct(<params>)
 
             $lines[] = $this->generateFieldMappingPropertyDocBlock($fieldMapping, $metadata);
             $lines[] = $this->spaces . $this->fieldVisibility . ' $' . $fieldMapping['fieldName']
-                     . (isset($fieldMapping['default']) ? ' = ' . var_export($fieldMapping['default'], true) : null) . ";\n";
+                     . (isset($fieldMapping['options']['default']) ? ' = ' . var_export($fieldMapping['options']['default'], true) : null) . ";\n";
         }
 
         return implode("\n", $lines);
@@ -1650,8 +1655,14 @@ public function __construct(<params>)
                 $column[] = 'nullable=' .  var_export($fieldMapping['nullable'], true);
             }
 
-            if (isset($fieldMapping['unsigned']) && $fieldMapping['unsigned']) {
-                $column[] = 'options={"unsigned"=true}';
+            $options = [];
+
+            if (isset($fieldMapping['options']['unsigned']) && $fieldMapping['options']['unsigned']) {
+                $options[] = '"unsigned"=true';
+            }
+
+            if ($options) {
+                $column[] = 'options={'.implode(',', $options).'}';
             }
 
             if (isset($fieldMapping['columnDefinition'])) {

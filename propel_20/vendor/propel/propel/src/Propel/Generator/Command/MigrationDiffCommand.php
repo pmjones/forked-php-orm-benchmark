@@ -10,6 +10,7 @@
 
 namespace Propel\Generator\Command;
 
+use Propel\Common\Config\ConfigurationManager;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -26,8 +27,6 @@ use Propel\Generator\Model\Schema;
  */
 class MigrationDiffCommand extends AbstractCommand
 {
-    const DEFAULT_OUTPUT_DIRECTORY  = 'generated-migrations';
-
     /**
      * {@inheritdoc}
      */
@@ -36,16 +35,18 @@ class MigrationDiffCommand extends AbstractCommand
         parent::configure();
 
         $this
-            ->addOption('output-dir',         null, InputOption::VALUE_REQUIRED,  'The output directory where the migration files are located', self::DEFAULT_OUTPUT_DIRECTORY)
+            ->addOption('schema-dir',         null, InputOption::VALUE_REQUIRED,  'The directory where the schema files are placed')
+            ->addOption('output-dir',         null, InputOption::VALUE_REQUIRED,  'The output directory where the migration files are located')
             ->addOption('migration-table',    null, InputOption::VALUE_REQUIRED,  'Migration table name', null)
-            ->addOption('connection',         null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Connection to use. Example: \'bookstore=mysql:host=127.0.0.1;dbname=test;user=root;password=foobar\' where "bookstore" is your propel database name (used in your schema.xml)', array())
+            ->addOption('connection',         null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Connection to use. Example: \'bookstore=mysql:host=127.0.0.1;dbname=test;user=root;password=foobar\' where "bookstore" is your propel database name (used in your schema.xml)', [])
             ->addOption('table-renaming',     null, InputOption::VALUE_NONE,      'Detect table renaming', null)
             ->addOption('editor',             null, InputOption::VALUE_OPTIONAL,  'The text editor to use to open diff files', null)
             ->addOption('skip-removed-table', null, InputOption::VALUE_NONE,      'Option to skip removed table from the migration')
-            ->addOption('skip-tables',        null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_OPTIONAL, 'List of excluded tables', array())
+            ->addOption('skip-tables',        null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_OPTIONAL, 'List of excluded tables', [])
+            ->addOption('disable-identifier-quoting', null, InputOption::VALUE_NONE, 'Disable identifier quoting in SQL queries for reversed database tables.')
             ->addOption('comment',            "m",  InputOption::VALUE_OPTIONAL,  'A comment for the migration', '')
             ->setName('migration:diff')
-            ->setAliases(array('diff'))
+            ->setAliases(['diff'])
             ->setDescription('Generate diff classes')
             ;
     }
@@ -55,8 +56,8 @@ class MigrationDiffCommand extends AbstractCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $configOptions = array();
-        
+        $configOptions = [];
+
         if ($this->hasInputOption('connection', $input)) {
             foreach ($input->getOption('connection') as $conn) {
                 $configOptions += $this->connectionToProperties($conn);
@@ -67,36 +68,36 @@ class MigrationDiffCommand extends AbstractCommand
             $configOptions['propel']['migrations']['tableName'] = $input->getOption('migration-table');
         }
 
-        if ($this->hasInputOption('platform', $input)) {
-            $configOptions['propel']['migrations']['parserClass'] = $this->getReverseClass($input);
+        if ($this->hasInputOption('schema-dir', $input)) {
+            $configOptions['propel']['paths']['schemaDir'] = $input->getOption('schema-dir');
         }
 
-        if ($input->getOption('input-dir') !== '.'){
-            $configOptions['propel']['paths']['schemaDir'] = $input->getOption('input-dir');
+        if ($this->hasInputOption('output-dir', $input)) {
+            $configOptions['propel']['paths']['migrationDir'] = $input->getOption('output-dir');
         }
 
         $generatorConfig = $this->getGeneratorConfig($configOptions, $input);
 
-        $this->createDirectory($input->getOption('output-dir'));
+        $this->createDirectory($generatorConfig->getSection('paths')['migrationDir']);
 
         $manager = new MigrationManager();
         $manager->setGeneratorConfig($generatorConfig);
         $manager->setSchemas($this->getSchemas($generatorConfig->getSection('paths')['schemaDir'], $input->getOption('recursive')));
 
-        $connections = array();
+        $connections = [];
         $optionConnections = $input->getOption('connection');
         if (!$optionConnections) {
             $connections = $generatorConfig->getBuildConnections();
         } else {
             foreach ($optionConnections as $connection) {
                 list($name, $dsn, $infos) = $this->parseConnection($connection);
-                $connections[$name] = array_merge(array('dsn' => $dsn), $infos);
+                $connections[$name] = array_merge(['dsn' => $dsn], $infos);
             }
         }
 
         $manager->setConnections($connections);
         $manager->setMigrationTable($generatorConfig->getConfigProperty('migrations.tableName'));
-        $manager->setWorkingDirectory($input->getOption('output-dir'));
+        $manager->setWorkingDirectory($generatorConfig->getSection('paths')['migrationDir']);
 
         if ($manager->hasPendingMigrations()) {
             throw new RuntimeException('Uncommitted migrations have been found ; you should either execute or delete them before rerunning the \'diff\' task');
@@ -131,12 +132,16 @@ class MigrationDiffCommand extends AbstractCommand
                 }
             }
 
+            if ($input->getOption('disable-identifier-quoting')) {
+                $platform->setIdentifierQuoting(false);
+            }
+
             $database = new Database($name);
             $database->setPlatform($platform);
             $database->setSchema($appDatabase->getSchema());
             $database->setDefaultIdMethod(IdMethod::NATIVE);
 
-            $parser   = $generatorConfig->getConfiguredSchemaParser($conn);
+            $parser   = $generatorConfig->getConfiguredSchemaParser($conn, $name);
             $nbTables = $parser->parse($database, $additionalTables);
 
             $reversedSchema->addDatabase($database);
@@ -157,8 +162,8 @@ class MigrationDiffCommand extends AbstractCommand
         $output->writeln('Comparing models...');
         $tableRenaming = $input->getOption('table-renaming');
 
-        $migrationsUp   = array();
-        $migrationsDown = array();
+        $migrationsUp   = [];
+        $migrationsDown = [];
         $removeTable = !$input->getOption('skip-removed-table');
         $excludedTables = $input->getOption('skip-tables');
         foreach ($reversedSchema->getDatabases() as $database) {
@@ -172,6 +177,9 @@ class MigrationDiffCommand extends AbstractCommand
                 $output->writeln(sprintf('<error>Database "%s" does not exist in schema.xml. Skipped.</error>', $name));
                 continue;
             }
+
+            $configManager = new ConfigurationManager();
+            $excludedTables = array_merge((array) $excludedTables, (array) $configManager->getSection('exclude_tables'));
 
             $databaseDiff = DatabaseComparator::computeDiff($database, $appDataDatabase, false, $tableRenaming, $removeTable, $excludedTables);
 
@@ -191,7 +199,11 @@ class MigrationDiffCommand extends AbstractCommand
                 ));
             }
 
-            $platform               = $generatorConfig->getConfiguredPlatform(null, $name);
+            $conn     = $manager->getAdapterConnection($name);
+            $platform = $generatorConfig->getConfiguredPlatform($conn, $name);
+            if ($input->getOption('disable-identifier-quoting')) {
+                $platform->setIdentifierQuoting(false);
+            }
             $migrationsUp[$name]    = $platform->getModifyDatabaseDDL($databaseDiff);
             $migrationsDown[$name]  = $platform->getModifyDatabaseDDL($databaseDiff->getReverseDiff());
         }
@@ -206,7 +218,7 @@ class MigrationDiffCommand extends AbstractCommand
         $migrationFileName  = $manager->getMigrationFileName($timestamp);
         $migrationClassBody = $manager->getMigrationClassBody($migrationsUp, $migrationsDown, $timestamp, $input->getOption('comment'));
 
-        $file = $input->getOption('output-dir') . DIRECTORY_SEPARATOR . $migrationFileName;
+        $file = $generatorConfig->getSection('paths')['migrationDir'] . DIRECTORY_SEPARATOR . $migrationFileName;
         file_put_contents($file, $migrationClassBody);
 
         $output->writeln(sprintf('"%s" file successfully created.', $file));
@@ -220,17 +232,4 @@ class MigrationDiffCommand extends AbstractCommand
         }
     }
 
-    /**
-     * Return the name of the reverse parser class
-     */
-    protected function getReverseClass(InputInterface $input)
-    {
-        $reverse = $input->getOption('platform');
-        if (false !== strpos($reverse, 'Platform')) {
-            $reverse = strstr($input->getOption('platform'), 'Platform', true);
-        }
-        $reverse = sprintf('Propel\\Generator\\Reverse\\%sSchemaParser', ucfirst($reverse));
-
-        return $reverse;
-    }
 }

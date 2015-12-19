@@ -30,12 +30,12 @@ class MigrationManager extends AbstractManager
     /**
      * @var array
      */
-    protected $connections = array();
+    protected $connections = [];
 
     /**
      * @var ConnectionInterface[]
      */
-    protected $adapterConnections = array();
+    protected $adapterConnections = [];
 
     /**
      * @var string
@@ -122,11 +122,12 @@ class MigrationManager extends AbstractManager
 
     public function getAllDatabaseVersions()
     {
-        if (!$connections = $this->getConnections()) {
+        $connections = $this->getConnections();
+        if (!$connections) {
             throw new \Exception('You must define database connection settings in a buildtime-conf.xml file to use migrations');
         }
 
-        $migrationTimestamps = array();
+        $migrationTimestamps = [];
         foreach ($connections as $name => $params) {
             $conn = $this->getAdapterConnection($name);
             $platform = $this->getGeneratorConfig()->getConfiguredPlatform($conn);
@@ -200,7 +201,7 @@ class MigrationManager extends AbstractManager
         $conn->transaction(function () use ($conn, $platform, $timestamp) {
             $sql = sprintf('DELETE FROM %s WHERE %s = ?',
                 $this->getMigrationTable(),
-                $platform->quoteIdentifier('version')
+                $platform->doQuoting('version')
             );
             $stmt = $conn->prepare($sql);
             $stmt->bindParam(1, $timestamp, \PDO::PARAM_INT);
@@ -214,7 +215,7 @@ class MigrationManager extends AbstractManager
         $conn = $this->getAdapterConnection($datasource);
         $sql = sprintf('INSERT INTO %s (%s) VALUES (?)',
             $this->getMigrationTable(),
-            $platform->quoteIdentifier('version')
+            $platform->doQuoting('version')
         );
         $stmt = $conn->prepare($sql);
         $stmt->bindParam(1, $timestamp, \PDO::PARAM_INT);
@@ -224,7 +225,7 @@ class MigrationManager extends AbstractManager
     public function getMigrationTimestamps()
     {
         $path = $this->getWorkingDirectory();
-        $migrationTimestamps = array();
+        $migrationTimestamps = [];
 
         if (is_dir($path)) {
             $files = scandir($path);
@@ -248,7 +249,7 @@ class MigrationManager extends AbstractManager
 
     public function hasPendingMigrations()
     {
-        return array() !== $this->getValidMigrationTimestamps();
+        return [] !== $this->getValidMigrationTimestamps();
     }
 
     public function getAlreadyExecutedMigrationTimestamps()

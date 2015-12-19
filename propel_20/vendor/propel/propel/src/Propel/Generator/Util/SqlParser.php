@@ -21,6 +21,7 @@ use \Propel\Runtime\Connection\StatementInterface;
 class SqlParser
 {
     protected $delimiter = ';';
+    protected $delimiterLength = 1;
 
     protected $sql = '';
     protected $len = 0;
@@ -159,7 +160,7 @@ class SqlParser
     public static function parseFile($file)
     {
         if (!file_exists($file)) {
-            return array();
+            return [];
         }
 
         return self::parseString(file_get_contents($file));
@@ -167,15 +168,15 @@ class SqlParser
 
     public function convertLineFeedsToUnixStyle()
     {
-        $this->setSQL(str_replace(array("\r\n", "\r"), "\n", $this->sql));
+        $this->setSQL(str_replace(["\r\n", "\r"], "\n", $this->sql));
     }
 
     public function stripSQLCommentLines()
     {
-        $this->setSQL(preg_replace(array(
+        $this->setSQL(preg_replace([
             '#^\s*(//|--|\#).*(\n|$)#m',    // //, --, or # style comments
             '#^\s*/\*.*?\*/#s'              // c-style comments
-        ), '', $this->sql));
+        ], '', $this->sql));
     }
 
     /**
@@ -186,7 +187,7 @@ class SqlParser
     public function explodeIntoStatements()
     {
         $this->pos = 0;
-        $sqlStatements = array();
+        $sqlStatements = [];
         while ($sqlStatement = $this->getNextStatement()) {
             $sqlStatements[] = $sqlStatement;
         }
@@ -206,9 +207,9 @@ class SqlParser
         $isInString = false;
         $stringQuotes = '';
         $parsedString = '';
-        while ($this->pos < $this->len) {
-            $char = $this->sql[$this->pos];
-
+        $lowercaseString = ''; // helper variable for performance sake
+        while ($this->pos <= $this->len) {
+            $char = isset($this->sql[$this->pos]) ? $this->sql[$this->pos] : '';
             // check flags for strings or escaper
             switch ($char) {
                 case "\\":
@@ -226,21 +227,49 @@ class SqlParser
                     }
                     break;
             }
-
             $this->pos++;
-
             if ($char !== "\\") {
                 $isAfterBackslash = false;
             }
-
-            // check for end of statement
-            if (!$isInString && $char == $this->delimiter) {
-                return trim($parsedString);
+            if (!$isInString) {
+                if (false !== strpos($lowercaseString, 'delimiter ')) {
+                    // remove DELIMITER from string because it's a command-line keyword only
+                    $parsedString = trim(str_ireplace('delimiter ', '', $parsedString));
+                    // set new delimiter
+                    $this->delimiter = $char;
+                    // append other delimiter characters if any
+                    while (isset($this->sql[$this->pos]) && $this->sql[$this->pos] != "\n") {
+                        $this->delimiter .= $this->sql[$this->pos++]; // increase position
+                    }
+                    $this->delimiter = trim($this->delimiter);
+                    // store delimiter length for better performance
+                    $this->delimiterLength = strlen($this->delimiter);
+                    // delimiter has changed so return current sql if any
+                    if ($parsedString) {
+                        return $parsedString;
+                    } else {
+                        // reset helper variable
+                        $lowercaseString = '';
+                        continue;
+                    }
+                }
+                // get next characters if we have multiple characters in delimiter
+                $nextChars = '';
+                for ($i = 0; $i < $this->delimiterLength - 1; $i++) {
+                    if (!isset($this->sql[$this->pos + $i])) break;
+                    $nextChars .= $this->sql[$this->pos + $i];
+                }
+                // check for end of statement
+                if ($char.$nextChars == $this->delimiter) {
+                    $this->pos += $i; // increase position
+                    return trim($parsedString);
+                }
+                // avoid using strtolower on the whole parsed string every time new character is added
+                // there is also no point in adding characters which are in the string
+                $lowercaseString .= strtolower($char);
             }
-
             $parsedString .= $char;
         }
-
         return trim($parsedString);
     }
 

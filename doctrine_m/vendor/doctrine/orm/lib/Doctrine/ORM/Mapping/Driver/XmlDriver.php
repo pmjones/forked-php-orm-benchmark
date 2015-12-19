@@ -76,12 +76,17 @@ class XmlDriver extends FileDriver
         }
 
         // Evaluate <entity...> attributes
-        $table = array();
+        $primaryTable = array();
+
         if (isset($xmlRoot['table'])) {
-            $table['name'] = (string)$xmlRoot['table'];
+            $primaryTable['name'] = (string) $xmlRoot['table'];
         }
 
-        $metadata->setPrimaryTable($table);
+        if (isset($xmlRoot['schema'])) {
+            $primaryTable['schema'] = (string) $xmlRoot['schema'];
+        }
+
+        $metadata->setPrimaryTable($primaryTable);
 
         // Evaluate second level cache
         if (isset($xmlRoot->cache)) {
@@ -149,11 +154,6 @@ class XmlDriver extends FileDriver
                 ));
             }
         }
-
-        /* not implemented specially anyway. use table = schema.table
-        if (isset($xmlRoot['schema'])) {
-            $metadata->table['schema'] = (string)$xmlRoot['schema'];
-        }*/
 
         if (isset($xmlRoot['inheritance-type'])) {
             $inheritanceType = (string)$xmlRoot['inheritance-type'];
@@ -255,11 +255,20 @@ class XmlDriver extends FileDriver
 
         if (isset($xmlRoot->embedded)) {
             foreach ($xmlRoot->embedded as $embeddedMapping) {
+                $columnPrefix = isset($embeddedMapping['column-prefix'])
+                    ? (string) $embeddedMapping['column-prefix']
+                    : null;
+
+                $useColumnPrefix = isset($embeddedMapping['use-column-prefix'])
+                    ? $this->evaluateBoolean($embeddedMapping['use-column-prefix'])
+                    : true;
+
                 $mapping = array(
                     'fieldName' => (string) $embeddedMapping['name'],
                     'class' => (string) $embeddedMapping['class'],
-                    'columnPrefix' => isset($embeddedMapping['column-prefix']) ? (string) $embeddedMapping['column-prefix'] : null,
+                    'columnPrefix' => $useColumnPrefix ? $columnPrefix : false
                 );
+
                 $metadata->mapEmbedded($mapping);
             }
         }
@@ -375,12 +384,12 @@ class XmlDriver extends FileDriver
                     $mapping['orphanRemoval'] = $this->evaluateBoolean($oneToOneElement['orphan-removal']);
                 }
 
-                $metadata->mapOneToOne($mapping);
-
                 // Evaluate second level cache
                 if (isset($oneToOneElement->cache)) {
-                    $metadata->enableAssociationCache($mapping['fieldName'], $this->cacheToArray($oneToOneElement->cache));
+                    $mapping['cache'] = $metadata->getAssociationCacheDefaults($mapping['fieldName'], $this->cacheToArray($oneToOneElement->cache));
                 }
+
+                $metadata->mapOneToOne($mapping);
             }
         }
 
@@ -419,12 +428,12 @@ class XmlDriver extends FileDriver
                     throw new \InvalidArgumentException("<index-by /> is not a valid tag");
                 }
 
-                $metadata->mapOneToMany($mapping);
-
                 // Evaluate second level cache
                 if (isset($oneToManyElement->cache)) {
-                    $metadata->enableAssociationCache($mapping['fieldName'], $this->cacheToArray($oneToManyElement->cache));
+                    $mapping['cache'] = $metadata->getAssociationCacheDefaults($mapping['fieldName'], $this->cacheToArray($oneToManyElement->cache));
                 }
+
+                $metadata->mapOneToMany($mapping);
             }
         }
 
@@ -464,12 +473,13 @@ class XmlDriver extends FileDriver
                     $mapping['cascade'] = $this->_getCascadeMappings($manyToOneElement->cascade);
                 }
 
-                $metadata->mapManyToOne($mapping);
-
                 // Evaluate second level cache
                 if (isset($manyToOneElement->cache)) {
-                    $metadata->enableAssociationCache($mapping['fieldName'], $this->cacheToArray($manyToOneElement->cache));
+                    $mapping['cache'] = $metadata->getAssociationCacheDefaults($mapping['fieldName'], $this->cacheToArray($manyToOneElement->cache));
                 }
+
+                $metadata->mapManyToOne($mapping);
+
             }
         }
 
@@ -534,12 +544,12 @@ class XmlDriver extends FileDriver
                     throw new \InvalidArgumentException("<index-by /> is not a valid tag");
                 }
 
-                $metadata->mapManyToMany($mapping);
-
                 // Evaluate second level cache
                 if (isset($manyToManyElement->cache)) {
-                    $metadata->enableAssociationCache($mapping['fieldName'], $this->cacheToArray($manyToManyElement->cache));
+                    $mapping['cache'] = $metadata->getAssociationCacheDefaults($mapping['fieldName'], $this->cacheToArray($manyToManyElement->cache));
                 }
+
+                $metadata->mapManyToMany($mapping);
             }
         }
 
@@ -593,6 +603,11 @@ class XmlDriver extends FileDriver
                     }
 
                     $override['joinTable'] = $joinTable;
+                }
+
+                // Check for inversed-by
+                if (isset($overrideElement->{'inversed-by'})) {
+                    $override['inversedBy'] = (string) $overrideElement->{'inversed-by'}['name'];
                 }
 
                 $metadata->setAssociationOverride($fieldName, $override);
@@ -781,7 +796,7 @@ class XmlDriver extends FileDriver
      *
      * @return array The list of cascade options.
      */
-    private function _getCascadeMappings($cascadeElement)
+    private function _getCascadeMappings(SimpleXMLElement $cascadeElement)
     {
         $cascades = array();
         /* @var $action SimpleXmlElement */
@@ -833,6 +848,6 @@ class XmlDriver extends FileDriver
     {
         $flag = (string)$element;
 
-        return ($flag === true || $flag == "true" || $flag == "1");
+        return ($flag == "true" || $flag == "1");
     }
 }

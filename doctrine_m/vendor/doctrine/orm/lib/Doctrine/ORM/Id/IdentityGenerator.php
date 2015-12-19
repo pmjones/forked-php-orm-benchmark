@@ -48,7 +48,7 @@ class IdentityGenerator extends AbstractIdGenerator
     }
 
     /**
-     * {@inheritdoc}
+     * {@inheritDoc}
      */
     public function generate(EntityManager $em, $entity)
     {

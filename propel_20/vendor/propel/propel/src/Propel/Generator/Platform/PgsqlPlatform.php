@@ -59,6 +59,7 @@ class PgsqlPlatform extends DefaultPlatform
         $this->setSchemaDomainMapping(new Domain(PropelTypes::OBJECT, 'BYTEA'));
         $this->setSchemaDomainMapping(new Domain(PropelTypes::PHP_ARRAY, 'TEXT'));
         $this->setSchemaDomainMapping(new Domain(PropelTypes::ENUM, 'INT2'));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::DECIMAL, 'NUMERIC'));
     }
 
     public function getNativeIdMethod()
@@ -73,19 +74,19 @@ class PgsqlPlatform extends DefaultPlatform
 
     public function getDefaultTypeSizes()
     {
-        return array(
+        return [
             'char'      => 1,
             'character' => 1,
             'integer'   => 32,
             'bigint'    => 64,
             'smallint'  => 16,
             'double precision' => 54
-        );
+        ];
     }
 
     public function getMaxColumnNameLength()
     {
-        return 32;
+        return 63;
     }
 
     public function getBooleanString($b)
@@ -164,7 +165,7 @@ DROP SEQUENCE %s;
     public function getAddSchemasDDL(Database $database)
     {
         $ret = '';
-        $schemas = array();
+        $schemas = [];
         foreach ($database->getTables() as $table) {
             $vi = $table->getVendorInfoForType('pgsql');
             if ($vi->hasParameter('schema') && !isset($schemas[$vi->getParameter('schema')])) {
@@ -212,8 +213,7 @@ SET search_path TO public;
 
     public function getAddTablesDDL(Database $database)
     {
-        $ret = $this->getBeginDDL();
-        $ret .= $this->getAddSchemasDDL($database);
+        $ret = $this->getAddSchemasDDL($database);
 
         foreach ($database->getTablesForSql() as $table) {
             $this->normalizeTable($table);
@@ -228,9 +228,32 @@ SET search_path TO public;
         foreach ($database->getTablesForSql() as $table) {
             $ret .= $this->getAddForeignKeysDDL($table);
         }
-        $ret .= $this->getEndDDL();
+
+        if (!empty($ret)) {
+            $ret = $this->getBeginDDL() . $ret . $this->getEndDDL();
+        }
 
         return $ret;
+    }
+    
+    /**
+     * @return string
+     */
+    public function getBeginDDL()
+    {
+        return "
+BEGIN;
+";
+    }
+    
+    /**
+     * @return string
+     */
+    public function getEndDDL()
+    {
+        return "
+COMMIT;
+";
     }
 
     /**
@@ -252,7 +275,7 @@ SET search_path TO public;
         $ret .= $this->getUseSchemaDDL($table);
         $ret .= $this->getAddSequenceDDL($table);
 
-        $lines = array();
+        $lines = [];
 
         foreach ($table->getColumns() as $column) {
             $lines[] = $this->getColumnDDL($column);
@@ -344,7 +367,7 @@ DROP TABLE IF EXISTS %s CASCADE;
     {
         $domain = $col->getDomain();
 
-        $ddl = array($this->quoteIdentifier($col->getName()));
+        $ddl = [$this->quoteIdentifier($col->getName())];
         $sqlType = $domain->getSqlType();
         $table = $col->getTable();
         if ($col->isAutoIncrement() && $table && $table->getIdMethodParameters() == null) {
@@ -380,7 +403,7 @@ DROP TABLE IF EXISTS %s CASCADE;
     {
         return sprintf('CONSTRAINT %s UNIQUE (%s)',
             $this->quoteIdentifier($unique->getName()),
-            $this->getColumnListDDL($unique->getColumns())
+            $this->getColumnListDDL($unique->getColumnObjects())
         );
     }
 
@@ -410,7 +433,7 @@ ALTER TABLE %s RENAME TO %s;
 
     public function hasSize($sqlType)
     {
-        return !in_array($sqlType, array('BYTEA', 'TEXT', 'DOUBLE PRECISION'));
+        return !in_array($sqlType, ['BYTEA', 'TEXT', 'DOUBLE PRECISION']);
     }
 
     public function hasStreamBlobImpl()
@@ -502,19 +525,23 @@ DROP SEQUENCE %s CASCADE;
 
             $sqlType = $toColumn->getDomain()->getSqlType();
 
-            if ($this->hasSize($sqlType)) {
+            if ($this->hasSize($sqlType) && $toColumn->isDefaultSqlType($this)) {
                 if ($this->isNumber($sqlType)) {
-                    if ('NUMBER' === strtoupper($sqlType)) {
+                    if ('NUMERIC' === strtoupper($sqlType)) {
                         $sqlType .= $toColumn->getSizeDefinition();
                     }
                 } else {
                     $sqlType .= $toColumn->getSizeDefinition();
                 }
             }
+
             if ($using = $this->getUsingCast($fromColumn, $toColumn)) {
                 $sqlType .= $using;
             }
-            $ret .= sprintf($pattern, $this->quoteIdentifier($table->getName()), $colName . ' TYPE ' . $sqlType);
+            $ret .= sprintf($pattern,
+                $this->quoteIdentifier($table->getName()),
+                $colName . ' TYPE ' . $sqlType
+            );
         }
 
         if (isset($changedProperties['defaultValueValue'])) {
@@ -554,8 +581,8 @@ DROP SEQUENCE %s CASCADE;
 
     public function getUsingCast(Column $fromColumn, Column $toColumn)
     {
-        $fromSqlType = strtoupper($fromColumn->getDomain()->getOriginSqlType() ?: $fromColumn->getDomain()->getSqlType());
-        $toSqlType = strtoupper($toColumn->getDomain()->getOriginSqlType() ?: $toColumn->getDomain()->getSqlType());
+        $fromSqlType = strtoupper($fromColumn->getDomain()->getSqlType());
+        $toSqlType = strtoupper($toColumn->getDomain()->getSqlType());
         $name = $fromColumn->getName();
 
         if ($this->isNumber($fromSqlType) && $this->isString($toSqlType)) {
@@ -661,7 +688,7 @@ DROP SEQUENCE %s CASCADE;
 %s = \$dataFetcher->fetchColumn();";
         $script = sprintf($snippet,
             $connectionVariableName,
-            $this->quoteIdentifier($sequenceName),
+            $sequenceName,
             $columnValueMutator
         );
 

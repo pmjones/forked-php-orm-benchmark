@@ -60,19 +60,14 @@ class Collection implements \ArrayAccess, \IteratorAggregate, \Countable, \Seria
     /**
      * @var array
      */
-    protected $data = array();
-
-    /**
-     * @var CollectionIterator
-     */
-    protected $lastIterator;
+    protected $data = [];
 
     /**
      * @var PluralizerInterface|null
      */
     private $pluralizer;
 
-    public function __construct($data = array())
+    public function __construct($data = [])
     {
         $this->data = $data;
     }
@@ -167,7 +162,7 @@ class Collection implements \ArrayAccess, \IteratorAggregate, \Countable, \Seria
      */
     public function getIterator()
     {
-        return $this->lastIterator = new CollectionIterator($this);
+        return new CollectionIterator($this);
     }
 
     public function count()
@@ -328,7 +323,7 @@ class Collection implements \ArrayAccess, \IteratorAggregate, \Countable, \Seria
      */
     public function clear()
     {
-        return $this->exchangeArray(array());
+        return $this->exchangeArray([]);
     }
 
     /**
@@ -381,11 +376,11 @@ class Collection implements \ArrayAccess, \IteratorAggregate, \Countable, \Seria
      */
     public function serialize()
     {
-        $repr = array(
+        $repr = [
             'data' => $this->getArrayCopy(),
             'model' => $this->model,
             'fullyQualifiedModel' => $this->fullyQualifiedModel,
-        );
+        ];
 
         return serialize($repr);
     }
@@ -554,12 +549,6 @@ class Collection implements \ArrayAccess, \IteratorAggregate, \Countable, \Seria
             $includeLazyLoadColumns = isset($params[1]) ? $params[1] : true;
 
             return $this->exportTo($format, $usePrefix, $includeLazyLoadColumns);
-        }
-        if (!$this->lastIterator) {
-            $this->getIterator();
-        }
-        if (is_callable([$this->lastIterator, $name])) {
-            return call_user_func_array([$this->lastIterator, $name], $params);
         }
         throw new BadMethodCallException('Call to undefined method: ' . $name);
     }

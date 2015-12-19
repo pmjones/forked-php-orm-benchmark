@@ -29,7 +29,7 @@ class ObjectCombinationCollection extends ObjectCollection
      */
     public function getPrimaryKeys($usePrefix = true)
     {
-        $ret = array();
+        $ret = [];
 
         /** @var $obj ActiveRecordInterface */
         foreach ($this as $combination) {
@@ -49,6 +49,21 @@ class ObjectCombinationCollection extends ObjectCollection
     public function push($value)
     {
         parent::push(func_get_args());
+    }
+
+    /**
+     * Returns all values from one position/column.
+     *
+     * @param int $position beginning with 1
+     * @return array
+     */
+    public function getObjectsFromPosition($position = 1)
+    {
+        $result = [];
+        foreach ($this as $array) {
+            $result[] = $array[$position - 1];
+        }
+        return $result;
     }
 
     /**

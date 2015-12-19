@@ -77,7 +77,7 @@ class SchemaReader
      * first dimension is for schemas(key is the path to the schema file),
      * second is for tags within the schema
      */
-    private $schemasTagsStack = array();
+    private $schemasTagsStack = [];
 
     /**
      * Creates a new instance for the specified database type.
@@ -136,7 +136,7 @@ class SchemaReader
             return;
         }
         // store current schema file path
-        $this->schemasTagsStack[$xmlFile] = array();
+        $this->schemasTagsStack[$xmlFile] = [];
         $this->currentXmlFile = $xmlFile;
 
         $parser = xml_parser_create();
@@ -233,11 +233,13 @@ class SchemaReader
 
                 case 'index':
                     $this->currIndex = new Index();
+                    $this->currIndex->setTable($this->currTable);
                     $this->currIndex->loadMapping($attributes);
                     break;
 
                 case 'unique':
                     $this->currUnique = new Unique();
+                    $this->currUnique->setTable($this->currTable);
                     $this->currUnique->loadMapping($attributes);
                     break;
 

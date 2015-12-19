@@ -26,6 +26,9 @@ $column15 = new Column('body', 'clob');
 $column16 = new Column('average_rating', 'float', 2);
 $column16->setScale(2);
 $column16->setDescription('The post rating in percentage');
+$column17 = new Column('price_without_decimal_places', 'DECIMAL', 10);
+$column17->setScale(0);
+$column17->setDescription('The Price without decimal places');
 
 $column21 = new Column('id', 'smallint', 3);
 $column21->setAutoIncrement();
@@ -106,7 +109,7 @@ $fkTagPost->setOnDelete('CASCADE');
 /* Regular Indexes */
 $pageContentFulltextIdx = new Index('page_content_fulltext_idx');
 $pageContentFulltextIdx->setColumns([ [ 'name' => 'content' ] ]);
-$pageContentFulltextIdx->addVendorInfo(new VendorInfo('mysql', array('Index_type' => 'FULLTEXT')));
+$pageContentFulltextIdx->addVendorInfo(new VendorInfo('mysql', ['Index_type' => 'FULLTEXT']));
 
 /* Unique Indexes */
 $authorUsernameUnique = new Unique('author_password_unique_idx');
@@ -123,7 +126,7 @@ $table1 = new Table('blog_post');
 $table1->setDescription('The list of posts');
 $table1->setNamespace('Blog');
 $table1->setPackage('Acme.Blog');
-$table1->addColumns([ $column11, $column12, $column13, $column14, $column15, $column16 ]);
+$table1->addColumns([ $column11, $column12, $column13, $column14, $column15, $column16, $column17 ]);
 $table1->addForeignKeys([ $fkAuthorPost, $fkCategoryPost ]);
 $table1->addBehavior($timestampableBehavior);
 $table1->addBehavior($sluggableBehavior);
@@ -161,7 +164,7 @@ $table6->setBaseClass('Acme\\Model\\PublicationActiveRecord');
 $table6->setPackage('Acme.Cms');
 $table6->addColumns([ $column61, $column62, $column63, $column64 ]);
 $table6->addIndex($pageContentFulltextIdx);
-$table6->addVendorInfo(new VendorInfo('mysql', array('Engine' => 'MyISAM')));
+$table6->addVendorInfo(new VendorInfo('mysql', ['Engine' => 'MyISAM']));
 
 /* Database */
 $database = new Database('acme_blog', new MysqlPlatform());

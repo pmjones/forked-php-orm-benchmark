@@ -27,15 +27,16 @@ class I18nBehavior extends Behavior
     const DEFAULT_LOCALE = 'en_US';
 
     // default parameters value
-    protected $parameters = array(
+    protected $parameters = [
         'i18n_table'        => '%TABLE%_i18n',
         'i18n_phpname'      => '%PHPNAME%I18n',
         'i18n_columns'      => '',
+        'i18n_pk_column'    => null,
         'locale_column'     => 'locale',
         'locale_length'     => 5,
         'default_locale'    => null,
         'locale_alias'      => '',
-    );
+    ];
 
     protected $tableModificationOrder = 70;
 
@@ -49,10 +50,10 @@ class I18nBehavior extends Behavior
     {
         foreach ($this->getDatabase()->getTables() as $table) {
             if ($table->hasBehavior('i18n') && !$table->getBehavior('i18n')->getParameter('default_locale')) {
-                $table->getBehavior('i18n')->addParameter(array(
+                $table->getBehavior('i18n')->addParameter([
                     'name'  => 'default_locale',
                     'value' => $this->getParameter('default_locale'),
-                ));
+                ]);
             }
         }
     }
@@ -87,7 +88,7 @@ class I18nBehavior extends Behavior
 
     public function getI18nColumns()
     {
-        $columns = array();
+        $columns = [];
         $i18nTable = $this->getI18nTable();
         if ($columnNames = $this->getI18nColumnNamesFromConfig()) {
             // Strategy 1: use the i18n_columns parameter
@@ -112,10 +113,10 @@ class I18nBehavior extends Behavior
     {
         $table = $this->getTable();
 
-        return strtr($string, array(
+        return strtr($string, [
             '%TABLE%'   => $table->getOriginCommonName(),
             '%PHPNAME%' => $table->getPhpName(),
-        ));
+        ]);
     }
 
     public function getObjectBuilderModifier()
@@ -138,9 +139,9 @@ class I18nBehavior extends Behavior
 
     public function staticAttributes($builder)
     {
-        return $this->renderTemplate('staticAttributes', array(
+        return $this->renderTemplate('staticAttributes', [
             'defaultLocale' => $this->getDefaultLocale(),
-        ));
+        ]);
     }
 
     public function modifyTable()
@@ -160,14 +161,15 @@ class I18nBehavior extends Behavior
         if ($database->hasTable($i18nTableName)) {
             $this->i18nTable = $database->getTable($i18nTableName);
         } else {
-            $this->i18nTable = $database->addTable(array(
+            $this->i18nTable = $database->addTable([
                 'name'      => $i18nTableName,
                 'phpName'   => $this->getI18nTablePhpName(),
                 'package'   => $table->getPackage(),
                 'schema'    => $table->getSchema(),
                 'namespace' => $table->getNamespace() ? '\\' . $table->getNamespace() : null,
-                'skipSql'   => $table->isSkipSql()
-            ));
+                'skipSql'   => $table->isSkipSql(),
+                'identifierQuoting' => $table->getIdentifierQuoting()
+            ]);
 
             // every behavior adding a table should re-execute database behaviors
             foreach ($database->getBehaviors() as $behavior) {
@@ -186,16 +188,20 @@ class I18nBehavior extends Behavior
             throw new EngineException('The i18n behavior does not support tables with composite primary keys');
         }
 
-        foreach ($pks as $column) {
-            if (!$i18nTable->hasColumn($column->getName())) {
-                $column = clone $column;
-                $column->setAutoIncrement(false);
-                $i18nTable->addColumn($column);
-            }
+        $column = $pks[0];
+        $i18nColumn = clone $column;
+
+        if ($this->getParameter('i18n_pk_column')) {
+            // custom i18n table pk name
+            $i18nColumn->setName($this->getParameter('i18n_pk_column'));
+        } else if (in_array($table->getName(), $i18nTable->getForeignTableNames())) {
+            // custom i18n table pk name not set, but some fk already exists
+            return;
         }
 
-        if (in_array($table->getName(), $i18nTable->getForeignTableNames())) {
-            return;
+        if (!$i18nTable->hasColumn($i18nColumn->getName())) {
+            $i18nColumn->setAutoIncrement(false);
+            $i18nTable->addColumn($i18nColumn);
         }
 
         $fk = new ForeignKey();
@@ -204,10 +210,7 @@ class I18nBehavior extends Behavior
         $fk->setDefaultJoin('LEFT JOIN');
         $fk->setOnDelete(ForeignKey::CASCADE);
         $fk->setOnUpdate(ForeignKey::NONE);
-
-        foreach ($pks as $column) {
-            $fk->addReference($column->getName(), $column->getName());
-        }
+        $fk->addReference($i18nColumn->getName(), $column->getName());
 
         $i18nTable->addForeignKey($fk);
     }
@@ -217,13 +220,13 @@ class I18nBehavior extends Behavior
         $localeColumnName = $this->getLocaleColumnName();
 
         if (! $this->i18nTable->hasColumn($localeColumnName)) {
-            $this->i18nTable->addColumn(array(
+            $this->i18nTable->addColumn([
                 'name'       => $localeColumnName,
                 'type'       => PropelTypes::VARCHAR,
                 'size'       => $this->getParameter('locale_length') ? (int) $this->getParameter('locale_length') : 5,
                 'default'    => $this->getDefaultLocale(),
                 'primaryKey' => 'true',
-            ));
+            ]);
         }
     }
 
@@ -235,7 +238,7 @@ class I18nBehavior extends Behavior
         $table     = $this->getTable();
         $i18nTable = $this->i18nTable;
 
-        $i18nValidateParams = array();
+        $i18nValidateParams = [];
         foreach ($this->getI18nColumnNamesFromConfig() as $columnName) {
             if (!$i18nTable->hasColumn($columnName)) {
                 if (!$table->hasColumn($columnName)) {

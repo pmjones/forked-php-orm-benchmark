@@ -25,7 +25,7 @@ class ConnectionManagerMasterSlave implements ConnectionManagerInterface
     /**
      * @var array
      */
-    protected $writeConfiguration = array();
+    protected $writeConfiguration = [];
 
     /**
      * @var \Propel\Runtime\Connection\ConnectionInterface
@@ -159,6 +159,10 @@ class ConnectionManagerMasterSlave implements ConnectionManagerInterface
      */
     public function getReadConnection(AdapterInterface $adapter = null)
     {
+        if ($this->writeConnection && $this->writeConnection->inTransaction()) {
+            return $this->writeConnection;
+        }
+
         if ($this->isForceMasterConnection()) {
             return $this->getWriteConnection($adapter);
         }

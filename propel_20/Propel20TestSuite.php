@@ -6,11 +6,11 @@ class Propel20TestSuite extends AbstractTestSuite
 {
 	function initialize()
 	{
-        $loader = require_once "vendor/autoload.php";
+		$loader = require_once "vendor/autoload.php";
 
 		include realpath(dirname(__FILE__) . '/build/conf/config.php');
 
-        $loader->add('', __DIR__ . '/build/classes');
+		$loader->add('', __DIR__ . '/build/classes');
 
 		\Propel\Runtime\Propel::disableInstancePooling();
 		
@@ -20,7 +20,6 @@ class Propel20TestSuite extends AbstractTestSuite
 	
 	function clearCache()
 	{
-
 	}
 	
 	function beginTransaction()
@@ -38,34 +37,34 @@ class Propel20TestSuite extends AbstractTestSuite
 		$author = new Author();
 		$author->setFirstName('John' . $i);
 		$author->setLastName('Doe' . $i);
-		$author->save($this->con);
-		$this->authors[]= $author->getId();
+		$author->save();
+		$this->authors[]= $author;
 	}
 
 	function runBookInsertion($i)
 	{
 		$book = new Book();
 		$book->setTitle('Hello' . $i);
-		$book->setAuthorId($this->authors[array_rand($this->authors)]);
+		$book->setAuthor($this->authors[array_rand($this->authors)]);
 		$book->setISBN('1234');
 		$book->setPrice($i);
-		$book->save($this->con);
-		$this->books[]= $book->getId();
+		$book->save();
+		$this->books[]= $book;
 	}
 	
 	function runPKSearch($i)
 	{
-        $author = AuthorQuery::create()
-            ->findPk($this->authors[array_rand($this->authors)], $this->con);
+		$author = AuthorQuery::create()
+			->findPk($this->authors[array_rand($this->authors)]->getId());
 	}
 	
 	function runComplexQuery($i)
 	{
 		$authors = AuthorQuery::create()
-			->where('Author.Id > ?', $this->authors[array_rand($this->authors)])
+			->filterById($this->authors[array_rand($this->authors)]->getId(), AuthorQuery::GREATER_THAN)
 			->_or()
-            ->Where('(Author.FirstName || Author.LastName) = ?', 'John Doe')
-			->count($this->con);
+			->Where('(Author.FirstName || Author.LastName) = ?', 'John Doe')
+			->count();
 	}
 
 	function runHydrate($i)
@@ -73,7 +72,7 @@ class Propel20TestSuite extends AbstractTestSuite
 		$books = BookQuery::create()
 			->filterByPrice(array('min' => $i))
 			->limit(5)
-			->find($this->con);
+			->find();
 		foreach ($books as $book) {
 		}
 	}
@@ -81,9 +80,8 @@ class Propel20TestSuite extends AbstractTestSuite
 	function runJoinSearch($i)
 	{
 		$books = BookQuery::create()
-			->filterByTitle('Hello' . $i)
-			->leftJoinWith('Book.Author')
-			->findOne($this->con);
+			->joinWithAuthor()
+			->findOneByTitle('Hello' . $i);
 	}
 	
 }

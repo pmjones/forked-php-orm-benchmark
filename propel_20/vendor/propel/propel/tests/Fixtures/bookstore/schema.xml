@@ -58,15 +58,15 @@
     <table name="essay" >
         <column name="id" required="true" primaryKey="true" autoIncrement="true" type="INTEGER" />
         <column name="title" type="VARCHAR" required="true" primaryString="true" />
-        <column name="first_author" required="false" type="INTEGER" description="Foreign Key Author" />
-        <column name="second_author" required="false" type="INTEGER" description="Foreign Key Author" />
+        <column name="first_author_id" required="false" type="INTEGER" description="Foreign Key Author" />
+        <column name="second_author_id" required="false" type="INTEGER" description="Foreign Key Author" />
         <column name="subtitle" type="VARCHAR" phpName="SecondTitle" />
         <column name="next_essay_id" required="false" type="INTEGER" description="Book Id" />
-        <foreign-key foreignTable="author" onDelete="setnull" onUpdate="cascade">
-            <reference local="first_author" foreign="id" />
+        <foreign-key foreignTable="author" onDelete="setnull" onUpdate="cascade" phpName="FirstAuthor">
+            <reference local="first_author_id" foreign="id" />
         </foreign-key>
-        <foreign-key foreignTable="author" defaultJoin="INNER JOIN" onDelete="setnull" onUpdate="cascade">
-            <reference local="second_author" foreign="id" />
+        <foreign-key foreignTable="author" defaultJoin="INNER JOIN" onDelete="setnull" onUpdate="cascade" phpName="SecondAuthor">
+            <reference local="second_author_id" foreign="id" />
         </foreign-key>
         <foreign-key foreignTable="essay" onDelete="setnull" onUpdate="cascade">
             <reference local="next_essay_id" foreign="id" />
@@ -79,10 +79,10 @@
         <column name="title" type="VARCHAR" required="true" primaryString="true" />
         <column name="first_essay_id" required="false" type="INTEGER" description="Book Id" />
         <column name="second_essay_id" required="false" type="INTEGER" description="Book Id" />
-        <foreign-key foreignTable="composite_essay" onDelete="setnull" onUpdate="cascade">
+        <foreign-key foreignTable="composite_essay" onDelete="setnull" onUpdate="cascade" phpName="firstEssay">
             <reference local="first_essay_id" foreign="id" />
         </foreign-key>
-        <foreign-key foreignTable="composite_essay" onDelete="setnull" onUpdate="cascade">
+        <foreign-key foreignTable="composite_essay" onDelete="setnull" onUpdate="cascade" phpName="secondEssay">
             <reference local="second_essay_id" foreign="id" />
         </foreign-key>
     </table>
@@ -283,12 +283,30 @@
     <table name="contest">
         <column name="id" type="INTEGER" primaryKey="true" autoIncrement="true" />
         <column name="name" type="VARCHAR" size="100" />
+        <column name="country_code" type="VARCHAR" size="6" />
+        <foreign-key foreignTable="country" onDelete="setnull">
+          <reference local="country_code" foreign="code" />
+        </foreign-key>
     </table>
 
     <!-- Test Views (read-only tables) -->
-    <table name="contest_view" readOnly="true">
+    <table name="country_translation" readOnly="true">
         <column name="id" type="INTEGER" primaryKey="true" autoIncrement="true" />
-        <column name="name" type="VARCHAR" size="100" />
+        <column name="country_code" type="VARCHAR" size="6" />
+        <column name="language_code" type="VARCHAR" size="6" />
+        <column name="label" type="VARCHAR" size="100" />
+        <index>
+            <index-column name="country_code"/>
+        </index>
+        <foreign-key foreignTable="country" onDelete="cascade">
+            <reference local="country_code" foreign="code" />
+        </foreign-key>
+    </table>
+
+    <!-- Test Views (read-only tables) -->
+    <table name="country" readOnly="true">
+        <column name="code" type="VARCHAR" size="6" primaryKey="true" />
+        <column name="capital" type="VARCHAR" size="100" />
     </table>
 
     <table name="bookstore_contest">
@@ -362,6 +380,23 @@
         <column name="name" type="VARCHAR" />
         <foreign-key foreignTable="record_label" onDelete="cascade">
             <reference local="record_label_id" foreign="id" />
+        </foreign-key>
+    </table>
+
+    <table name="polymorphic_relation_log">
+        <column name="id" primaryKey="true" autoIncrement="true" type="INTEGER"/>
+        <column name="message" type="VARCHAR" required="true" />
+        <column name="target_id" required="false" type="INTEGER" />
+        <column name="target_type" required="false" type="VARCHAR" size="55" />
+
+        <foreign-key foreignTable="author" onDelete="setnull" onUpdate="cascade">
+            <reference local="target_type" value="author" />
+            <reference local="target_id" foreign="id" />
+        </foreign-key>
+
+        <foreign-key foreignTable="book" onDelete="setnull" onUpdate="cascade">
+            <reference local="target_type" value="book" />
+            <reference local="target_id" foreign="id" />
         </foreign-key>
     </table>
 

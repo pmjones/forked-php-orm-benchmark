@@ -1,7 +1,7 @@
 {
     "require": {
-        "doctrine/common": "2.4.*",
-        "doctrine/dbal": "dev-master",
+        "doctrine/common": "~2.5.0||~2.6.0",
+        "doctrine/dbal": "~2.5.0||~2.6.0",
         "doctrine/orm": "dev-master"
     }
 }

@@ -347,7 +347,7 @@ class ResultSetMapping
      * @param string $class       The class name of the joined entity.
      * @param string $alias       The unique alias to use for the joined entity.
      * @param string $parentAlias The alias of the entity result that is the parent of this joined result.
-     * @param object $relation    The association field that connects the parent entity result
+     * @param string $relation    The association field that connects the parent entity result
      *                            with the joined entity result.
      *
      * @return ResultSetMapping This ResultSetMapping instance.
@@ -558,6 +558,8 @@ class ResultSetMapping
      * @param string $type                  The column type
      *
      * @return ResultSetMapping This ResultSetMapping instance.
+     *
+     * @todo Make all methods of this class require all parameters and not infer anything
      */
     public function addMetaResult($alias, $columnName, $fieldName, $isIdentifierColumn = false, $type = null)
     {

@@ -29,14 +29,17 @@ class SqlBuildCommand extends AbstractCommand
 
         $this
             ->addOption('mysql-engine', null, InputOption::VALUE_REQUIRED,  'MySQL engine (MyISAM, InnoDB, ...)')
+            ->addOption('schema-dir',   null, InputOption::VALUE_REQUIRED,  'The directory where the schema files are placed')
             ->addOption('output-dir',   null, InputOption::VALUE_REQUIRED,  'The output directory')
             ->addOption('validate',     null, InputOption::VALUE_NONE,      '')
-            ->addOption('connection',   null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Connection to use', array())
+            ->addOption('overwrite',    null, InputOption::VALUE_NONE,      '')
+            ->addOption('connection',   null, InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Connection to use', [])
             ->addOption('schema-name',  null, InputOption::VALUE_REQUIRED,  'The schema name for RDBMS supporting them', '')
             //->addOption('encoding',     null, InputOption::VALUE_REQUIRED,  'The encoding to use for the database')
-            ->addOption('table-prefix', null, InputOption::VALUE_REQUIRED,  'Add a prefix to all the table names in the database', '')
+            ->addOption('table-prefix', null, InputOption::VALUE_REQUIRED,  'Add a prefix to all the table names in the database')
+            ->addOption('composer-dir', null, InputOption::VALUE_REQUIRED, 'Directory in which your composer.json resides', null)
             ->setName('sql:build')
-            ->setAliases(array('sql'))
+            ->setAliases(['build-sql'])
             ->setDescription('Build SQL files')
         ;
     }
@@ -46,15 +49,13 @@ class SqlBuildCommand extends AbstractCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $configOptions = array();
+        $configOptions = [];
 
         foreach ($input->getOptions() as $key => $option) {
             if (null !== $option) {
                 switch ($key) {
-                    case 'input-dir':
-                        if ('.' !== $option) {
-                            $configOptions['propel']['paths']['schemaDir'] = $option;
-                        }
+                    case 'schema-dir':
+                        $configOptions['propel']['paths']['schemaDir'] = $option;
                         break;
                     case 'output-dir':
                         $configOptions['propel']['paths']['sqlDir'] = $option;
@@ -68,6 +69,9 @@ class SqlBuildCommand extends AbstractCommand
                     case 'mysql-engine';
                         $configOptions['propel']['database']['adapters']['mysql']['tableType'] = $option;
                         break;
+                    case 'composer-dir':
+                        $configOptions['propel']['paths']['composerDir'] = $option;
+                        break;
                 }
             }
         }
@@ -78,16 +82,17 @@ class SqlBuildCommand extends AbstractCommand
 
         $manager = new SqlManager();
 
-        $connections = array();
+        $connections = [];
         $optionConnections = $input->getOption('connection');
         if (!$optionConnections) {
             $connections = $generatorConfig->getBuildConnections();
         } else {
             foreach ($optionConnections as $connection) {
                 list($name, $dsn, $infos) = $this->parseConnection($connection);
-                $connections[$name] = array_merge(array('dsn' => $dsn), $infos);
+                $connections[$name] = array_merge(['dsn' => $dsn], $infos);
             }
         }
+        $manager->setOverwriteSqlMap($input->getOption('overwrite'));
         $manager->setConnections($connections);
 
         $manager->setValidate($input->getOption('validate'));
@@ -100,8 +105,8 @@ class SqlBuildCommand extends AbstractCommand
         });
         $manager->setWorkingDirectory($generatorConfig->getSection('paths')['sqlDir']);
 
-        if ($manager->existSqlMap()) {
-            $output->writeln("<info>sqldb.map won't be saved because it already exists. Remove it to generate a new map.</info>");
+        if (!$manager->isOverwriteSqlMap() && $manager->existSqlMap()) {
+            $output->writeln("<info>sqldb.map won't be saved because it already exists. Remove it to generate a new map. Use --overwrite to force a overwrite.</info>");
         }
 
         $manager->buildSql();

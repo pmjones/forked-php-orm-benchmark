@@ -110,7 +110,7 @@ class OracleAdapter extends PdoAdapter implements SqlAdapterInterface
      */
     public function applyLimit(&$sql, $offset, $limit, $criteria = null)
     {
-        $params = array();
+        $params = [];
         if ($criteria && $criteria->needsSelectAliases()) {
             $crit = clone $criteria;
             $selectSql = $this->createSelectSqlPart($crit, $params, true);
@@ -230,5 +230,20 @@ class OracleAdapter extends PdoAdapter implements SqlAdapterInterface
         }
 
         return $stmt->bindValue($parameter, $value, $cMap->getPdoType());
+    }
+
+    /**
+     * We need to replace oracle: to oci: in connection's dsn.
+     *
+     * @param array $params
+     * @return array
+     */
+    protected function prepareParams($params)
+    {
+        if (isset($params['dsn'])) {
+            $params['dsn'] = str_replace('oracle:', 'oci:', $params['dsn']);
+        }
+
+        return parent::prepareParams($params);
     }
 }

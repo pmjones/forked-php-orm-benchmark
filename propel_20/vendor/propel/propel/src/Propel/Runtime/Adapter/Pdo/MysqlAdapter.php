@@ -110,17 +110,7 @@ class MysqlAdapter extends PdoAdapter implements SqlAdapterInterface
     public function quoteIdentifierTable($table)
     {
         // e.g. 'database.table alias' should be escaped as '`database`.`table` `alias`'
-        return '`' . strtr($table, array('.' => '`.`', ' ' => '` `')) . '`';
-    }
-
-    /**
-     * @see AdapterInterface::useQuoteIdentifier()
-     *
-     * @return boolean
-     */
-    public function useQuoteIdentifier()
-    {
-        return true;
+        return '`' . strtr($table, ['.' => '`.`', ' ' => '` `']) . '`';
     }
 
     /**

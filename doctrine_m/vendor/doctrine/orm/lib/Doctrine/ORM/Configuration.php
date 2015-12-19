@@ -25,6 +25,7 @@ use Doctrine\Common\Annotations\CachedReader;
 use Doctrine\Common\Annotations\SimpleAnnotationReader;
 use Doctrine\Common\Cache\ArrayCache;
 use Doctrine\Common\Cache\Cache as CacheDriver;
+use Doctrine\Common\Proxy\AbstractProxyFactory;
 use Doctrine\ORM\Cache\CacheConfiguration;
 use Doctrine\Common\Persistence\Mapping\Driver\MappingDriver;
 use Doctrine\ORM\Mapping\DefaultEntityListenerResolver;
@@ -41,8 +42,9 @@ use Doctrine\ORM\Repository\RepositoryFactory;
  * Configuration container for all configuration options of Doctrine.
  * It combines all configuration options from DBAL & ORM.
  *
+ * Internal note: When adding a new configuration option just write a getter/setter pair.
+ *
  * @since 2.0
- * @internal When adding a new configuration option just write a getter/setter pair.
  * @author  Benjamin Eberlei <kontakt@beberlei.de>
  * @author  Guilherme Blanco <guilhermeblanco@hotmail.com>
  * @author  Jonathan Wage <jonwage@gmail.com>
@@ -75,29 +77,28 @@ class Configuration extends \Doctrine\DBAL\Configuration
     }
 
     /**
-     * Gets a boolean flag that indicates whether proxy classes should always be regenerated
-     * during each script execution.
+     * Gets the strategy for automatically generating proxy classes.
      *
-     * @return boolean
+     * @return int Possible values are constants of Doctrine\Common\Proxy\AbstractProxyFactory.
      */
     public function getAutoGenerateProxyClasses()
     {
         return isset($this->_attributes['autoGenerateProxyClasses'])
             ? $this->_attributes['autoGenerateProxyClasses']
-            : true;
+            : AbstractProxyFactory::AUTOGENERATE_ALWAYS;
     }
 
     /**
-     * Sets a boolean flag that indicates whether proxy classes should always be regenerated
-     * during each script execution.
+     * Sets the strategy for automatically generating proxy classes.
      *
-     * @param boolean|int $bool Possible values are constants of Doctrine\Common\Proxy\AbstractProxyFactory
+     * @param boolean|int $autoGenerate Possible values are constants of Doctrine\Common\Proxy\AbstractProxyFactory.
+     *                                  True is converted to AUTOGENERATE_ALWAYS, false to AUTOGENERATE_NEVER.
      *
      * @return void
      */
-    public function setAutoGenerateProxyClasses($bool)
+    public function setAutoGenerateProxyClasses($autoGenerate)
     {
-        $this->_attributes['autoGenerateProxyClasses'] = $bool;
+        $this->_attributes['autoGenerateProxyClasses'] = (int)$autoGenerate;
     }
 
     /**
@@ -381,8 +382,14 @@ class Configuration extends \Doctrine\DBAL\Configuration
      */
     public function ensureProductionSettings()
     {
-        if ( ! $this->getQueryCacheImpl()) {
+        $queryCacheImpl = $this->getQueryCacheImpl();
+
+        if ( ! $queryCacheImpl) {
             throw ORMException::queryCacheNotConfigured();
+        }
+
+        if ($queryCacheImpl instanceof ArrayCache) {
+            throw ORMException::queryCacheUsesNonPersistentCache($queryCacheImpl);
         }
 
         $metadataCacheImpl = $this->getMetadataCacheImpl();
@@ -657,7 +664,7 @@ class Configuration extends \Doctrine\DBAL\Configuration
      *
      * @param string $name The name of the filter.
      *
-     * @return string The class name of the filter, or null of it is not
+     * @return string The class name of the filter, or null if it is not
      *  defined.
      */
     public function getFilterClassName($name)

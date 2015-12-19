@@ -24,18 +24,21 @@ use PDO;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\PersistentCollection;
 use Doctrine\ORM\Query;
+use Doctrine\ORM\Events;
+use Doctrine\ORM\Event\LifecycleEventArgs;
+use Doctrine\ORM\Event\PostLoadEventDispatcher;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Proxy\Proxy;
 
 /**
  * The ObjectHydrator constructs an object graph out of an SQL result set.
  *
+ * Internal note: Highly performance-sensitive code.
+ *
  * @since  2.0
  * @author Roman Borschel <roman@code-factory.org>
  * @author Guilherme Blanco <guilhermeblanoc@hotmail.com>
  * @author Fabio B. Silva <fabio.bat.silva@gmail.com>
- *
- * @internal Highly performance-sensitive code.
  */
 class ObjectHydrator extends AbstractHydrator
 {
@@ -145,8 +148,10 @@ class ObjectHydrator extends AbstractHydrator
         $this->resultPointers = array();
 
         if ($eagerLoad) {
-            $this->_em->getUnitOfWork()->triggerEagerLoads();
+            $this->_uow->triggerEagerLoads();
         }
+
+        $this->_uow->hydrationComplete();
     }
 
     /**
@@ -184,8 +189,8 @@ class ObjectHydrator extends AbstractHydrator
         $relation = $class->associationMappings[$fieldName];
         $value    = $class->reflFields[$fieldName]->getValue($entity);
 
-        if ($value === null) {
-            $value = new ArrayCollection;
+        if ($value === null || is_array($value)) {
+            $value = new ArrayCollection((array) $value);
         }
 
         if ( ! $value instanceof PersistentCollection) {
@@ -520,6 +525,10 @@ class ObjectHydrator extends AbstractHydrator
                     $resultKey = $index;
                 }
             }
+
+            if (isset($this->_hints[Query::HINT_INTERNAL_ITERATION]) && $this->_hints[Query::HINT_INTERNAL_ITERATION]) {
+                $this->_uow->hydrationComplete();
+            }
         }
 
         if ( ! isset($resultKey) ) {
@@ -545,14 +554,15 @@ class ObjectHydrator extends AbstractHydrator
                 $resultKey = $this->resultCounter - 1;
             }
 
-            $count = count($rowData['newObjects']);
+
+            $scalarCount = (isset($rowData['scalars'])? count($rowData['scalars']): 0);
 
             foreach ($rowData['newObjects'] as $objIndex => $newObject) {
                 $class  = $newObject['class'];
                 $args   = $newObject['args'];
                 $obj    = $class->newInstanceArgs($args);
 
-                if ($count === 1) {
+                if ($scalarCount == 0 && count($rowData['newObjects']) == 1 ) {
                     $result[$resultKey] = $obj;
 
                     continue;

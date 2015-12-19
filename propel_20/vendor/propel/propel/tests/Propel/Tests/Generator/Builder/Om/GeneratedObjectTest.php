@@ -21,6 +21,9 @@ use Propel\Tests\Bookstore\AcctAuditLog;
 use Propel\Tests\Bookstore\AcctAuditLogQuery;
 use Propel\Tests\Bookstore\Author;
 use Propel\Tests\Bookstore\AuthorQuery;
+use Propel\Tests\Bookstore\ContestQuery;
+use Propel\Tests\Bookstore\CountryQuery;
+use Propel\Tests\Bookstore\CountryTranslationQuery;
 use Propel\Tests\Bookstore\Map\AuthorTableMap;
 use Propel\Tests\Bookstore\Map\AcctAuditLogTableMap;
 use Propel\Tests\Bookstore\Book;
@@ -42,8 +45,9 @@ use Propel\Tests\Bookstore\BookstoreContestEntry;
 use Propel\Tests\Bookstore\BookstoreSale;
 use Propel\Tests\Bookstore\BookSummaryQuery;
 use Propel\Tests\Bookstore\Contest;
-use Propel\Tests\Bookstore\ContestView;
+use Propel\Tests\Bookstore\Country;
 use Propel\Tests\Bookstore\Customer;
+use Propel\Tests\Bookstore\Map\ContestTableMap;
 use Propel\Tests\Bookstore\Map\CustomerTableMap;
 use Propel\Tests\Bookstore\CustomerQuery;
 use Propel\Tests\Bookstore\Publisher;
@@ -413,7 +417,7 @@ class GeneratedObjectTest extends BookstoreTestBase
         $opinion->save();
 
 
-        $opinion2 = BookOpinionQuery::create()->findPk(array($bookId, $readerId));
+        $opinion2 = BookOpinionQuery::create()->findPk([$bookId, $readerId]);
 
         $this->assertSame($opinion, $opinion2, "Expected same object to be retrieved from differently type-casted primary key values.");
 
@@ -722,16 +726,26 @@ class GeneratedObjectTest extends BookstoreTestBase
         $b->setTitle('Don Juan');
 
         $arr1 = $b->toArray();
-        $expectedKeys = array(
+        $expectedKeys = [
             'Id',
             'Title',
             'ISBN',
             'Price',
             'PublisherId',
             'AuthorId'
-        );
+        ];
         $this->assertEquals($expectedKeys, array_keys($arr1), 'toArray() returns an associative array with TableMap::TYPE_PHPNAME keys by default');
         $this->assertEquals('Don Juan', $arr1['Title'], 'toArray() returns an associative array representation of the object');
+    }
+
+    public function testToArrayDateTimeAsString()
+    {
+        $date = new \DateTime('2015-01-04T16:00:02Z');
+
+        $review = new Review();
+        $review->setReviewDate($date);
+
+        $this->assertEquals('2015-01-04T16:00:02+00:00', $review->toArray()['ReviewDate'], 'toArray() format temporal colums as ISO8601');
     }
 
     public function testWithColumn()
@@ -747,14 +761,14 @@ class GeneratedObjectTest extends BookstoreTestBase
         $b->setTitle('Don Juan');
 
         $arr1 = $b->toArray(TableMap::TYPE_COLNAME);
-        $expectedKeys = array(
+        $expectedKeys = [
             BookTableMap::COL_ID,
             BookTableMap::COL_TITLE,
             BookTableMap::COL_ISBN,
             BookTableMap::COL_PRICE,
             BookTableMap::COL_PUBLISHER_ID,
             BookTableMap::COL_AUTHOR_ID
-        );
+        ];
         $this->assertEquals($expectedKeys, array_keys($arr1), 'toArray() accepts a $keyType parameter to change the result keys');
         $this->assertEquals('Don Juan', $arr1[BookTableMap::COL_TITLE], 'toArray() returns an associative array representation of the object');
     }
@@ -769,17 +783,17 @@ class GeneratedObjectTest extends BookstoreTestBase
     </table>
 </database>
 EOF;
-        $extraConf['propel']['generator']['objectModel']['defaultKeyType'] = 'studlyPhpName';
+        $extraConf['propel']['generator']['objectModel']['defaultKeyType'] = 'camelName';
         $generatorConfig = new QuickGeneratorConfig($extraConf);
         $builder = new QuickBuilder();
         $builder->setSchema($schema);
         $builder->setConfig($generatorConfig);
         $builder->buildClasses();
 
-        $expectedKeys = array(
+        $expectedKeys = [
             'idKeyType',
             'nameKeyType',
-        );
+        ];
         $object = new TestKeyTypeTable();
         $this->assertEquals($expectedKeys, array_keys($object->toArray()), 'toArray() returns an associative array with pre-defined key type in properties.');
     }
@@ -900,13 +914,13 @@ EOF;
     {
         $b = new BookOpinion();
         $this->assertTrue($b->isPrimaryKeyNull());
-        $b->setPrimaryKey(array(123, 456));
+        $b->setPrimaryKey([123, 456]);
         $this->assertFalse($b->isPrimaryKeyNull());
-        $b->setPrimaryKey(array(123, null));
+        $b->setPrimaryKey([123, null]);
         $this->assertFalse($b->isPrimaryKeyNull());
-        $b->setPrimaryKey(array(null, 456));
+        $b->setPrimaryKey([null, 456]);
         $this->assertFalse($b->isPrimaryKeyNull());
-        $b->setPrimaryKey(array(null, null));
+        $b->setPrimaryKey([null, null]);
         $this->assertTrue($b->isPrimaryKeyNull());
     }
 
@@ -1063,15 +1077,32 @@ EOF;
 
     public static function conditionsForTestReadOnly()
     {
-        return array(
-            array('reload'),
-            array('delete'),
-            array('save'),
-            array('doSave'),
-            array('importFrom'),
-            array('setName'),
-            array('setId'),
-        );
+        return [
+            ['reload'],
+            ['delete'],
+            ['save'],
+            ['doSave'],
+            ['importFrom']
+        ];
+    }
+
+    public static function conditionsForTestVisibility()
+    {
+        return [
+            ['setCode'],
+            ['setCapital']
+        ];
+    }
+
+    /**
+     * @dataProvider conditionsForTestVisibility
+     */
+    public function testMethodVisibility($method)
+    {
+        $cv = new Country();
+        $reflectionMethod = new \ReflectionMethod($cv, $method);
+
+        $this->assertTrue($reflectionMethod->isProtected(), 'readOnly tables end up with no callable `' . $method . '` method in the generated object class');
     }
 
     /**
@@ -1079,9 +1110,42 @@ EOF;
      */
     public function testReadOnly($method)
     {
-        $cv = new ContestView();
+        $cv = new Country();
         $this->assertFalse(method_exists($cv, $method), 'readOnly tables end up with no ' . $method . ' method in the generated object class');
     }
+
+    public function testReadOnlyRelations()
+    {
+        //add countries
+        CountryTranslationQuery::create()->deleteAll();
+        CountryQuery::create()->deleteAll();
+        $stmt = $this->con->prepare('INSERT INTO country VALUES (?, ?)');
+        $stmt->execute(['fr', 'Paris']);
+        $stmt->execute(['us', 'Washington']);
+        $stmt->execute(['de', 'Berlin']);
+
+        $stmt = $this->con->prepare('INSERT INTO country_translation (country_code, language_code, label) VALUES (?, ?, ?)');
+        $stmt->execute(['fr', 'fr_FR', 'France']);
+        $stmt->execute(['us', 'us_US', 'United States America']);
+        $stmt->execute(['de', 'de_DE', 'Berlin']);
+
+        $contest = new Contest();
+        $contest->setName('Symfony Live 2014');
+        $contest->setCountryCode('fr');
+        $contest->save();
+
+        ContestTableMap::clearInstancePool();
+
+        $contestDb = ContestQuery::create()
+                ->joinWith('Contest.Country')
+                ->joinWith('Country.CountryTranslation')
+                ->findPk($contest->getId());
+
+        $translations = $contestDb->getCountry()->getCountryTranslations();
+        $this->assertCount(1, $translations);
+        $this->assertEquals('France', $translations[0]->getLabel());
+    }
+
 
     public function testSetterOneToMany()
     {
@@ -1313,7 +1377,7 @@ EOF;
         AuthorQuery::create()->deleteAll();
 
         $books = new ObjectCollection();
-        foreach (array('foo', 'bar') as $title) {
+        foreach (['foo', 'bar'] as $title) {
             $b = new Book();
             $b->setTitle($title);
             $b->setISBN('FA404');
@@ -1332,7 +1396,7 @@ EOF;
         $this->assertEquals('bar', $books[1]->getTitle());
 
         $books = new ObjectCollection();
-        foreach (array('bam', 'bom') as $title) {
+        foreach (['bam', 'bom'] as $title) {
             $b = new Book();
             $b->setTitle($title);
             $b->setISBN('FA404');
@@ -1439,7 +1503,7 @@ EOF;
         BookQuery::create()->deleteAll();
 
         $bookSummaries = new ObjectCollection();
-        foreach (array('foo', 'bar') as $summary) {
+        foreach (['foo', 'bar'] as $summary) {
             $s = new BookSummary();
             $s->setSummary($summary);
             $bookSummaries[] = $s;
@@ -1456,7 +1520,7 @@ EOF;
         $this->assertEquals('bar', $bookSummaries[1]->getSummary());
 
         $bookSummaries = new ObjectCollection();
-        foreach (array('bam', 'bom') as $summary) {
+        foreach (['bam', 'bom'] as $summary) {
             $s = new BookSummary();
             $s->setSummary($summary);
             $bookSummaries[] = $s;

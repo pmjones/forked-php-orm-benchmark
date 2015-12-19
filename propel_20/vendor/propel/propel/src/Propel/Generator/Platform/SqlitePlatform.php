@@ -35,7 +35,7 @@ class SqlitePlatform extends DefaultPlatform
      *
      * @var bool
      */
-    private $foreignKeySupport = null;
+    protected $foreignKeySupport = null;
 
     /**
      * If we should alter the table through creating a temporarily created table,
@@ -43,7 +43,7 @@ class SqlitePlatform extends DefaultPlatform
      *
      * @var bool
      */
-    private $tableAlteringWorkaround = true;
+    protected $tableAlteringWorkaround = true;
 
     /**
      * Initializes db specific domain mapping.
@@ -63,9 +63,9 @@ class SqlitePlatform extends DefaultPlatform
         $this->setSchemaDomainMapping(new Domain(PropelTypes::BINARY, 'BLOB'));
         $this->setSchemaDomainMapping(new Domain(PropelTypes::VARBINARY, 'MEDIUMBLOB'));
         $this->setSchemaDomainMapping(new Domain(PropelTypes::LONGVARBINARY, 'LONGBLOB'));
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::BLOB, 'LONGBLOB'));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::BLOB, 'BLOB'));
         $this->setSchemaDomainMapping(new Domain(PropelTypes::CLOB, 'LONGTEXT'));
-        $this->setSchemaDomainMapping(new Domain(PropelTypes::OBJECT, 'LONGBLOB'));
+        $this->setSchemaDomainMapping(new Domain(PropelTypes::OBJECT, 'BLOB'));
         $this->setSchemaDomainMapping(new Domain(PropelTypes::PHP_ARRAY, 'MEDIUMTEXT'));
         $this->setSchemaDomainMapping(new Domain(PropelTypes::ENUM, 'TINYINT'));
     }
@@ -77,14 +77,14 @@ class SqlitePlatform extends DefaultPlatform
 
     public function getDefaultTypeSizes()
     {
-        return array(
+        return [
             'char'      => 1,
             'character' => 1,
             'integer'   => 32,
             'bigint'    => 64,
             'smallint'  => 16,
             'double precision' => 54
-        );
+        ];
     }
 
     /**
@@ -92,6 +92,8 @@ class SqlitePlatform extends DefaultPlatform
      */
     public function setGeneratorConfig(GeneratorConfigInterface $generatorConfig)
     {
+        parent::setGeneratorConfig($generatorConfig);
+
         if (null !== ($foreignKeySupport = $generatorConfig->getConfigProperty('database.adapter.sqlite.foreignKey'))) {
             $this->foreignKeySupport = filter_var($foreignKeySupport, FILTER_VALIDATE_BOOLEAN);;
         }
@@ -119,6 +121,8 @@ ALTER TABLE %s ADD %s;
                 $this->getColumnDDL($column)
             );
         }
+
+        return $ret;
     }
 
     /**
@@ -126,7 +130,6 @@ ALTER TABLE %s ADD %s;
      */
     public function getModifyTableDDL(TableDiff $tableDiff)
     {
-
         $changedNotEditableThroughDirectDDL = $this->tableAlteringWorkaround && (false
             || $tableDiff->hasModifiedFks()
             || $tableDiff->hasModifiedIndices()
@@ -156,7 +159,7 @@ ALTER TABLE %s ADD %s;
                     //The column may not have a default value of CURRENT_TIME, CURRENT_DATE, CURRENT_TIMESTAMP,
                     //or an expression in parentheses.
                     || false !== array_search(
-                        $column->getDefaultValue(), array('CURRENT_TIME', 'CURRENT_DATE', 'CURRENT_TIMESTAMP'))
+                        $column->getDefaultValue(), ['CURRENT_TIME', 'CURRENT_DATE', 'CURRENT_TIMESTAMP'])
                     || substr(trim($column->getDefaultValue()), 0, 1) == '('
 
                     //If a NOT NULL constraint is specified, then the column must have a default value other than NULL.
@@ -322,7 +325,6 @@ PRAGMA foreign_keys = ON;
                     }
                 }
             }
-
         }
 
         parent::normalizeTable($table);
@@ -451,7 +453,7 @@ PRAGMA foreign_keys = ON;
         $table = clone $table;
         $tableDescription = $table->hasDescription() ? $this->getCommentLineDDL($table->getDescription()) : '';
 
-        $lines = array();
+        $lines = [];
 
         foreach ($table->getColumns() as $column) {
             $lines[] = $this->getColumnDDL($column);
@@ -467,7 +469,7 @@ PRAGMA foreign_keys = ON;
 
         if ($this->foreignKeySupport) {
             foreach ($table->getForeignKeys() as $foreignKey) {
-                if ($foreignKey->isSkipSql()) {
+                if ($foreignKey->isSkipSql() || $foreignKey->isPolymorphic()) {
                     continue;
                 }
                 $lines[] = str_replace("
@@ -495,16 +497,16 @@ PRAGMA foreign_keys = ON;
 
     public function getForeignKeyDDL(ForeignKey $fk)
     {
-        if ($fk->isSkipSql() || !$this->foreignKeySupport) {
+        if ($fk->isSkipSql() || !$this->foreignKeySupport || $fk->isPolymorphic()) {
             return;
         }
 
         $pattern = "FOREIGN KEY (%s) REFERENCES %s (%s)";
 
         $script = sprintf($pattern,
-            $this->getColumnListDDL($fk->getLocalColumns()),
+            $this->getColumnListDDL($fk->getLocalColumnObjects()),
             $this->quoteIdentifier($fk->getForeignTableName()),
-            $this->getColumnListDDL($fk->getForeignColumns())
+            $this->getColumnListDDL($fk->getForeignColumnObjects())
         );
 
         if ($fk->hasOnUpdate()) {
@@ -521,18 +523,21 @@ PRAGMA foreign_keys = ON;
 
     public function hasSize($sqlType)
     {
-        return !in_array($sqlType, array(
+        return !in_array($sqlType, [
             'MEDIUMTEXT',
             'LONGTEXT',
             'BLOB',
             'MEDIUMBLOB',
             'LONGBLOB',
-        ));
+        ]);
     }
 
-    public function quoteIdentifier($text)
+    /**
+     * {@inheritdoc}
+     */
+    public function doQuoting($text)
     {
-        return $this->isIdentifierQuotingEnabled ? '[' . $text . ']' : $text;
+        return '[' . strtr($text, ['.' => '].[']) . ']';
     }
 
     public function supportsSchemas()

@@ -33,6 +33,8 @@ class SqlManager extends AbstractManager
      */
     protected $databases = null;
 
+    protected $overwriteSqlMap = false;
+
     /**
      * Set the database connection settings
      *
@@ -56,6 +58,22 @@ class SqlManager extends AbstractManager
     public function hasConnection($connection)
     {
         return isset($this->connections[$connection]);
+    }
+
+    /**
+     * @return boolean
+     */
+    public function isOverwriteSqlMap()
+    {
+        return $this->overwriteSqlMap;
+    }
+
+    /**
+     * @param boolean $overwriteSqlMap
+     */
+    public function setOverwriteSqlMap($overwriteSqlMap)
+    {
+        $this->overwriteSqlMap = (boolean) $overwriteSqlMap;
     }
 
     public function getConnection($datasource)
@@ -85,10 +103,6 @@ class SqlManager extends AbstractManager
             $platform = $database->getPlatform();
             $filename = $database->getName() . '.sql';
 
-            if ($this->getGeneratorConfig()->get()['generator']['objectModel']['disableIdentifierQuoting']) {
-                $platform->setIdentifierQuoting(false);
-            }
-
             $ddl = $platform->getAddTablesDDL($database);
 
             $file = $this->getWorkingDirectory() . DIRECTORY_SEPARATOR . $filename;
@@ -100,7 +114,7 @@ class SqlManager extends AbstractManager
             $sqlDbMapContent .= sprintf("%s=%s\n", $filename, $datasource);
         }
 
-        if (!$this->existSqlMap()) {
+        if ($this->isOverwriteSqlMap() || !$this->existSqlMap()) {
             file_put_contents($this->getSqlDbMapFilename(), $sqlDbMapContent);
         }
     }
@@ -120,7 +134,7 @@ class SqlManager extends AbstractManager
      */
     public function insertSql($datasource = null)
     {
-        $statementsToInsert = array();
+        $statementsToInsert = [];
         foreach ($this->getProperties($this->getSqlDbMapFilename()) as $sqlFile => $database) {
             if (null !== $datasource && $database !== $datasource) {
                 // skip
@@ -129,7 +143,7 @@ class SqlManager extends AbstractManager
             }
 
             if (!isset($statementsToInsert[$database])) {
-                $statementsToInsert[$database] = array();
+                $statementsToInsert[$database] = [];
             }
 
             if (null === $datasource || (null !== $database && $database === $datasource)) {
@@ -186,7 +200,7 @@ class SqlManager extends AbstractManager
         $username = isset($buildConnection['user']) && $buildConnection['user'] ? $buildConnection['user'] : null;
         $password = isset($buildConnection['password']) && $buildConnection['password'] ? $buildConnection['password'] : null;
 
-        $con = ConnectionFactory::create(array('dsn' => $dsn, 'user' => $username, 'password' => $password), AdapterFactory::create($buildConnection['adapter']));
+        $con = ConnectionFactory::create(['dsn' => $dsn, 'user' => $username, 'password' => $password], AdapterFactory::create($buildConnection['adapter']));
 
         return $con;
     }

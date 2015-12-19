@@ -2,7 +2,6 @@
 
 use Base\BookQuery as BaseBookQuery;
 
-
 /**
  * Skeleton subclass for performing query and update operations on the 'book' table.
  *
@@ -16,4 +15,4 @@ use Base\BookQuery as BaseBookQuery;
 class BookQuery extends BaseBookQuery
 {
 
-} // BookQuery
+}
