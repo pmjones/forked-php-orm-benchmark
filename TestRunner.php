@@ -53,5 +53,8 @@ passthru('php doctrine_m/TestRunner.php');
 echo $separator;
 if (version_compare(PHP_VERSION, '5.5.9', '>=')) { 
 	passthru('php eloquent/TestRunner.php');
+	echo $separator;
 }
+passthru('php phalcon/TestRunner.php');
+echo $separator;
 echo "|-------------------------------------------------------------------------------------------------------|\n";
