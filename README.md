@@ -1,3 +1,6 @@
+This project is looking for a new maintainer.
+---------------------------------------------
+
 Requirements
 ------------
 
