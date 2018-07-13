@@ -7,12 +7,12 @@ $separator = "|                                  |        |        |        |   
 
 passthru('php raw_pdo/TestRunner.php');
 echo $separator;
-passthru('php lessql/TestRunner.php');
-echo $separator;
-passthru('php yii1_m/TestRunner.php');
-echo $separator;
-passthru('php yii2_m/TestRunner.php');
-echo $separator;
+// passthru('php lessql/TestRunner.php');
+// echo $separator;
+// passthru('php yii1_m/TestRunner.php');
+// echo $separator;
+// passthru('php yii2_m/TestRunner.php');
+// echo $separator;
 // Fuel is broken - "No composer autoloader found. Please run composer to install the FuelPHP framework dependencies first!"
 //passthru('php fuel_173/TestRunner.php');
 //echo $separator;
@@ -32,8 +32,8 @@ echo $separator;
 //passthru('php propel_17/TestRunner.php');
 //echo $separator;
 //passthru('php propel_17_with_cache/TestRunner.php');
-passthru('php propel_20/TestRunner.php');
-echo $separator;
+// passthru('php propel_20/TestRunner.php');
+// echo $separator;
 // Propel dm is broken - "Fatal error: Class undefined: Propel\Runtime\Configuration in /repo/propel_dm/generated-conf/config.php on line 4"
 //passthru('php propel_dm/TestRunner.php');
 //echo $separator;
@@ -51,10 +51,12 @@ echo $separator;
 //echo $separator;
 passthru('php doctrine_m/TestRunner.php');
 echo $separator;
-if (version_compare(PHP_VERSION, '5.5.9', '>=')) { 
-	passthru('php eloquent/TestRunner.php');
-	echo $separator;
-}
-passthru('php phalcon/TestRunner.php');
+passthru('php atlas_3/TestRunner.php');
 echo $separator;
+// if (version_compare(PHP_VERSION, '5.5.9', '>=')) {
+// 	passthru('php eloquent/TestRunner.php');
+// 	echo $separator;
+// }
+// passthru('php phalcon/TestRunner.php');
+// echo $separator;
 echo "|-------------------------------------------------------------------------------------------------------|\n";
