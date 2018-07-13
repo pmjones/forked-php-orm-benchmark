@@ -1,0 +1,279 @@
+[
+    {
+        "name": "atlas/mapper",
+        "version": "1.0.1",
+        "version_normalized": "1.0.1.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/atlasphp/Atlas.Mapper.git",
+            "reference": "454e3a0c4025feb49f272857cb67ae28f0744e52"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/atlasphp/Atlas.Mapper/zipball/454e3a0c4025feb49f272857cb67ae28f0744e52",
+            "reference": "454e3a0c4025feb49f272857cb67ae28f0744e52",
+            "shasum": ""
+        },
+        "require": {
+            "atlas/table": "~1.0",
+            "php": ">=7.1.0"
+        },
+        "require-dev": {
+            "atlas/testing": "~1.0",
+            "pds/skeleton": "~1.0",
+            "phpunit/phpunit": "~7.0"
+        },
+        "time": "2018-07-12T21:29:28+00:00",
+        "type": "library",
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "Atlas\\Mapper\\": "src/"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "MIT"
+        ],
+        "authors": [
+            {
+                "name": "Atlas Contributors",
+                "homepage": "https://github.com/atlasphp/Atlas.Mapper/contributors"
+            }
+        ],
+        "description": "A data mapper for the persistence model.",
+        "homepage": "http://github.com/atlasphp/Atlas.Mapper",
+        "keywords": [
+            "data",
+            "mapper",
+            "mapping",
+            "orm",
+            "sql"
+        ]
+    },
+    {
+        "name": "atlas/orm",
+        "version": "3.0.0",
+        "version_normalized": "3.0.0.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/atlasphp/Atlas.Orm.git",
+            "reference": "f1dee14d58cf78921f7d1d2c8966aec26a28494b"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/atlasphp/Atlas.Orm/zipball/f1dee14d58cf78921f7d1d2c8966aec26a28494b",
+            "reference": "f1dee14d58cf78921f7d1d2c8966aec26a28494b",
+            "shasum": ""
+        },
+        "require": {
+            "atlas/mapper": "~1.0",
+            "php": ">=7.1.0"
+        },
+        "require-dev": {
+            "atlas/testing": "~1.0",
+            "pds/skeleton": "~1.0",
+            "phpunit/phpunit": "~7.0"
+        },
+        "suggest": {
+            "atlas/cli": "A command-line tool to build skeleton classes."
+        },
+        "time": "2018-07-10T13:07:37+00:00",
+        "type": "library",
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "Atlas\\Orm\\": "src/"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "MIT"
+        ],
+        "authors": [
+            {
+                "name": "Atlas Contributors",
+                "homepage": "https://github.com/atlasphp/Atlas.Orm/contributors"
+            }
+        ],
+        "description": "An ORM for your persistence model (not your domain model).",
+        "homepage": "http://github.com/atlasphp/Atlas.Orm",
+        "keywords": [
+            "data",
+            "mapper",
+            "mapping",
+            "orm",
+            "sql"
+        ]
+    },
+    {
+        "name": "atlas/pdo",
+        "version": "1.0.0",
+        "version_normalized": "1.0.0.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/atlasphp/Atlas.Pdo.git",
+            "reference": "abc27ed9a3f6eae055a1737c03b3fbb86b9763ef"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/atlasphp/Atlas.Pdo/zipball/abc27ed9a3f6eae055a1737c03b3fbb86b9763ef",
+            "reference": "abc27ed9a3f6eae055a1737c03b3fbb86b9763ef",
+            "shasum": ""
+        },
+        "require": {
+            "php": ">=7.1"
+        },
+        "require-dev": {
+            "pds/skeleton": "~1.0",
+            "phpunit/phpunit": "~7.0"
+        },
+        "time": "2018-05-07T12:42:19+00:00",
+        "type": "library",
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "Atlas\\Pdo\\": "src/"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "MIT"
+        ],
+        "authors": [
+            {
+                "name": "Atlas.Pdo Contributors",
+                "homepage": "https://github.com/atlasphp/Atlas.Pdo/contributors"
+            }
+        ],
+        "description": "Provides a PDO instance decorator with convenience methods, and a connection manager.",
+        "homepage": "https://github.com/atlasphp/Atlas.Pdo",
+        "keywords": [
+            "Connection",
+            "database",
+            "pdo",
+            "sql"
+        ]
+    },
+    {
+        "name": "atlas/query",
+        "version": "1.1.0",
+        "version_normalized": "1.1.0.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/atlasphp/Atlas.Query.git",
+            "reference": "5d2cb454fedc6dc25ac44b86f5e2e0358193bbe7"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/atlasphp/Atlas.Query/zipball/5d2cb454fedc6dc25ac44b86f5e2e0358193bbe7",
+            "reference": "5d2cb454fedc6dc25ac44b86f5e2e0358193bbe7",
+            "shasum": ""
+        },
+        "require": {
+            "atlas/pdo": "~1.0",
+            "php": ">=7.1"
+        },
+        "require-dev": {
+            "pds/skeleton": "~1.0",
+            "phpunit/phpunit": "~7.0"
+        },
+        "time": "2018-05-23T20:13:07+00:00",
+        "type": "library",
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "Atlas\\Query\\": "src/"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "MIT"
+        ],
+        "authors": [
+            {
+                "name": "Atlas.Query Contributors",
+                "homepage": "https://github.com/atlasphp/Atlas.Query/contributors"
+            }
+        ],
+        "description": "Object-oriented query builders for MySQL, Postgres, SQLite, and SQLServer.",
+        "homepage": "https://github.com/atlasphp/Atlas.Query",
+        "keywords": [
+            "database",
+            "db",
+            "delete",
+            "dml",
+            "insert",
+            "mysql",
+            "pdo",
+            "pgsql",
+            "postgres",
+            "postgresql",
+            "query",
+            "select",
+            "sql",
+            "sql server",
+            "sqlite",
+            "sqlserver",
+            "update"
+        ]
+    },
+    {
+        "name": "atlas/table",
+        "version": "1.0.1",
+        "version_normalized": "1.0.1.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/atlasphp/Atlas.Table.git",
+            "reference": "87906cbacd89bd26cde7006d5be40cf0167a5b69"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/atlasphp/Atlas.Table/zipball/87906cbacd89bd26cde7006d5be40cf0167a5b69",
+            "reference": "87906cbacd89bd26cde7006d5be40cf0167a5b69",
+            "shasum": ""
+        },
+        "require": {
+            "atlas/pdo": "~1.0",
+            "atlas/query": "~1.0",
+            "php": ">=7.1.0"
+        },
+        "require-dev": {
+            "atlas/testing": "~1.0",
+            "pds/skeleton": "~1.0",
+            "phpunit/phpunit": "~7.0"
+        },
+        "suggest": {
+            "atlas/cli": "A command-line tool to build skeleton classes."
+        },
+        "time": "2018-07-12T21:11:19+00:00",
+        "type": "library",
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "Atlas\\Table\\": "src/"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "MIT"
+        ],
+        "authors": [
+            {
+                "name": "Atlas Contributors",
+                "homepage": "https://github.com/atlasphp/Atlas.Table/contributors"
+            }
+        ],
+        "description": "Table data gateway implementation for Atlas.",
+        "homepage": "http://github.com/atlasphp/Atlas.Table",
+        "keywords": [
+            "data",
+            "gateway",
+            "mapper",
+            "mapping",
+            "orm",
+            "sql",
+            "table"
+        ]
+    }
+]
