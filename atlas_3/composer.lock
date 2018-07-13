@@ -8,16 +8,16 @@
     "packages": [
         {
             "name": "atlas/mapper",
-            "version": "1.0.1",
+            "version": "1.0.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/atlasphp/Atlas.Mapper.git",
-                "reference": "454e3a0c4025feb49f272857cb67ae28f0744e52"
+                "reference": "508660890779c4293e624de96be6264e4ef0bdaa"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/atlasphp/Atlas.Mapper/zipball/454e3a0c4025feb49f272857cb67ae28f0744e52",
-                "reference": "454e3a0c4025feb49f272857cb67ae28f0744e52",
+                "url": "https://api.github.com/repos/atlasphp/Atlas.Mapper/zipball/508660890779c4293e624de96be6264e4ef0bdaa",
+                "reference": "508660890779c4293e624de96be6264e4ef0bdaa",
                 "shasum": ""
             },
             "require": {
@@ -54,7 +54,7 @@
                 "orm",
                 "sql"
             ],
-            "time": "2018-07-12T21:29:28+00:00"
+            "time": "2018-07-13T15:05:19+00:00"
         },
         {
             "name": "atlas/orm",
