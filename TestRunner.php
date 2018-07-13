@@ -49,7 +49,7 @@ echo $separator;
 //echo $separator;
 //passthru('php doctrine_24/TestRunner.php');
 //echo $separator;
-passthru('php doctrine_m/TestRunner.php');
+passthru('php doctrine_26/TestRunner.php');
 echo $separator;
 passthru('php atlas_3/TestRunner.php');
 echo $separator;
