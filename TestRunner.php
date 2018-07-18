@@ -76,8 +76,8 @@ echo $separator;
 passthru('php atlas_3/TestRunner.php');
 echo $separator;
 
-passthru('php eloquent/TestRunner.php');
-echo $separator;
+// passthru('php eloquent/TestRunner.php');
+// echo $separator;
 
 // passthru('php phalcon/TestRunner.php');
 // echo $separator;
