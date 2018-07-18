@@ -220,17 +220,17 @@
     },
     {
         "name": "atlas/table",
-        "version": "1.0.1",
-        "version_normalized": "1.0.1.0",
+        "version": "1.0.2",
+        "version_normalized": "1.0.2.0",
         "source": {
             "type": "git",
             "url": "https://github.com/atlasphp/Atlas.Table.git",
-            "reference": "87906cbacd89bd26cde7006d5be40cf0167a5b69"
+            "reference": "3e4fbbb5ad7d480ce1d7af8b5dbb4ee702cf30ee"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/atlasphp/Atlas.Table/zipball/87906cbacd89bd26cde7006d5be40cf0167a5b69",
-            "reference": "87906cbacd89bd26cde7006d5be40cf0167a5b69",
+            "url": "https://api.github.com/repos/atlasphp/Atlas.Table/zipball/3e4fbbb5ad7d480ce1d7af8b5dbb4ee702cf30ee",
+            "reference": "3e4fbbb5ad7d480ce1d7af8b5dbb4ee702cf30ee",
             "shasum": ""
         },
         "require": {
@@ -246,7 +246,7 @@
         "suggest": {
             "atlas/cli": "A command-line tool to build skeleton classes."
         },
-        "time": "2018-07-12T21:11:19+00:00",
+        "time": "2018-07-13T21:31:03+00:00",
         "type": "library",
         "installation-source": "dist",
         "autoload": {

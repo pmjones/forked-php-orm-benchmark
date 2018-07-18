@@ -56,12 +56,12 @@ class Atlas3TestSuite extends AbstractTestSuite
 
     function runPKSearch($i)
     {
-        $this->atlas->fetchRecord(Author::CLASS, $i);
+        $author = $this->atlas->fetchRecord(Author::CLASS, $i);
     }
 
     function runHydrate($i)
     {
-        $this->atlas
+        $authors = $this->atlas
             ->select(Book::CLASS)
             ->where('price > ', $i)
             ->limit(5)
@@ -70,7 +70,7 @@ class Atlas3TestSuite extends AbstractTestSuite
 
     function runComplexQuery($i)
     {
-        $this->atlas
+        $count = $this->atlas
             ->select(Author::CLASS)
             ->where('id > ', $this->authors[array_rand($this->authors)])
             ->orWhere('(first_name || last_name) = ', 'John Doe')
@@ -79,7 +79,7 @@ class Atlas3TestSuite extends AbstractTestSuite
 
     function runJoinSearch($i)
     {
-        $this->atlas
+        $book = $this->atlas
             ->select(Book::CLASS)
             ->where('title = ', 'Hello' . $i)
             ->with(['author'])
