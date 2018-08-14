@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 1.2.0
+
+The release introduces automatic quoting of foreign table, alias, and column
+name identifiers in relationships. (N.b.: Atlas.Table handles the quoting of
+native identifiers.)
+
+## 1.1.0
+
+Added method MapperLocator::getTableLocator().
+
+Updated tests.
+
 ## 1.0.2
 
 Another small performance improvement to MapperRelationships::getRelated().

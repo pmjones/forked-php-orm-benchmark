@@ -1,6 +1,7 @@
 {
     "require": {
-        "atlas/orm": "~3.0"
+        "atlas/orm": "~3.0",
+        "atlas/pdo": "1.x@dev"
     },
     "autoload": {
         "psr-4": {

@@ -161,6 +161,30 @@ class Atlas
         $this->transaction->rollBack();
     }
 
+    public function logQueries($logQueries = true) : void
+    {
+        $this->mapperLocator
+            ->getTableLocator()
+            ->getConnectionLocator()
+            ->logQueries($logQueries);
+    }
+
+    public function getQueries() : array
+    {
+        return $this->mapperLocator
+            ->getTableLocator()
+            ->getConnectionLocator()
+            ->getQueries();
+    }
+
+    public function setQueryLogger(callable $queryLogger) : void
+    {
+        $this->mapperLocator
+            ->getTableLocator()
+            ->getConnectionLocator()
+            ->setQueryLogger($queryLogger);
+    }
+
     protected function read(string $mapperClass, string $method, ...$params)
     {
         $mapper = $this->mapper($mapperClass);

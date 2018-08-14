@@ -70,8 +70,8 @@ echo $separator;
 passthru('php doctrine_26/TestRunner.php');
 echo $separator;
 
-// passthru('php atlas_2/TestRunner.php');
-// echo $separator;
+passthru('php atlas_2/TestRunner.php');
+echo $separator;
 
 passthru('php atlas_3/TestRunner.php');
 echo $separator;

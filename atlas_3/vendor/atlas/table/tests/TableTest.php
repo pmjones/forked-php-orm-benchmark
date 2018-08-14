@@ -29,6 +29,17 @@ class TableTest extends \PHPUnit\Framework\TestCase
         $this->table = $this->tableLocator->get(EmployeeTable::CLASS);
     }
 
+    protected function logQueries()
+    {
+        $this->tableLocator->getConnectionLocator()->logQueries(true);
+    }
+
+    protected function getQueries()
+    {
+        $this->tableLocator->getConnectionLocator()->logQueries(false);
+        return $this->tableLocator->getConnectionLocator()->getQueries();
+    }
+
     public function testUpdateOnChangedPrimaryKey()
     {
         $row = $this->table->fetchRow(1);
@@ -49,9 +60,23 @@ class TableTest extends \PHPUnit\Framework\TestCase
             'floor' => '1',
         ];
 
+        $this->logQueries();
         $row = $this->table->fetchRow(1);
         $this->assertInstanceOf(EmployeeRow::CLASS, $row);
         $this->assertSame($expect, $row->getArrayCopy());
+
+        // check quoting
+        $queries = $this->getQueries();
+        $actual = $queries[0]['statement'];
+        $expect = '
+            SELECT
+                *
+            FROM
+                "employee"
+            WHERE
+                "id" = :__1__
+        ';
+        $this->assertSameSql($expect, $actual);
 
         // fetch failure
         $actual = $this->table->fetchRow(-1);
@@ -68,12 +93,26 @@ class TableTest extends \PHPUnit\Framework\TestCase
             'title' => 'Algebra',
         ];
 
+        $this->logQueries();
         $actual = $table->fetchRow([
             'course_subject' => 'MATH',
             'course_number' => '100'
         ]);
 
         $this->assertSame($expect, $actual->getArrayCopy());
+
+        // check quoting
+        $queries = $this->getQueries();
+        $actual = $queries[0]['statement'];
+        $expect = '
+            SELECT
+                *
+            FROM
+                "courses"
+            WHERE
+                "course_subject" = :__1__ AND "course_number" = :__2__
+        ';
+        $this->assertSameSql($expect, $actual);
     }
 
     public function testFetchRow_compositeKey_partMissing()
@@ -127,6 +166,7 @@ class TableTest extends \PHPUnit\Framework\TestCase
             ],
         ];
 
+        $this->logQueries();
         $actual = $this->table->fetchRows([1, 2, 3]);
         $this->assertCount(3, $actual);
         $this->assertInstanceOf(EmployeeRow::CLASS, $actual[0]);
@@ -135,6 +175,19 @@ class TableTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($expect[0], $actual[0]->getArrayCopy());
         $this->assertSame($expect[1], $actual[1]->getArrayCopy());
         $this->assertSame($expect[2], $actual[2]->getArrayCopy());
+
+        // check quoting
+        $queries = $this->getQueries();
+        $actual = $queries[0]['statement'];
+        $expect = '
+            SELECT
+                *
+            FROM
+                "employee"
+            WHERE
+                "id" IN (:__1__, :__2__, :__3__)
+        ';
+        $this->assertSameSql($expect, $actual);
 
         // fetch failure
         $actual = $this->table->fetchRows([997, 998, 999]);
@@ -163,6 +216,7 @@ class TableTest extends \PHPUnit\Framework\TestCase
             ],
         ];
 
+        $this->logQueries();
         $actual = $table->fetchRows($expect);
         $this->assertCount(3, $actual);
         $this->assertInstanceOf(CourseRow::CLASS, $actual[0]);
@@ -171,6 +225,21 @@ class TableTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($expect[0], $actual[0]->getArrayCopy());
         $this->assertSame($expect[1], $actual[1]->getArrayCopy());
         $this->assertSame($expect[2], $actual[2]->getArrayCopy());
+
+        // check quoting
+        $queries = $this->getQueries();
+        $actual = $queries[0]['statement'];
+        $expect = '
+            SELECT
+                *
+            FROM
+                "courses"
+            WHERE
+                ("course_subject" = :__1__ AND "course_number" = :__2__)
+                OR ("course_subject" = :__3__ AND "course_number" = :__4__)
+                OR ("course_subject" = :__5__ AND "course_number" = :__6__)
+        ';
+        $this->assertSameSql($expect, $actual);
     }
 
     public function testInsertRow()
@@ -183,8 +252,25 @@ class TableTest extends \PHPUnit\Framework\TestCase
         ]);
 
         // does the insert *look* successful?
+        $this->logQueries();
         $actual = $this->table->insertRow($row);
         $this->assertInstanceOf(PDOStatement::CLASS, $actual);
+
+        // check quoting
+        $queries = $this->getQueries();
+        $actual = $queries[0]['statement'];
+        $expect = '
+            INSERT INTO "employee" (
+                "name",
+                "building",
+                "floor"
+            ) VALUES (
+                :name,
+                :building,
+                :floor
+            )
+        ';
+        $this->assertSameSql($expect, $actual);
 
         // did the autoincrement ID get retained?
         $this->assertEquals(13, $row->id);
@@ -217,8 +303,21 @@ class TableTest extends \PHPUnit\Framework\TestCase
         $row->name = 'Annabelle';
 
         // did the update *look* successful?
+        $this->logQueries();
         $actual = $this->table->updateRow($row);
         $this->assertInstanceOf(PDOStatement::CLASS, $actual);
+
+        // check quoting
+        $queries = $this->getQueries();
+        $actual = $queries[0]['statement'];
+        $expect = '
+            UPDATE "employee"
+            SET
+                "name" = :name
+            WHERE
+                id = :__1__
+        ';
+        $this->assertSameSql($expect, $actual);
 
         // was it *actually* updated?
         $expect = $row->getArrayCopy();
@@ -245,10 +344,23 @@ class TableTest extends \PHPUnit\Framework\TestCase
 
     public function testDeleteRow()
     {
-        // fetch a record, then delete it
+        // fetch a record
         $row = $this->table->fetchRow(1);
+
+        // now delete it
+        $this->logQueries();
         $actual = $this->table->deleteRow($row);
         $this->assertInstanceOf(PDOStatement::CLASS, $actual);
+
+        // check quoting
+        $queries = $this->getQueries();
+        $actual = $queries[0]['statement'];
+        $expect = '
+            DELETE FROM "employee"
+            WHERE
+                id = :__1__
+        ';
+        $this->assertSameSql($expect, $actual);
 
         // did it delete?
         $actual = $this->table->fetchRow(1);

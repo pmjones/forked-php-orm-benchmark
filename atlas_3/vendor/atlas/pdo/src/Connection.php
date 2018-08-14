@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace Atlas\Pdo;
 
+use Exception;
 use Generator;
 use PDO;
 use PDOStatement;
@@ -17,37 +18,37 @@ use PDOStatement;
 /**
  * Decorator for PDO instances.
  *
- * @method bool beginTransaction()
- * @method bool commit()
  * @method mixed errorCode()
  * @method array errorInfo()
- * @method int exec(string $statement)
  * @method mixed getAttribute($attribute)
  * @method bool inTransaction()
  * @method string lastInsertId(string $name = null)
- * @method PDOStatement prepare(string $statement, array $options = null)
- * @method PDOStatement query(string $statement, ...$fetch)
- * @method string quote($value, int $parameter_type = PDO::PARAM_STR)
- * @method bool rollBack()
+ * @method string quote($value, int $dataType = PDO::PARAM_STR)
  * @method mixed setAttribute($attribute, $value)
  */
 class Connection
 {
     protected $pdo;
 
+    protected $logQueries = false;
+
+    protected $queries = [];
+
+    protected $queryLogger;
+
     public static function new(...$args) : Connection
     {
         if ($args[0] instanceof PDO) {
-            return new Connection($args[0]);
+            return new static($args[0]);
         }
 
-        return new Connection(new PDO(...$args));
+        return new static(new PDO(...$args));
     }
 
     public static function factory(...$args) : callable
     {
         return function () use ($args) {
-            return Connection::new(...$args);
+            return static::new(...$args);
         };
     }
 
@@ -74,6 +75,57 @@ class Connection
         return $this->pdo;
     }
 
+    /* Transactions */
+
+    public function beginTransaction() : bool
+    {
+        $entry = $this->newLogEntry(__METHOD__);
+        $result = $this->pdo->beginTransaction();
+        $this->addLogEntry($entry);
+        return $result;
+    }
+
+    public function commit() : bool
+    {
+        $entry = $this->newLogEntry(__METHOD__);
+        $result = $this->pdo->commit();
+        $this->addLogEntry($entry);
+        return $result;
+    }
+
+    public function rollBack() : bool
+    {
+        $entry = $this->newLogEntry(__METHOD__);
+        $result = $this->pdo->rollBack();
+        $this->addLogEntry($entry);
+        return $result;
+    }
+
+    /* Queries */
+
+    public function exec(string $statement) : int
+    {
+        $entry = $this->newLogEntry($statement);
+        $rowCount = $this->pdo->exec($statement);
+        $this->addLogEntry($entry);
+        return $rowCount;
+    }
+
+    public function prepare(
+        string $statement,
+        array $driverOptions = []
+    ) : PDOStatement
+    {
+        $sth = $this->pdo->prepare($statement, $driverOptions);
+        if ($sth instanceof LoggedStatement) {
+            $sth->setLogEntry($this->newLogEntry($statement));
+            $sth->setQueryLogger(function (array $entry) : void {
+                $this->addLogEntry($entry);
+            });
+        }
+        return $sth;
+    }
+
     public function perform(
         string $statement,
         array $values = []
@@ -81,16 +133,41 @@ class Connection
     {
         $sth = $this->prepare($statement);
         foreach ($values as $name => $args) {
-            if (is_int($name)) {
-                // sequential placeholders are 1-based
-                $name ++;
-            }
-            settype($args, 'array');
-            $sth->bindValue($name, ...$args);
+            $this->performBind($sth, $name, $args);
         }
         $sth->execute();
         return $sth;
     }
+
+    protected function performBind(PDOStatement $sth, $name, $args)
+    {
+        if (is_int($name)) {
+            // sequential placeholders are 1-based
+            $name ++;
+        }
+
+        if (! is_array($args)) {
+            $sth->bindValue($name, $args);
+            return;
+        }
+
+        $type = $args[1] ?? PDO::PARAM_STR;
+        if ($type === PDO::PARAM_BOOL && is_bool($args[0])) {
+            $args[0] = $args[0] ? '1' : '0';
+        }
+
+        $sth->bindValue($name, ...$args);
+    }
+
+    public function query(string $statement, ...$fetch) : PDOStatement
+    {
+        $entry = $this->newLogEntry($statement);
+        $sth = $this->pdo->query($statement, ...$fetch);
+        $this->addLogEntry($entry);
+        return $sth;
+    }
+
+    /* Fetching */
 
     public function fetchAffected(
         string $statement,
@@ -143,12 +220,12 @@ class Connection
         string $statement,
         array $values = [],
         string $class = 'stdClass',
-        array $args = []
+        array $ctorArgs = []
     ) {
         $sth = $this->perform($statement, $values);
 
-        if (! empty($args)) {
-            return $sth->fetchObject($class, $args);
+        if (! empty($ctorArgs)) {
+            return $sth->fetchObject($class, $ctorArgs);
         }
 
         return $sth->fetchObject($class);
@@ -158,13 +235,13 @@ class Connection
         string $statement,
         array $values = [],
         string $class = 'stdClass',
-        array $args = []
+        array $ctorArgs = []
     ) : array
     {
         $sth = $this->perform($statement, $values);
 
-        if (! empty($args)) {
-            return $sth->fetchAll(PDO::FETCH_CLASS, $class, $args);
+        if (! empty($ctorArgs)) {
+            return $sth->fetchAll(PDO::FETCH_CLASS, $class, $ctorArgs);
         }
 
         return $sth->fetchAll(PDO::FETCH_CLASS, $class);
@@ -200,6 +277,8 @@ class Connection
         $sth = $this->perform($statement, $values);
         return $sth->fetchColumn($column);
     }
+
+    /* Yielding */
 
     public function yieldAll(
         string $statement,
@@ -240,16 +319,17 @@ class Connection
         string $statement,
         array $values = [],
         string $class = 'stdClass',
-        array $args = []
-    ) : Generator {
+        array $ctorArgs = []
+    ) : Generator
+    {
         $sth = $this->perform($statement, $values);
 
-        if (empty($args)) {
+        if (empty($ctorArgs)) {
             while ($instance = $sth->fetchObject($class)) {
                 yield $instance;
             }
         } else {
-            while ($instance = $sth->fetchObject($class, $args)) {
+            while ($instance = $sth->fetchObject($class, $ctorArgs)) {
                 yield $instance;
             }
         }
@@ -263,6 +343,58 @@ class Connection
         $sth = $this->perform($statement, $values);
         while ($row = $sth->fetch(PDO::FETCH_NUM)) {
             yield $row[0] => $row[1];
+        }
+    }
+
+    /* Logging */
+
+    public function logQueries(bool $logQueries = true) : void
+    {
+        $this->logQueries = $logQueries;
+
+        $statementClass = ($this->logQueries)
+            ? LoggedStatement::CLASS
+            : PDOStatement::CLASS;
+
+        $this->pdo->setAttribute(PDO::ATTR_STATEMENT_CLASS, [$statementClass]);
+    }
+
+    public function getQueries()
+    {
+        return $this->queries;
+    }
+
+    public function setQueryLogger(callable $queryLogger) : void
+    {
+        $this->queryLogger = $queryLogger;
+    }
+
+    protected function newLogEntry(string $statement) : array
+    {
+        return [
+            'start' => microtime(true),
+            'finish' => null,
+            'duration' => null,
+            'statement' => $statement,
+            'values' => [],
+            'trace' => null,
+        ];
+    }
+
+    protected function addLogEntry(array $entry) : void
+    {
+        if (! $this->logQueries) {
+            return;
+        }
+
+        $entry['finish'] = microtime(true);
+        $entry['duration'] = $entry['finish'] - $entry['start'];
+        $entry['trace'] = (new Exception())->getTraceAsString();
+
+        if ($this->queryLogger !== null) {
+            ($this->queryLogger)($entry);
+        } else {
+            $this->queries[] = $entry;
         }
     }
 }
